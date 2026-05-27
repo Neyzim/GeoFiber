@@ -1,6 +1,7 @@
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, TileLayer, Popup, Marker } from 'react-leaflet'
-import './App.css'
+import '../App.css'
+import CreateMapMarker from './CreateMapMarker';
  
 
 const LeafletMap = () => {
@@ -15,16 +16,21 @@ const LeafletMap = () => {
     
   return (
     <div >
-    <MapContainer center={center} zoom={zoomLevel} scrollWheelZoom={false} id='map-container'>
-  <TileLayer
-    attribution={attr}
-    url={mapUrl}
-  />
+    <MapContainer 
+    center={center} 
+    zoom={zoomLevel} 
+    scrollWheelZoom={false} 
+    id='map-container'>
+        <TileLayer
+            attribution={attr}
+            url={mapUrl}
+        />
   <Marker position={position}>
     <Popup>
       A pretty CSS3 popup. <br /> Easily customizable.
     </Popup>
   </Marker>
+  <CreateMapMarker/>
 </MapContainer>
       
     </div>

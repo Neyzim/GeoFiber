@@ -1,5 +1,5 @@
 import './App.css'
-import LeafletMap from './LeafletMap'
+import LeafletMap from './components/LeafletMap'
 
 function App() {
 
