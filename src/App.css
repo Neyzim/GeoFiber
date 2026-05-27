@@ -181,4 +181,10 @@
     right: 0;
     border-right-color: var(--border);
   }
+
+}
+
+#map-container {
+  height: 860px;
+  width: 100%;
 }
