@@ -1,18 +1,42 @@
-import useCreateMapMarker from '../hooks/useCreateMapMarker'
 import { Marker, Popup } from 'react-leaflet';
+import { useState } from 'react';
+import useMapClick from '../hooks/useMapClick';
+import type { MarkerData } from '../types/MarkerData';
+import type { ActiveToolProps } from '../types/ActiveToolProps';
+import { markerIcons } from '../types/MarkerIcons';
 
-const CreateMapMarker = () => {
+const CreateMapMarker = ({activeTool}: ActiveToolProps) => {
 
-    const position = useCreateMapMarker();
+    const [markers, setMarkers] = useState<MarkerData[]>([]);
 
-    if(!position){
-        return null;
-    }
+    useMapClick({
+      onMapClick(position){
+        if(!activeTool){
+          return;
+        }
+        setMarkers((prev) => [...prev,
+      {
+        id: Date.now(),
+        type: activeTool,
+        position
+      }
+      ]);
+      }
+    });
   return (
- 
-      <Marker position={position}>
-        <Popup>Marcador genérico</Popup>
+    <>
+    {markers.map((marker) => {
+      return <Marker key={marker.id}
+        position={marker.position}
+        icon={markerIcons[marker.type]}
+      >
+        <Popup>Marcador do tipo {marker.type}</Popup>
+
       </Marker>
+    })}
+    
+    </>
+    
   
   )
 }

@@ -1,0 +1,2 @@
+export type MarkerType = 
+    | 'cto';
