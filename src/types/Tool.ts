@@ -1,5 +1,6 @@
+import type { MarkerType } from "./MarkerType";
+
 export type Tool =
-  | 'cto'
-  | 'ceo'
-  | 'utilityPole'
+  | MarkerType
+  | 'cable'
   | null;

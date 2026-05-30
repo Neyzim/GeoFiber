@@ -9,11 +9,13 @@ const CreateMapMarker = ({activeTool}: ActiveToolProps) => {
 
     const [markers, setMarkers] = useState<MarkerData[]>([]);
 
+   
+
     useMapClick({
       onMapClick(position){
-        if(!activeTool){
-          return;
-        }
+      if(!activeTool || activeTool === 'cable'){
+        return null;
+      }
         setMarkers((prev) => [...prev,
       {
         id: Date.now(),
