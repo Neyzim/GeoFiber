@@ -1,2 +1,4 @@
 export type MarkerType = 
-    | 'cto';
+    | 'cto'
+    | 'ceo'
+    | 'utilityPole';

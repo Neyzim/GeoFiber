@@ -1,5 +1,7 @@
-import { CtoIcon } from "../map.icons/ctoIcon";
+import { CeoIcon, CtoIcon, UtilityPoleIcon } from "../map.icons/MapIcon";
 
 export const markerIcons = {
-    cto: CtoIcon
+    cto: CtoIcon,
+    ceo: CeoIcon,
+    utilityPole: UtilityPoleIcon
 }
