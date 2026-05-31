@@ -3,12 +3,14 @@ import type { SelectedItem } from '../types/SelectedItem';
 
 type SelectedElementScreenProps = {
   selectedItem: SelectedItem | null;
+  isEditing: boolean;
+  onToggleEdit: () => void;
   onClearSelection: () => void;
   onDeleteSelectedItem: () => void;
   onUpdateSelectedItem: (updated: SelectedItem) => void;
 };
 
-const SelectedElementScreen = ({ selectedItem, onClearSelection, onDeleteSelectedItem, onUpdateSelectedItem }: SelectedElementScreenProps) => {
+const SelectedElementScreen = ({ selectedItem, isEditing, onToggleEdit, onClearSelection, onDeleteSelectedItem, onUpdateSelectedItem }: SelectedElementScreenProps) => {
   const [name, setName] = useState('');
   const [capacity, setCapacity] = useState<number>(0);
   const [occupancy, setOccupancy] = useState<number>(0);
@@ -16,18 +18,19 @@ const SelectedElementScreen = ({ selectedItem, onClearSelection, onDeleteSelecte
 
   useEffect(() => {
     if (!selectedItem) return;
-    if (selectedItem.kind === 'marker') {
-      setName(selectedItem.item.name ?? '');
-      setCapacity(selectedItem.item.capacity ?? 0);
-      setOccupancy(selectedItem.item.occupancy ?? 0);
-      setObservations(selectedItem.item.observations ?? '');
-    } else {
-      setName(selectedItem.item.name ?? '');
-      setCapacity(selectedItem.item.capacity ?? 0);
-      setOccupancy(selectedItem.item.occupancy ?? 0);
-      setObservations(selectedItem.item.observations ?? '');
-    }
+    setName(selectedItem.item.name ?? '');
+    setCapacity(selectedItem.item.capacity ?? 0);
+    setOccupancy(selectedItem.item.occupancy ?? 0);
+    setObservations(selectedItem.item.observations ?? '');
   }, [selectedItem]);
+
+  useEffect(() => {
+    if (!selectedItem || isEditing) return;
+    setName(selectedItem.item.name ?? '');
+    setCapacity(selectedItem.item.capacity ?? 0);
+    setOccupancy(selectedItem.item.occupancy ?? 0);
+    setObservations(selectedItem.item.observations ?? '');
+  }, [isEditing, selectedItem]);
 
   if (!selectedItem) {
     return null;
@@ -77,19 +80,22 @@ const SelectedElementScreen = ({ selectedItem, onClearSelection, onDeleteSelecte
           )}
 
           <label>Nome</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
+          <input disabled={!isEditing} value={name} onChange={(e) => setName(e.target.value)} />
 
           <label>Capacidade</label>
-          <input type="number" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
+          <input disabled={!isEditing} type="number" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
 
           <label>Ocupação</label>
-          <input type="number" value={occupancy} onChange={(e) => setOccupancy(Number(e.target.value))} />
+          <input disabled={!isEditing} type="number" value={occupancy} onChange={(e) => setOccupancy(Number(e.target.value))} />
 
           <label>Observações</label>
-          <textarea value={observations} onChange={(e) => setObservations(e.target.value)} />
+          <textarea disabled={!isEditing} value={observations} onChange={(e) => setObservations(e.target.value)} />
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button className="selection-save" onClick={handleSave}>Salvar</button>
+          <div className="selection-actions">
+            <button className="selection-save" onClick={handleSave} disabled={!isEditing}>Salvar</button>
+            <button className="selection-edit" onClick={onToggleEdit}>
+              {isEditing ? 'Cancelar' : 'Editar'}
+            </button>
             <button className="selection-delete" onClick={onDeleteSelectedItem}>Excluir</button>
           </div>
         </div>

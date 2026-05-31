@@ -205,17 +205,18 @@
 
 .selection-overlay {
   position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: grid;
-  place-items: center;
+  top: 20px;
+  right: 20px;
   z-index: 1100;
+  pointer-events: none;
 }
 
 .selection-card {
+  pointer-events: auto;
   background: white;
   padding: 20px 22px;
-  width: min(420px, calc(100% - 40px));
+  width: 320px;
+  max-width: calc(100vw - 40px);
   border-radius: 16px;
   box-shadow: 0 18px 35px rgba(0, 0, 0, 0.18);
 }
@@ -275,6 +276,26 @@
   background: #256f33;
 }
 
+.selection-edit {
+  margin-top: 14px;
+  border: none;
+  background: #337ab7;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selection-edit:hover {
+  background: #2a6a9c;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .selection-card label {
   display: block;
   margin-top: 8px;
@@ -293,6 +314,20 @@
 
 .selection-card textarea {
   min-height: 80px;
+}
+
+.vertex-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #0077cc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.vertex-handle.leaflet-div-icon {
+  margin-left: -6px;
+  margin-top: -6px;
 }
 
 .map-wrapper {

@@ -13,7 +13,6 @@ import type { MarkerData } from '../types/MarkerData';
 import type { SelectedItem } from '../types/SelectedItem';
 import SaveCable from '../services/SaveCable';
 
-
 const LeafletMap = () => {
 
     // Map Configuration Parameters
@@ -25,6 +24,7 @@ const LeafletMap = () => {
     // Active Tool State
     const [activeTool, setActiveTool] = useState<Tool>(null);
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
     const [markers, setMarkers] = useState<MarkerData[]>([]);
   
     // Cable Creation State
@@ -34,6 +34,7 @@ const LeafletMap = () => {
     // Handle Cable Save
     const handleSaveCable = () => {
       SaveCable({currentCablePoints, setCables, setCurrentCablePoints, activeTool, cables})
+      setActiveTool(null);
     } 
 
   return (
@@ -54,7 +55,18 @@ const LeafletMap = () => {
       activeTool={activeTool}
       markers={markers}
       setMarkers={setMarkers}
-      onMarkerSelect={(marker) => setSelectedItem({ kind: 'marker', item: marker })}
+      selectedMarkerId={selectedItem?.kind === 'marker' ? selectedItem.item.id : undefined}
+      isEditing={isEditing}
+      onMarkerSelect={(marker) => {
+        setSelectedItem({ kind: 'marker', item: marker });
+        setActiveTool(null);
+        setIsEditing(false);
+      }}
+      onMarkerUpdate={(updatedMarker) => {
+        if (selectedItem?.kind === 'marker' && selectedItem.item.id === updatedMarker.id) {
+          setSelectedItem({ kind: 'marker', item: updatedMarker });
+        }
+      }}
     />
     <CreatMapCable
       activeTool={activeTool}
@@ -62,15 +74,30 @@ const LeafletMap = () => {
       setCurrentCablePoints={setCurrentCablePoints}
       cables={cables}
       setCables={setCables}
-      onCableSelect={(cable) => setSelectedItem({ kind: 'cable', item: cable })}
+      onCableSelect={(cable) => {
+        setSelectedItem({ kind: 'cable', item: cable });
+        setActiveTool(null);
+        setIsEditing(false);
+      }}
       selectedCableId={selectedItem?.kind === 'cable' ? selectedItem.item.id : undefined}
+      isEditing={isEditing}
+      onCableUpdate={(updatedCable) => {
+        if (selectedItem?.kind === 'cable' && selectedItem.item.id === updatedCable.id) {
+          setSelectedItem({ kind: 'cable', item: updatedCable });
+        }
+      }}
     />
   </MapContainer>
   
 
   <SelectedElementScreen
     selectedItem={selectedItem}
-    onClearSelection={() => setSelectedItem(null)}
+    isEditing={isEditing}
+    onClearSelection={() => {
+      setSelectedItem(null);
+      setIsEditing(false);
+    }}
+    onToggleEdit={() => setIsEditing((prev) => !prev)}
     onDeleteSelectedItem={() => {
       if (!selectedItem) return;
       if (selectedItem.kind === 'marker') {
@@ -80,15 +107,16 @@ const LeafletMap = () => {
         setCables((prev) => prev.filter((c) => c.id !== selectedItem.item.id));
       }
       setSelectedItem(null);
+      setIsEditing(false);
     }}
     onUpdateSelectedItem={(updated) => {
       if (updated.kind === 'marker') {
         setMarkers((prev) => prev.map((m) => (m.id === updated.item.id ? updated.item : m)));
-        setSelectedItem(updated);
       } else {
         setCables((prev) => prev.map((c) => (c.id === updated.item.id ? updated.item : c)));
-        setSelectedItem(updated);
       }
+      setSelectedItem(updated);
+      setIsEditing(false);
     }}
   />
     </div>
