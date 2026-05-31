@@ -1,40 +1,50 @@
 import { Marker, Popup } from 'react-leaflet';
-import { useState } from 'react';
 import useMapClick from '../hooks/useMapClick';
+import type { Dispatch, SetStateAction } from 'react';
 import type { MarkerData } from '../types/MarkerData';
 import type { ActiveToolProps } from '../types/ActiveToolProps';
 import { markerIcons } from '../types/MarkerIcons';
 
-const CreateMapMarker = ({activeTool}: ActiveToolProps) => {
+type CreateMapMarkerProps = ActiveToolProps & {
+  markers: MarkerData[];
+  setMarkers: Dispatch<SetStateAction<MarkerData[]>>;
+  onMarkerSelect: (selectedMarker: MarkerData) => void;
+};
 
-    const [markers, setMarkers] = useState<MarkerData[]>([]);
+const CreateMapMarker = ({ activeTool, markers, setMarkers, onMarkerSelect }: CreateMapMarkerProps) => {
 
    
 
     useMapClick({
       onMapClick(position){
-      if(!activeTool || activeTool === 'cable'){
-        return null;
-      }
-        setMarkers((prev) => [...prev,
-      {
-        id: Date.now(),
-        type: activeTool,
-        position
-      }
-      ]);
+        if(!activeTool || activeTool === 'cable'){
+          return null;
+        }
+        setMarkers((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            type: activeTool,
+            position
+          }
+        ]);
       }
     });
   return (
     <>
     {markers.map((marker) => {
-      return <Marker key={marker.id}
-        position={marker.position}
-        icon={markerIcons[marker.type]}
-      >
-        <Popup>Marcador do tipo {marker.type}</Popup>
-
-      </Marker>
+      return (
+        <Marker
+          key={marker.id}
+          position={marker.position}
+          icon={markerIcons[marker.type]}
+          eventHandlers={{
+            click: () => onMarkerSelect(marker),
+          }}
+        >
+          <Popup>Marcador do tipo {marker.type}</Popup>
+        </Marker>
+      );
     })}
     
     </>

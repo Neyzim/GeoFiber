@@ -1,6 +1,8 @@
 import type { CreateMapCableProps } from "../types/CreateCableMapProps";
  
-export default function SaveCable ({currentCablePoints, setCables,setCurrentCablePoints}: CreateMapCableProps) {
+type SaveCableProps = Omit<CreateMapCableProps, 'onCableSelect' | 'selectedCableId'>;
+ 
+export default function SaveCable ({currentCablePoints, setCables, setCurrentCablePoints}: SaveCableProps) {
     if(currentCablePoints.length < 2){
       return;
     }
@@ -9,7 +11,6 @@ export default function SaveCable ({currentCablePoints, setCables,setCurrentCabl
       {
         id: Date.now(),
         positions: currentCablePoints
-        
       }
     ])
     setCurrentCablePoints([]);

@@ -3,8 +3,7 @@ import { Polyline } from 'react-leaflet';
 import type { CreateMapCableProps } from '../types/CreateCableMapProps';
 
 const CreatMapCable = (
-  {activeTool, currentCablePoints,
-  setCurrentCablePoints, cables} : CreateMapCableProps
+  { activeTool, currentCablePoints, setCurrentCablePoints, cables, onCableSelect, selectedCableId }: CreateMapCableProps
 ) => {
 
 
@@ -22,9 +21,22 @@ const CreatMapCable = (
  return (
     <div>
       {cables.map((cable) => (
-        <Polyline key={cable.id} positions={cable.positions} />
+        <Polyline
+          key={cable.id}
+          positions={cable.positions}
+          eventHandlers={{
+            click: () => onCableSelect(cable),
+          }}
+          pathOptions={{
+            color: selectedCableId === cable.id ? 'orange' : 'blue',
+            weight: selectedCableId === cable.id ? 6 : 4,
+          }}
+        />
       ))}
-      <Polyline positions={currentCablePoints}/>
+      <Polyline
+        positions={currentCablePoints}
+        pathOptions={{ color: 'gray', dashArray: '4 4' }}
+      />
       
     </div>
   )

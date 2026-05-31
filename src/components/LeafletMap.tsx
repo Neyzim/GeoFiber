@@ -6,8 +6,11 @@ import ToolsSideBar from './ToolsSideBar';
 import type { Tool } from '../types/Tool';
 import CreateMapMarker from './CreateMapMarker';
 import CreatMapCable from './CreatMapCable';
+import SelectedElementScreen from './SelectedElementScreen';
 import type { CableData } from '../types/CableData';
 import type { LatLng } from 'leaflet';
+import type { MarkerData } from '../types/MarkerData';
+import type { SelectedItem } from '../types/SelectedItem';
 import SaveCable from '../services/SaveCable';
 
 
@@ -21,6 +24,8 @@ const LeafletMap = () => {
 
     // Active Tool State
     const [activeTool, setActiveTool] = useState<Tool>(null);
+    const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+    const [markers, setMarkers] = useState<MarkerData[]>([]);
   
     // Cable Creation State
     const [cables, setCables] = useState<CableData[]>([]);
@@ -45,14 +50,41 @@ const LeafletMap = () => {
         /> 
   
     {/*Created Components */}
-    <CreateMapMarker activeTool={activeTool} />
-    <CreatMapCable  activeTool={activeTool} 
-                    currentCablePoints={currentCablePoints}
-                    setCurrentCablePoints={setCurrentCablePoints}
-                    cables={cables}
-                    setCables={setCables}
-     />
-</MapContainer>
+    <CreateMapMarker
+      activeTool={activeTool}
+      markers={markers}
+      setMarkers={setMarkers}
+      onMarkerSelect={(marker) => setSelectedItem({ kind: 'marker', item: marker })}
+    />
+    <CreatMapCable
+      activeTool={activeTool}
+      currentCablePoints={currentCablePoints}
+      setCurrentCablePoints={setCurrentCablePoints}
+      cables={cables}
+      setCables={setCables}
+      onCableSelect={(cable) => setSelectedItem({ kind: 'cable', item: cable })}
+      selectedCableId={selectedItem?.kind === 'cable' ? selectedItem.item.id : undefined}
+    />
+  </MapContainer>
+  <SelectedElementScreen
+    selectedItem={selectedItem}
+    onClearSelection={() => setSelectedItem(null)}
+    onDeleteSelectedItem={() => {
+      if (!selectedItem) {
+        return;
+      }
+
+      if (selectedItem.kind === 'marker') {
+        setMarkers((prev) => prev.filter((marker) => marker.id !== selectedItem.item.id));
+      }
+
+      if (selectedItem.kind === 'cable') {
+        setCables((prev) => prev.filter((cable) => cable.id !== selectedItem.item.id));
+      }
+
+      setSelectedItem(null);
+    }}
+  />
     </div>
   )
 }

@@ -9,4 +9,6 @@ export type CreateMapCableProps = {
   setCables: Dispatch<SetStateAction<CableData[]>>;
   currentCablePoints: LatLng[];
   setCurrentCablePoints: Dispatch<SetStateAction<LatLng[]>>;
+  onCableSelect: (selectedCable: CableData) => void;
+  selectedCableId?: number;
 };
