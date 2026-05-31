@@ -66,23 +66,29 @@ const LeafletMap = () => {
       selectedCableId={selectedItem?.kind === 'cable' ? selectedItem.item.id : undefined}
     />
   </MapContainer>
+  
+
   <SelectedElementScreen
     selectedItem={selectedItem}
     onClearSelection={() => setSelectedItem(null)}
     onDeleteSelectedItem={() => {
-      if (!selectedItem) {
-        return;
-      }
-
+      if (!selectedItem) return;
       if (selectedItem.kind === 'marker') {
-        setMarkers((prev) => prev.filter((marker) => marker.id !== selectedItem.item.id));
+        setMarkers((prev) => prev.filter((m) => m.id !== selectedItem.item.id));
       }
-
       if (selectedItem.kind === 'cable') {
-        setCables((prev) => prev.filter((cable) => cable.id !== selectedItem.item.id));
+        setCables((prev) => prev.filter((c) => c.id !== selectedItem.item.id));
       }
-
       setSelectedItem(null);
+    }}
+    onUpdateSelectedItem={(updated) => {
+      if (updated.kind === 'marker') {
+        setMarkers((prev) => prev.map((m) => (m.id === updated.item.id ? updated.item : m)));
+        setSelectedItem(updated);
+      } else {
+        setCables((prev) => prev.map((c) => (c.id === updated.item.id ? updated.item : c)));
+        setSelectedItem(updated);
+      }
     }}
   />
     </div>

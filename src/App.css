@@ -261,6 +261,40 @@
   background: #c23131;
 }
 
+.selection-save {
+  margin-top: 14px;
+  border: none;
+  background: #2b8a3e;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selection-save:hover {
+  background: #256f33;
+}
+
+.selection-card label {
+  display: block;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.selection-card input,
+.selection-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.selection-card textarea {
+  min-height: 80px;
+}
+
 .map-wrapper {
   position: relative;
   width: 100%;

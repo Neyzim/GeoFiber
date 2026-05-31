@@ -10,7 +10,11 @@ export default function SaveCable ({currentCablePoints, setCables, setCurrentCab
       ...prev,
       {
         id: Date.now(),
-        positions: currentCablePoints
+        positions: currentCablePoints,
+        name: '',
+        capacity: 0,
+        occupancy: 0,
+        observations: ''
       }
     ])
     setCurrentCablePoints([]);

@@ -21,13 +21,17 @@ const CreateMapMarker = ({ activeTool, markers, setMarkers, onMarkerSelect }: Cr
           return null;
         }
         setMarkers((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            type: activeTool,
-            position
-          }
-        ]);
+              ...prev,
+              {
+                id: Date.now(),
+                type: activeTool,
+                position,
+                name: '',
+                capacity: 0,
+                occupancy: 0,
+                observations: ''
+              }
+            ]);
       }
     });
   return (
