@@ -8,10 +8,13 @@ import { markerIcons } from '../types/MarkerIcons';
 type CreateMapMarkerProps = ActiveToolProps & {
   markers: MarkerData[];
   setMarkers: Dispatch<SetStateAction<MarkerData[]>>;
+  selectedMarkerId?: number;
+  isEditing?: boolean;
   onMarkerSelect: (selectedMarker: MarkerData) => void;
+  onMarkerUpdate?: (updatedMarker: MarkerData) => void;
 };
 
-const CreateMapMarker = ({ activeTool, markers, setMarkers, onMarkerSelect }: CreateMapMarkerProps) => {
+const CreateMapMarker = ({ activeTool, markers, setMarkers, selectedMarkerId, isEditing, onMarkerSelect, onMarkerUpdate }: CreateMapMarkerProps) => {
 
    
 
@@ -37,13 +40,24 @@ const CreateMapMarker = ({ activeTool, markers, setMarkers, onMarkerSelect }: Cr
   return (
     <>
     {markers.map((marker) => {
+      const isDraggable = marker.id === selectedMarkerId && isEditing;
       return (
         <Marker
           key={marker.id}
           position={marker.position}
           icon={markerIcons[marker.type]}
+          draggable={isDraggable}
           eventHandlers={{
             click: () => onMarkerSelect(marker),
+            dragend: (e) => {
+              if (!isDraggable) return;
+              const latlng = (e as any).target.getLatLng();
+              const updatedMarker = { ...marker, position: latlng };
+              setMarkers((prev) => prev.map((m) => (m.id === marker.id ? updatedMarker : m)));
+              if (onMarkerUpdate) {
+                onMarkerUpdate(updatedMarker);
+              }
+            },
           }}
         >
           <Popup>Marcador do tipo {marker.type}</Popup>
