@@ -1,0 +1,171 @@
+:host {
+  display: block;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--mat-sys-surface, #f5f7fa);
+}
+
+.project {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+// --- Painel lateral --------------------------------------------------------
+
+.project__sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: min(360px, 42vw);
+  min-width: 280px;
+  padding: 14px 14px 0;
+  gap: 12px;
+  box-sizing: border-box;
+  background: var(--mat-sys-surface-container-low, #fff);
+  border-right: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  overflow: hidden;
+}
+
+.project__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project__logo {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--mat-sys-primary, #1e88e5);
+  color: var(--mat-sys-on-primary, #fff);
+  font: var(--mat-sys-title-medium, 500 16px/1.3 sans-serif);
+  letter-spacing: 0.04em;
+}
+
+.project__brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+
+  strong {
+    font: var(--mat-sys-title-medium, 500 16px/1.3 sans-serif);
+  }
+
+  small {
+    font: var(--mat-sys-body-small, 400 12px/1.3 sans-serif);
+    color: var(--mat-sys-on-surface-variant, #546e7a);
+  }
+}
+
+.project__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.project__search {
+  width: 100%;
+}
+
+.project__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project__filters-label {
+  font: var(--mat-sys-label-medium, 500 12px/1.3 sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.project__status-group {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+
+  .mat-button-toggle {
+    flex: 1 1 42%;
+  }
+}
+
+.project__status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.project__list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: var(--mat-sys-label-large, 500 13px/1.3 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.project__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -14px;
+  padding: 0 14px 14px;
+  overflow: auto;
+}
+
+// --- Área do mapa ----------------------------------------------------------
+
+.project__map-area {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.project__map {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.project__status-bar {
+  flex: 0 0 auto;
+}
+
+.project__overlay {
+  position: absolute;
+  top: 12px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+
+  &--left {
+    left: 12px;
+  }
+
+  &--right {
+    right: 12px;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 820px) {
+  .project__sidebar {
+    width: min(320px, 78vw);
+    min-width: 0;
+  }
+}

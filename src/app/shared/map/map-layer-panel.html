@@ -1,0 +1,39 @@
+<section class="layer-panel" aria-label="Camadas do mapa">
+  <header class="layer-panel__header">
+    <h3 class="layer-panel__title">Mapa base</h3>
+    <button
+      mat-icon-button
+      type="button"
+      class="layer-panel__close"
+      matTooltip="Fechar"
+      (click)="close.emit()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <mat-radio-group
+    class="layer-panel__options"
+    [value]="activeKey()"
+    (change)="layerChange.emit($event.value)"
+  >
+    @for (layer of layers(); track layer.key) {
+      <mat-radio-button class="layer-panel__option" [value]="layer.key">
+        <mat-icon class="layer-panel__icon">{{ layer.icon }}</mat-icon>
+        <span>{{ layer.label }}</span>
+      </mat-radio-button>
+    }
+  </mat-radio-group>
+
+  <div class="layer-panel__opacity">
+    <span class="layer-panel__opacity-label">Opacidade</span>
+    <mat-slider [min]="minOpacity" max="1" step="0.1" discrete>
+      <input
+        matSliderThumb
+        [value]="opacity()"
+        aria-label="Opacidade do mapa base"
+        (valueChange)="opacityChange.emit($event)"
+      />
+    </mat-slider>
+  </div>
+</section>

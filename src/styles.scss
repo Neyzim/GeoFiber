@@ -1,0 +1,170 @@
+@use '@angular/material' as mat;
+
+// --- Tema Material 3 --------------------------------------------------------
+// Define os tokens de sistema (--mat-sys-*) usados por todos os componentes.
+html {
+  color-scheme: light;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$green-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+
+  // Reforça o token de fundo de app com uma leve camada de cor.
+  &,
+  body {
+    height: 100%;
+  }
+}
+
+body {
+  margin: 0;
+  font: var(--mat-sys-body-medium, 400 14px/1.5 Roboto, sans-serif);
+  background: var(--mat-sys-surface, #f5f7fa);
+  color: var(--mat-sys-on-surface, #1f2933);
+}
+
+// --- Marcadores de PIN (HTML gerado pelo Leaflet) ---------------------------
+// Estas classes são injetadas via `L.divIcon`, fora do escopo dos componentes,
+// por isso precisam viver nos estilos globais.
+
+.gf-pin-wrapper,
+.gf-pin-ghost,
+.gf-user-location {
+  background: transparent;
+  border: 0;
+}
+
+.gf-pin {
+  --gf-pin-color: #5c6bc0;
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 38px;
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease;
+}
+
+.gf-pin__head {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gf-pin-color);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+}
+
+.gf-pin__code {
+  font: 700 9px/1 Roboto, system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
+}
+
+.gf-pin__tip {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 13px solid var(--gf-pin-color);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.3));
+}
+
+.gf-pin__status {
+  position: absolute;
+  right: 0;
+  bottom: 9px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.gf-pin:hover,
+.gf-pin.is-selected {
+  transform: translateY(-2px) scale(1.08);
+}
+
+.gf-pin.is-selected .gf-pin__head {
+  box-shadow:
+    0 0 0 4px rgb(30 136 229 / 0.3),
+    0 3px 10px rgb(0 0 0 / 0.4);
+}
+
+// --- Pré-visualização (ferramenta "Adicionar PIN") --------------------------
+
+.gf-pin-ghost__dot {
+  display: block;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: rgb(30 136 229 / 0.25);
+  border: 2px dashed #1e88e5;
+  animation: gf-ghost-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes gf-ghost-pulse {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+// --- Localização do usuário -------------------------------------------------
+
+.gf-user-location__dot {
+  display: block;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #1e88e5;
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 0 4px rgb(30 136 229 / 0.25),
+    0 2px 6px rgb(0 0 0 / 0.3);
+}
+
+// --- Cursores e tooltip do mapa --------------------------------------------
+
+.gf-map--add-pin,
+.gf-map--add-pin .leaflet-marker-icon {
+  cursor: crosshair;
+}
+
+.gf-map--move-pin .leaflet-marker-icon {
+  cursor: grab;
+}
+
+.leaflet-tooltip.gf-pin-tooltip {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  font: 500 12px/1.45 Roboto, system-ui, sans-serif;
+  box-shadow: 0 4px 14px rgb(15 23 42 / 0.24);
+}

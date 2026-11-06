@@ -1,0 +1,156 @@
+<div class="project">
+  <!-- Painel lateral: identidade do projeto, busca, filtros e lista de PINs -->
+  <aside class="project__sidebar">
+    <header class="project__brand">
+      <span class="project__logo" aria-hidden="true">GF</span>
+      <span class="project__brand-text">
+        <strong>GeoFiber</strong>
+        <small>Mapeador de redes FTTH</small>
+      </span>
+    </header>
+
+    <div class="project__actions">
+      <button mat-flat-button type="button" (click)="createPinAtCenter()">
+        <mat-icon>add_location_alt</mat-icon>
+        Novo PIN
+      </button>
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="visibleCount() === 0"
+        (click)="fitToPins()"
+      >
+        <mat-icon>center_focus_strong</mat-icon>
+        Enquadrar
+      </button>
+    </div>
+
+    <mat-form-field class="project__search" appearance="outline" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Buscar PIN</mat-label>
+      <input
+        matInput
+        type="search"
+        [value]="search()"
+        (input)="onSearchInput($event)"
+        placeholder="Nome, descrição ou tag"
+      />
+      @if (search()) {
+        <button
+          matIconSuffix
+          mat-icon-button
+          type="button"
+          matTooltip="Limpar busca"
+          (click)="clearSearch()"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+
+    <div class="project__filters">
+      <span class="project__filters-label">Situação</span>
+      <mat-button-toggle-group
+        multiple
+        class="project__status-group"
+        [value]="activeStatuses()"
+        (change)="onStatusToggle($event)"
+      >
+        @for (status of statuses; track status.status) {
+          <mat-button-toggle [value]="status.status" [matTooltip]="status.label">
+            <span class="project__status-dot" [style.background]="status.color"></span>
+            {{ status.label }}
+          </mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="project__list-header">
+      <span>{{ visibleCount() }} de {{ totalPins() }} PIN(s)</span>
+      @if (hasActiveFilters()) {
+        <button mat-button type="button" (click)="clearFilters()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpar
+        </button>
+      }
+    </div>
+
+    <div class="project__list">
+      <app-pin-list
+        [pins]="pins()"
+        [selectedId]="selectedId()"
+        (select)="onPinClick($event)"
+        (zoomTo)="zoomToPin($event)"
+        (edit)="editPin($event)"
+        (remove)="removePin($event)"
+      />
+    </div>
+  </aside>
+
+  <!-- Área do mapa com barras flutuantes -->
+  <main class="project__map-area">
+    <app-geo-map
+      class="project__map"
+      [initialCenter]="initialCenter()"
+      [initialZoom]="initialZoom()"
+      [pins]="pins()"
+      [selectedPinId]="selectedId()"
+      [activeTool]="activeTool()"
+      [baseLayerKey]="preferencesState.baseLayerKey()"
+      [baseLayerOpacity]="preferencesState.baseLayerOpacity()"
+      (mapClick)="onMapClick($event)"
+      (pinClick)="onPinClick($event)"
+      (pinMoved)="onPinMoved($event)"
+      (pointerMove)="onPointerMove($event)"
+      (viewChanged)="onViewChanged($event)"
+      (located)="onLocated($event)"
+    />
+
+    <div class="project__overlay project__overlay--left">
+      <app-map-toolbar
+        [activeTool]="activeTool()"
+        [showLayerPanel]="showLayerPanel()"
+        [showLegend]="preferencesState.showLegend()"
+        [visibleCount]="visibleCount()"
+        (toolChange)="setTool($event)"
+        (zoomIn)="zoomIn()"
+        (zoomOut)="zoomOut()"
+        (locate)="locate()"
+        (fitToPins)="fitToPins()"
+        (toggleLayerPanel)="toggleLayerPanel()"
+        (toggleLegend)="toggleLegend()"
+        (clearAll)="clearAllPins()"
+      />
+    </div>
+
+    <div class="project__overlay project__overlay--right">
+      @if (showLayerPanel()) {
+        <app-map-layer-panel
+          [layers]="baseLayers"
+          [activeKey]="preferencesState.baseLayerKey()"
+          [opacity]="preferencesState.baseLayerOpacity()"
+          (layerChange)="onBaseLayerChange($event)"
+          (opacityChange)="onOpacityChange($event)"
+          (close)="toggleLayerPanel()"
+        />
+      }
+      @if (preferencesState.showLegend()) {
+        <app-map-legend
+          [items]="legendItems()"
+          [total]="totalPins()"
+          (toggleType)="toggleTypeVisibility($event)"
+          (close)="toggleLegend()"
+        />
+      }
+    </div>
+
+    <app-map-status-bar
+      class="project__status-bar"
+      [pointer]="pointer()"
+      [view]="view()"
+      [totalPins]="totalPins()"
+      [visiblePins]="visibleCount()"
+      [activeTool]="activeTool()"
+    />
+  </main>
+</div>

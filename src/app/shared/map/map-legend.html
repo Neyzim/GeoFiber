@@ -1,0 +1,37 @@
+<section class="map-legend" aria-label="Legenda de elementos">
+  <header class="map-legend__header">
+    <h3 class="map-legend__title">Legenda</h3>
+    <span class="map-legend__total">{{ total() }} PIN(s)</span>
+    <button
+      mat-icon-button
+      type="button"
+      class="map-legend__close"
+      matTooltip="Fechar legenda"
+      (click)="close.emit()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <ul class="map-legend__list">
+    @for (item of items(); track item.type) {
+      <li>
+        <button
+          type="button"
+          class="map-legend__item"
+          [class.is-hidden]="item.hidden"
+          [attr.aria-pressed]="!item.hidden"
+          [matTooltip]="item.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
+          (click)="toggleType.emit(item.type)"
+        >
+          <span class="map-legend__swatch" [style.background]="item.color">{{ item.code }}</span>
+          <span class="map-legend__label">{{ item.label }}</span>
+          <span class="map-legend__count">{{ item.count }}</span>
+          <mat-icon class="map-legend__eye">
+            {{ item.hidden ? 'visibility_off' : 'visibility' }}
+          </mat-icon>
+        </button>
+      </li>
+    }
+  </ul>
+</section>

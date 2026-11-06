@@ -1,0 +1,10 @@
+.confirm-dialog__message {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--mat-sys-on-surface-variant, #455a64);
+}
+
+.confirm-dialog__danger {
+  --mdc-filled-button-container-color: var(--mat-sys-error, #b3261e);
+  --mdc-filled-button-label-text-color: var(--mat-sys-on-error, #fff);
+}

@@ -1,0 +1,103 @@
+:host {
+  display: block;
+  max-width: min(320px, 78vw);
+}
+
+.map-legend {
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high, #fff);
+  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.map-legend__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.08));
+}
+
+.map-legend__title {
+  margin: 0;
+  font: var(--mat-sys-title-small, 500 14px/1.4 sans-serif);
+}
+
+.map-legend__total {
+  flex: 1;
+  text-align: right;
+  font: var(--mat-sys-label-medium, 500 12px/1.3 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.map-legend__close {
+  --mat-icon-button-touch-target-display: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.map-legend__list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 44vh;
+  overflow: auto;
+}
+
+.map-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: var(--mat-sys-surface-container, rgba(0, 0, 0, 0.04));
+  }
+
+  &.is-hidden {
+    opacity: 0.5;
+
+    .map-legend__swatch {
+      filter: grayscale(1);
+    }
+  }
+}
+
+.map-legend__swatch {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 24px;
+  border-radius: 6px;
+  color: #fff;
+  font: 700 9px/1 Roboto, Arial, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.map-legend__label {
+  flex: 1;
+  font: var(--mat-sys-body-small, 400 13px/1.4 sans-serif);
+}
+
+.map-legend__count {
+  font: var(--mat-sys-label-medium, 500 12px/1 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+  min-width: 20px;
+  text-align: right;
+}
+
+.map-legend__eye {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--mat-sys-on-surface-variant, #78909c);
+}

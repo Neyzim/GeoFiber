@@ -1,0 +1,58 @@
+<ul class="pin-list">
+  @for (pin of pins(); track pin.id) {
+    <li>
+      <div
+        class="pin-list__item"
+        [class.is-selected]="selectedId() === pin.id"
+        role="button"
+        tabindex="0"
+        (click)="select.emit(pin)"
+        (keydown.enter)="select.emit(pin)"
+      >
+        <span class="pin-list__badge" [style.background]="color(pin)">{{ code(pin) }}</span>
+
+        <span class="pin-list__content">
+          <span class="pin-list__name">{{ pin.name }}</span>
+          <span class="pin-list__meta">
+            <span class="pin-list__status" [style.background]="statusColor(pin)"></span>
+            {{ typeLabel(pin) }} · {{ statusLabel(pin) }}
+          </span>
+        </span>
+
+        <span class="pin-list__actions">
+          <button
+            mat-icon-button
+            type="button"
+            matTooltip="Centralizar no mapa"
+            (click)="$event.stopPropagation(); zoomTo.emit(pin)"
+          >
+            <mat-icon>center_focus_strong</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            matTooltip="Editar PIN"
+            (click)="$event.stopPropagation(); edit.emit(pin)"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="pin-list__delete"
+            matTooltip="Remover PIN"
+            (click)="$event.stopPropagation(); remove.emit(pin)"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </span>
+      </div>
+    </li>
+  } @empty {
+    <li class="pin-list__empty">
+      <mat-icon>location_off</mat-icon>
+      <p>Nenhum PIN para exibir.</p>
+      <span>Use a ferramenta <strong>Adicionar PIN</strong> e clique no mapa.</span>
+    </li>
+  }
+</ul>

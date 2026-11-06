@@ -1,0 +1,102 @@
+<div class="map-toolbar" role="toolbar" aria-label="Ferramentas do mapa">
+  <div class="map-toolbar__group">
+    @for (tool of tools; track tool.tool) {
+      <button
+        mat-icon-button
+        type="button"
+        class="map-toolbar__button"
+        [class.is-active]="activeTool() === tool.tool"
+        [attr.aria-pressed]="activeTool() === tool.tool"
+        [matTooltip]="tool.label"
+        matTooltipPosition="right"
+        (click)="toolChange.emit(tool.tool)"
+      >
+        <mat-icon>{{ tool.icon }}</mat-icon>
+      </button>
+    }
+  </div>
+
+  <mat-divider />
+
+  <div class="map-toolbar__group">
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      matTooltip="Aproximar"
+      matTooltipPosition="right"
+      (click)="zoomIn.emit()"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      matTooltip="Afastar"
+      matTooltipPosition="right"
+      (click)="zoomOut.emit()"
+    >
+      <mat-icon>remove</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      matTooltip="Enquadrar todos os PINs"
+      matTooltipPosition="right"
+      [disabled]="visibleCount() === 0"
+      (click)="fitToPins.emit()"
+    >
+      <mat-icon>center_focus_strong</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      matTooltip="Minha localização"
+      matTooltipPosition="right"
+      (click)="locate.emit()"
+    >
+      <mat-icon>my_location</mat-icon>
+    </button>
+  </div>
+
+  <mat-divider />
+
+  <div class="map-toolbar__group">
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      [class.is-active]="showLayerPanel()"
+      matTooltip="Camadas do mapa"
+      matTooltipPosition="right"
+      (click)="toggleLayerPanel.emit()"
+    >
+      <mat-icon>layers</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      [class.is-active]="showLegend()"
+      matTooltip="Legenda"
+      matTooltipPosition="right"
+      (click)="toggleLegend.emit()"
+    >
+      <mat-icon>legend_toggle</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button map-toolbar__button--danger"
+      matTooltip="Remover todos os PINs"
+      matTooltipPosition="right"
+      [disabled]="visibleCount() === 0"
+      (click)="clearAll.emit()"
+    >
+      <mat-icon>delete_sweep</mat-icon>
+    </button>
+  </div>
+</div>

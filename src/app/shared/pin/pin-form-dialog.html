@@ -1,0 +1,103 @@
+<h2 mat-dialog-title class="pin-form__title">
+  <span class="pin-form__title-badge" [style.background]="previewColor()">
+    {{ selectedType().code }}
+  </span>
+  {{ title }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="pin-form">
+    <div class="pin-form__grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="name" maxlength="60" placeholder="CTO-01" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Informe um nome para o PIN.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de elemento</mat-label>
+        <mat-select formControlName="type" (selectionChange)="onTypeChange($event.value)">
+          @for (type of types; track type.type) {
+            <mat-option [value]="type.type">
+              <span class="pin-form__option">
+                <span class="pin-form__option-badge" [style.background]="type.color">
+                  {{ type.code }}
+                </span>
+                {{ type.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Situação</mat-label>
+        <mat-select formControlName="status">
+          @for (status of statuses; track status.status) {
+            <mat-option [value]="status.status">
+              <span class="pin-form__option">
+                <span class="pin-form__option-dot" [style.background]="status.color"></span>
+                {{ status.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="pin-form__color-field">
+        <span class="pin-form__color-label">Cor do marcador</span>
+        <div class="pin-form__color-row">
+          <input
+            type="color"
+            class="pin-form__color-input"
+            [value]="previewColor()"
+            aria-label="Cor do marcador"
+            (input)="onColorInput($event)"
+          />
+          <button mat-button type="button" matTooltip="Usar a cor padrão do tipo" (click)="resetColor()">
+            Padrão
+          </button>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Latitude</mat-label>
+        <input matInput type="number" formControlName="latitude" step="0.000001" />
+        @if (form.controls.latitude.invalid && form.controls.latitude.touched) {
+          <mat-error>Informe uma latitude entre -90 e 90.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Longitude</mat-label>
+        <input matInput type="number" formControlName="longitude" step="0.000001" />
+        @if (form.controls.longitude.invalid && form.controls.longitude.touched) {
+          <mat-error>Informe uma longitude entre -180 e 180.</mat-error>
+        }
+        <mat-hint>{{ previewPosition() | coordinate: 'dms' }}</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="pin-form__full">
+        <mat-label>Etiquetas</mat-label>
+        <input matInput formControlName="tags" placeholder="derivação, splitter 1x8, projeto 2026" />
+        <mat-hint>Separe as etiquetas por vírgula.</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="pin-form__full">
+        <mat-label>Descrição</mat-label>
+        <textarea matInput formControlName="description" rows="3" maxlength="400"></textarea>
+      </mat-form-field>
+    </div>
+
+    <p class="pin-form__hint">
+      {{ selectedType().description }}
+    </p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid">{{ submitLabel }}</button>
+  </mat-dialog-actions>
+</form>

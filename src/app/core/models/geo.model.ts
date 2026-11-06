@@ -1,0 +1,58 @@
+/**
+ * Tipos geográficos básicos compartilhados por todo o app.
+ * Todas as coordenadas usam WGS84 (EPSG:4326), o mesmo sistema do Leaflet.
+ */
+
+/** Ponto geográfico em graus decimais. */
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+/** Retângulo delimitador geográfico. */
+export interface GeoBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+/** Ferramenta de interação ativa no mapa. */
+export type MapTool = 'select' | 'addPin' | 'move';
+
+/** Estado de visualização atual do mapa. */
+export interface MapViewState {
+  center: GeoPoint;
+  zoom: number;
+}
+
+/** Emitido quando o usuário clica no mapa. */
+export interface MapClickEvent {
+  position: GeoPoint;
+  tool: MapTool;
+}
+
+/** Emitido quando um PIN é reposicionado por arrasto. */
+export interface PinMoveEvent {
+  pinId: string;
+  position: GeoPoint;
+}
+
+export function isValidLatitude(value: number): boolean {
+  return Number.isFinite(value) && value >= -90 && value <= 90;
+}
+
+export function isValidLongitude(value: number): boolean {
+  return Number.isFinite(value) && value >= -180 && value <= 180;
+}
+
+/** Converte graus decimais em graus/minutos/segundos (hemisfério incluído). */
+export function toDegreesMinutesSeconds(value: number, positive: string, negative: string): string {
+  const hemisphere = value >= 0 ? positive : negative;
+  const absolute = Math.abs(value);
+  const degrees = Math.floor(absolute);
+  const minutesFloat = (absolute - degrees) * 60;
+  const minutes = Math.floor(minutesFloat);
+  const seconds = (minutesFloat - minutes) * 60;
+  return `${degrees}°${String(minutes).padStart(2, '0')}'${seconds.toFixed(1).padStart(4, '0')}"${hemisphere}`;
+}

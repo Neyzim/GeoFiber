@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.map-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--mat-sys-surface-container-high, #fff);
+  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(2px);
+}
+
+.map-toolbar__group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.map-toolbar__button {
+  --mat-icon-button-state-layer-shape: 10px;
+  border-radius: 10px;
+  color: var(--mat-sys-on-surface-variant, #455a64);
+
+  &.is-active {
+    background: var(--mat-sys-primary-container, #d7e3ff);
+    color: var(--mat-sys-on-primary-container, #001b3f);
+  }
+
+  &--danger {
+    color: var(--mat-sys-error, #b3261e);
+  }
+}
+
+mat-divider {
+  width: 70%;
+  margin: 4px 0;
+}
