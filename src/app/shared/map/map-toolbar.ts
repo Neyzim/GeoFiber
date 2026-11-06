@@ -36,9 +36,13 @@ export class MapToolbarComponent {
   readonly toggleLegend = output<void>();
   readonly clearAll = output<void>();
 
+  /**
+   * Ferramentas de criação/seleção. As ações de mover ficam nos diálogos de
+   * edição de cada elemento (PIN/cabo), por isso não aparecem aqui.
+   */
   protected readonly tools: readonly ToolOption[] = [
     { tool: 'select', icon: 'near_me', label: TOOL_LABELS.select },
     { tool: 'addPin', icon: 'add_location_alt', label: TOOL_LABELS.addPin },
-    { tool: 'move', icon: 'open_with', label: TOOL_LABELS.move },
+    { tool: 'addCable', icon: 'timeline', label: TOOL_LABELS.addCable },
   ];
 }

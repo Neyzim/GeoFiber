@@ -14,6 +14,9 @@ export type PinType =
 /** Situação operacional do elemento. */
 export type PinStatus = 'planejado' | 'ativo' | 'inativo' | 'manutencao';
 
+/** Variante de portas de uma CTO (divisor óptico). */
+export type CtoVariant = '1x16' | '1x8';
+
 /** Elemento posicionado no mapa (o "PIN"). */
 export interface Pin {
   id: string;
@@ -21,6 +24,8 @@ export interface Pin {
   type: PinType;
   status: PinStatus;
   position: GeoPoint;
+  /** Variante de portas, usada apenas quando `type === 'cto'`. */
+  ctoVariant?: CtoVariant;
   description: string;
   /** Cor personalizada; quando ausente usa a cor padrão do tipo. */
   color?: string;
@@ -126,6 +131,22 @@ export const PIN_STATUSES: readonly PinStatusDefinition[] = [
   { status: 'inativo', label: 'Inativo', color: '#9e9e9e', icon: 'pause_circle' },
   { status: 'manutencao', label: 'Manutenção', color: '#e53935', icon: 'build_circle' },
 ];
+
+export interface CtoVariantDefinition {
+  value: CtoVariant;
+  label: string;
+  description: string;
+}
+
+/** Variantes de portas oferecidas para as CTO. */
+export const CTO_VARIANTS: readonly CtoVariantDefinition[] = [
+  { value: '1x16', label: 'CTO 1x16', description: 'Divisor com 16 portas de atendimento.' },
+  { value: '1x8', label: 'CTO 1x8', description: 'Divisor com 8 portas de atendimento.' },
+];
+
+export function isCtoVariant(value: unknown): value is CtoVariant {
+  return CTO_VARIANTS.some((definition) => definition.value === value);
+}
 
 const FALLBACK_TYPE: PinTypeDefinition = PIN_TYPES[PIN_TYPES.length - 1];
 const FALLBACK_STATUS: PinStatusDefinition = PIN_STATUSES[0];

@@ -52,10 +52,11 @@ export function createPinIcon(pin: Pin, selected = false): L.DivIcon {
 }
 
 /** Pré-visualização que acompanha o cursor na ferramenta "Adicionar PIN". */
-export function createGhostIcon(): L.DivIcon {
+export function createGhostIcon(color = '#1e88e5'): L.DivIcon {
+  const safe = escapeHtml(color);
   return L.divIcon({
     className: 'gf-pin-ghost',
-    html: '<span class="gf-pin-ghost__dot"></span>',
+    html: `<span class="gf-pin-ghost__dot" style="border-color:${safe};background:${safe}33"></span>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
   });

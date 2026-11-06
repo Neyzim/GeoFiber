@@ -1,0 +1,57 @@
+<ul class="cable-list">
+  @for (cable of cables(); track cable.id) {
+    <li>
+      <div
+        class="cable-list__item"
+        [class.is-selected]="selectedId() === cable.id"
+        role="button"
+        tabindex="0"
+        (click)="select.emit(cable)"
+        (keydown.enter)="select.emit(cable)"
+      >
+        <span class="cable-list__sample">
+          <span
+            class="cable-list__line"
+            [class.is-dashed]="dashed(cable)"
+            [style.border-top-color]="color(cable)"
+          ></span>
+          <span class="cable-list__code">{{ code(cable) }}</span>
+        </span>
+
+        <span class="cable-list__content">
+          <span class="cable-list__name">{{ cable.name }}</span>
+          <span class="cable-list__meta">
+            <span class="cable-list__status" [style.background]="statusColor(cable)"></span>
+            {{ typeLabel(cable) }} · {{ statusLabel(cable) }} · {{ nodeCount(cable) }} nós
+          </span>
+        </span>
+
+        <span class="cable-list__actions">
+          <button
+            mat-icon-button
+            type="button"
+            matTooltip="Editar cabo"
+            (click)="$event.stopPropagation(); edit.emit(cable)"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="cable-list__delete"
+            matTooltip="Remover cabo"
+            (click)="$event.stopPropagation(); remove.emit(cable)"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </span>
+      </div>
+    </li>
+  } @empty {
+    <li class="cable-list__empty">
+      <mat-icon>timeline</mat-icon>
+      <p>Nenhum cabo para exibir.</p>
+      <span>Use a ferramenta <strong>Traçar cabo</strong>, clique no mapa e finalize com duplo clique.</span>
+    </li>
+  }
+</ul>

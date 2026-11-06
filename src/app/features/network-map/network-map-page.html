@@ -1,91 +1,28 @@
 <div class="project">
-  <!-- Painel lateral: identidade do projeto, busca, filtros e lista de PINs -->
-  <aside class="project__sidebar">
-    <header class="project__brand">
-      <span class="project__logo" aria-hidden="true">GF</span>
-      <span class="project__brand-text">
-        <strong>GeoFiber</strong>
-        <small>Mapeador de redes FTTH</small>
-      </span>
-    </header>
-
-    <div class="project__actions">
-      <button mat-flat-button type="button" (click)="createPinAtCenter()">
-        <mat-icon>add_location_alt</mat-icon>
-        Novo PIN
-      </button>
-      <button
-        mat-stroked-button
-        type="button"
-        [disabled]="visibleCount() === 0"
-        (click)="fitToPins()"
-      >
-        <mat-icon>center_focus_strong</mat-icon>
-        Enquadrar
-      </button>
-    </div>
-
-    <mat-form-field class="project__search" appearance="outline" subscriptSizing="dynamic">
-      <mat-icon matPrefix>search</mat-icon>
-      <mat-label>Buscar PIN</mat-label>
-      <input
-        matInput
-        type="search"
-        [value]="search()"
-        (input)="onSearchInput($event)"
-        placeholder="Nome, descrição ou tag"
-      />
-      @if (search()) {
-        <button
-          matIconSuffix
-          mat-icon-button
-          type="button"
-          matTooltip="Limpar busca"
-          (click)="clearSearch()"
-        >
-          <mat-icon>close</mat-icon>
-        </button>
-      }
-    </mat-form-field>
-
-    <div class="project__filters">
-      <span class="project__filters-label">Situação</span>
-      <mat-button-toggle-group
-        multiple
-        class="project__status-group"
-        [value]="activeStatuses()"
-        (change)="onStatusToggle($event)"
-      >
-        @for (status of statuses; track status.status) {
-          <mat-button-toggle [value]="status.status" [matTooltip]="status.label">
-            <span class="project__status-dot" [style.background]="status.color"></span>
-            {{ status.label }}
-          </mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-    </div>
-
-    <div class="project__list-header">
-      <span>{{ visibleCount() }} de {{ totalPins() }} PIN(s)</span>
-      @if (hasActiveFilters()) {
-        <button mat-button type="button" (click)="clearFilters()">
-          <mat-icon>filter_alt_off</mat-icon>
-          Limpar
-        </button>
-      }
-    </div>
-
-    <div class="project__list">
-      <app-pin-list
-        [pins]="pins()"
-        [selectedId]="selectedId()"
-        (select)="onPinClick($event)"
-        (zoomTo)="zoomToPin($event)"
-        (edit)="editPin($event)"
-        (remove)="removePin($event)"
-      />
-    </div>
-  </aside>
+  <!-- Painel lateral: identidade, busca, filtros e listas -->
+  <app-network-sidebar
+    class="project__sidebar"
+    [activeTool]="activeTool()"
+    [pins]="pins()"
+    [selectedPinId]="selectedId()"
+    [cables]="cables()"
+    [selectedCableId]="selectedCableId()"
+    [totalPins]="totalPins()"
+    [totalCables]="totalCables()"
+    [search]="search()"
+    [activeStatuses]="activeStatuses()"
+    [hasActiveFilters]="hasActiveFilters()"
+    (searchChange)="onSearchChange($event)"
+    (clearSearch)="clearSearch()"
+    (statusChange)="onStatusFilterChange($event)"
+    (clearFilters)="clearFilters()"
+    (pinSelect)="zoomToPin($event)"
+    (pinEdit)="editPin($event)"
+    (pinRemove)="removePin($event)"
+    (cableSelect)="zoomToCable($event)"
+    (cableEdit)="editCable($event)"
+    (cableRemove)="removeCable($event)"
+  />
 
   <!-- Área do mapa com barras flutuantes -->
   <main class="project__map-area">
@@ -95,11 +32,19 @@
       [initialZoom]="initialZoom()"
       [pins]="pins()"
       [selectedPinId]="selectedId()"
+      [paths]="paths()"
+      [selectedPathId]="selectedCableId()"
+      [draftOrigin]="draftOrigin()"
+      [previewColor]="previewColor()"
       [activeTool]="activeTool()"
       [baseLayerKey]="preferencesState.baseLayerKey()"
       [baseLayerOpacity]="preferencesState.baseLayerOpacity()"
       (mapClick)="onMapClick($event)"
+      (mapDoubleClick)="onMapDoubleClick()"
       (pinClick)="onPinClick($event)"
+      (pinDoubleClick)="onPinDoubleClick()"
+      (pathClick)="onPathClick($event)"
+      (pathVertexMoved)="onPathVertexMoved($event)"
       (pinMoved)="onPinMoved($event)"
       (pointerMove)="onPointerMove($event)"
       (viewChanged)="onViewChanged($event)"
@@ -119,8 +64,31 @@
         (fitToPins)="fitToPins()"
         (toggleLayerPanel)="toggleLayerPanel()"
         (toggleLegend)="toggleLegend()"
-        (clearAll)="clearAllPins()"
+        (clearAll)="clearAll()"
       />
+
+      @if (showPicker() && activeTool() === 'addPin') {
+        <app-map-type-picker
+          title="Tipo de PIN"
+          hint="Escolha o elemento e clique no mapa."
+          [options]="pinTypeOptions()"
+          [activeKey]="activePinType()"
+          (pick)="onPinTypePicked($event)"
+          (close)="closePicker()"
+        />
+      }
+
+      @if (showPicker() && activeTool() === 'addCable') {
+        <app-map-type-picker
+          title="Tipo de cabo"
+          hint="Clique no mapa para traçar e finalize com duplo clique."
+          sample="cable"
+          [options]="cableTypeOptions()"
+          [activeKey]="activeCableType()"
+          (pick)="onCableTypePicked($event)"
+          (close)="closePicker()"
+        />
+      }
     </div>
 
     <div class="project__overlay project__overlay--right">
@@ -136,9 +104,11 @@
       }
       @if (preferencesState.showLegend()) {
         <app-map-legend
-          [items]="legendItems()"
-          [total]="totalPins()"
-          (toggleType)="toggleTypeVisibility($event)"
+          [pinItems]="legendPinItems()"
+          [cableItems]="legendCableItems()"
+          [totalPins]="totalPins()"
+          [totalCables]="totalCables()"
+          (toggleItem)="onLegendToggle($event)"
           (close)="toggleLegend()"
         />
       }
@@ -150,6 +120,8 @@
       [view]="view()"
       [totalPins]="totalPins()"
       [visiblePins]="visibleCount()"
+      [totalCables]="totalCables()"
+      [visibleCables]="cables().length"
       [activeTool]="activeTool()"
     />
   </main>

@@ -58,12 +58,15 @@ export const MAP_MIN_ZOOM = 3;
 export const MAP_MAX_ZOOM = 20;
 
 export const PINS_STORAGE_KEY = 'geofiber.pins.v1';
+export const CABLES_STORAGE_KEY = 'geofiber.cables.v1';
 export const MAP_PREFERENCES_STORAGE_KEY = 'geofiber.map-preferences.v1';
 
 export const TOOL_LABELS: Record<MapTool, string> = {
   select: 'Selecionar',
   addPin: 'Adicionar PIN',
+  addCable: 'Traçar cabo',
   move: 'Mover PIN',
+  editCable: 'Mover cabo',
 };
 
 export function baseLayerDefinition(key: string): BaseLayerDefinition {

@@ -153,11 +153,36 @@ body {
 // --- Cursores e tooltip do mapa --------------------------------------------
 
 .gf-map--add-pin,
-.gf-map--add-pin .leaflet-marker-icon {
+.gf-map--add-pin .leaflet-marker-icon,
+.gf-map--add-cable,
+.gf-map--add-cable .leaflet-marker-icon {
   cursor: crosshair;
 }
 
 .gf-map--move-pin .leaflet-marker-icon {
+  cursor: grab;
+}
+
+// --- Vértices arrastáveis do cabo (ferramenta "Mover cabo") -----------------
+
+.gf-vertex {
+  background: transparent;
+  border: 0;
+}
+
+.gf-vertex__dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #1e88e5;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  cursor: grab;
+}
+
+.gf-map--edit-cable .leaflet-marker-icon.gf-vertex {
   cursor: grab;
 }
 

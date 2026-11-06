@@ -22,7 +22,6 @@ export class PinListComponent {
   readonly selectedId = input<string | null>(null);
 
   readonly select = output<Pin>();
-  readonly zoomTo = output<Pin>();
   readonly edit = output<Pin>();
   readonly remove = output<Pin>();
 

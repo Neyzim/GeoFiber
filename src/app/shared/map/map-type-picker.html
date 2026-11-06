@@ -1,0 +1,40 @@
+<section class="type-picker" aria-label="Paleta de tipos">
+  <header class="type-picker__header">
+    <h3 class="type-picker__title">{{ title() }}</h3>
+    <button
+      mat-icon-button
+      type="button"
+      class="type-picker__close"
+      matTooltip="Fechar paleta"
+      (click)="close.emit()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  @if (hint()) {
+    <p class="type-picker__hint">{{ hint() }}</p>
+  }
+
+  <div class="type-picker__grid">
+    @for (option of options(); track option.key) {
+      <button
+        type="button"
+        class="type-picker__option"
+        [class.is-active]="activeKey() === option.key"
+        [attr.aria-pressed]="activeKey() === option.key"
+        [matTooltip]="option.label"
+        matTooltipPosition="right"
+        (click)="pick.emit(option.key)"
+      >
+        @if (sample() === 'cable') {
+          <span class="type-picker__line" [style.border-top-color]="option.color"></span>
+        } @else {
+          <span class="type-picker__badge" [style.background]="option.color">{{ option.code }}</span>
+        }
+        <span class="type-picker__label">{{ option.label }}</span>
+        <span class="type-picker__count">{{ option.count }}</span>
+      </button>
+    }
+  </div>
+</section>

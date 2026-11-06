@@ -1,0 +1,106 @@
+:host {
+  display: block;
+  width: min(268px, 80vw);
+}
+
+.type-picker {
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high, #fff);
+  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.type-picker__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.08));
+}
+
+.type-picker__title {
+  flex: 1;
+  margin: 0;
+  font: var(--mat-sys-title-small, 500 14px/1.4 sans-serif);
+}
+
+.type-picker__close {
+  --mat-icon-button-touch-target-display: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.type-picker__hint {
+  margin: 0;
+  padding: 8px 14px 0;
+  font: var(--mat-sys-body-small, 400 12px/1.4 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.type-picker__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  max-height: 46vh;
+  overflow: auto;
+}
+
+.type-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: var(--mat-sys-surface-container, rgba(0, 0, 0, 0.04));
+  }
+
+  &.is-active {
+    background: var(--mat-sys-secondary-container, #dbe4f0);
+    border-color: var(--mat-sys-primary, #1e88e5);
+  }
+}
+
+.type-picker__badge {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 24px;
+  border-radius: 7px;
+  color: #fff;
+  font: 700 9px/1 Roboto, Arial, sans-serif;
+  letter-spacing: 0.02em;
+  flex: none;
+}
+
+.type-picker__line {
+  width: 34px;
+  height: 0;
+  flex: none;
+  border-top-width: 5px;
+  border-top-style: solid;
+}
+
+.type-picker__label {
+  flex: 1;
+  font: var(--mat-sys-body-small, 400 13px/1.4 sans-serif);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.type-picker__count {
+  font: var(--mat-sys-label-medium, 500 12px/1 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+  min-width: 18px;
+  text-align: right;
+}

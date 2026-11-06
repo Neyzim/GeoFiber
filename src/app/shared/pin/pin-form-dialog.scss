@@ -86,6 +86,10 @@
   color: var(--mat-sys-on-surface-variant, #546e7a);
 }
 
+.pin-form__spacer {
+  flex: 1 1 auto;
+}
+
 @media (max-width: 560px) {
   .pin-form__grid {
     grid-template-columns: minmax(0, 1fr);
