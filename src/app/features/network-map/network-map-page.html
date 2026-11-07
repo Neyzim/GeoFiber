@@ -1,28 +1,6 @@
 <div class="project">
-  <!-- Painel lateral: identidade, busca, filtros e listas -->
-  <app-network-sidebar
-    class="project__sidebar"
-    [activeTool]="activeTool()"
-    [pins]="pins()"
-    [selectedPinId]="selectedId()"
-    [cables]="cables()"
-    [selectedCableId]="selectedCableId()"
-    [totalPins]="totalPins()"
-    [totalCables]="totalCables()"
-    [search]="search()"
-    [activeStatuses]="activeStatuses()"
-    [hasActiveFilters]="hasActiveFilters()"
-    (searchChange)="onSearchChange($event)"
-    (clearSearch)="clearSearch()"
-    (statusChange)="onStatusFilterChange($event)"
-    (clearFilters)="clearFilters()"
-    (pinSelect)="zoomToPin($event)"
-    (pinEdit)="editPin($event)"
-    (pinRemove)="removePin($event)"
-    (cableSelect)="zoomToCable($event)"
-    (cableEdit)="editCable($event)"
-    (cableRemove)="removeCable($event)"
-  />
+  <!-- Painel lateral: área reservada para os cadastros do sistema -->
+  <app-network-sidebar class="project__sidebar" [activeTool]="activeTool()" />
 
   <!-- Área do mapa com barras flutuantes -->
   <main class="project__map-area">
@@ -104,11 +82,18 @@
       }
       @if (preferencesState.showLegend()) {
         <app-map-legend
-          [pinItems]="legendPinItems()"
-          [cableItems]="legendCableItems()"
-          [totalPins]="totalPins()"
-          [totalCables]="totalCables()"
-          (toggleItem)="onLegendToggle($event)"
+          [sections]="legendSections()"
+          [search]="search()"
+          [activeStatuses]="activeStatuses()"
+          [hasActiveFilters]="hasActiveFilters()"
+          (toggleGroup)="onLegendToggleGroup($event)"
+          (toggleSubgroup)="onLegendToggleSubgroup($event)"
+          (selectItem)="onLegendSelectItem($event)"
+          (editItem)="onLegendEditItem($event)"
+          (removeItem)="onLegendRemoveItem($event)"
+          (searchChange)="onLegendSearch($event)"
+          (statusChange)="onLegendStatusChange($event)"
+          (clearFilters)="clearFilters()"
           (close)="toggleLegend()"
         />
       }

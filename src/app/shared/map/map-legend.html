@@ -1,78 +1,210 @@
-<section class="map-legend" aria-label="Legenda de elementos">
+<section class="map-legend" aria-label="Legenda e filtros">
   <header class="map-legend__header">
     <h3 class="map-legend__title">Legenda</h3>
     <button
       mat-icon-button
       type="button"
       class="map-legend__close"
-      matTooltip="Fechar legenda"
+      matTooltip="Ocultar legenda"
       (click)="close.emit()"
     >
       <mat-icon>close</mat-icon>
     </button>
   </header>
 
-  @if (pinItems().length > 0) {
-    <p class="map-legend__section">
-      <span>Elementos</span>
-      <span>{{ totalPins() }}</span>
-    </p>
-    <ul class="map-legend__list">
-      @for (item of pinItems(); track item.key) {
-        <li>
-          <button
-            type="button"
-            class="map-legend__item"
-            [class.is-hidden]="item.hidden"
-            [attr.aria-pressed]="!item.hidden"
-            [matTooltip]="item.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
-            (click)="toggleItem.emit(item)"
-          >
-            <span class="map-legend__swatch" [style.background]="item.color">{{ item.code }}</span>
-            <span class="map-legend__label">{{ item.label }}</span>
-            <span class="map-legend__count">{{ item.count }}</span>
-            <mat-icon class="map-legend__eye">
-              {{ item.hidden ? 'visibility_off' : 'visibility' }}
-            </mat-icon>
-          </button>
-        </li>
-      }
-    </ul>
-  }
+  <div class="map-legend__tools">
+    <mat-form-field class="map-legend__search" appearance="outline" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Buscar</mat-label>
+      <input
+        matInput
+        type="search"
+        [value]="search()"
+        (input)="onSearchInput($event)"
+        placeholder="Nome, descrição ou tag"
+      />
+    </mat-form-field>
 
-  @if (cableItems().length > 0) {
-    <p class="map-legend__section">
-      <span>Cabos</span>
-      <span>{{ totalCables() }}</span>
-    </p>
-    <ul class="map-legend__list">
-      @for (item of cableItems(); track item.key) {
-        <li>
-          <button
-            type="button"
-            class="map-legend__item"
-            [class.is-hidden]="item.hidden"
-            [attr.aria-pressed]="!item.hidden"
-            [matTooltip]="item.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
-            (click)="toggleItem.emit(item)"
-          >
-            <span
-              class="map-legend__swatch map-legend__line"
-              [class.is-dashed]="item.dashed"
-              [style.border-top-color]="item.color"
-            ></span>
-            <span class="map-legend__label">{{ item.label }}</span>
-            <span class="map-legend__count">{{ item.count }}</span>
-            <mat-icon class="map-legend__eye">
-              {{ item.hidden ? 'visibility_off' : 'visibility' }}
-            </mat-icon>
-          </button>
-        </li>
+    <mat-button-toggle-group
+      multiple
+      class="map-legend__status-group"
+      [value]="activeStatuses()"
+      (change)="onStatusToggle($event)"
+    >
+      @for (status of statuses; track status.status) {
+        <mat-button-toggle [value]="status.status" [matTooltip]="status.label">
+          <span class="map-legend__status-dot" [style.background]="status.color"></span>
+          {{ status.label }}
+        </mat-button-toggle>
       }
-    </ul>
-  }
+    </mat-button-toggle-group>
 
-  @if (pinItems().length === 0 && cableItems().length === 0) {
-    <p class="map-legend__empty">Nada para exibir.</p>
-  }
+    @if (hasActiveFilters()) {
+      <button mat-button type="button" class="map-legend__clear" (click)="clearFilters.emit()">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpar filtros
+      </button>
+    }
+  </div>
+
+  <div class="map-legend__tree">
+    @for (section of sections(); track section.key) {
+      <p class="map-legend__section">
+        <span>{{ section.label }}</span>
+        <span>{{ section.total }}</span>
+      </p>
+
+      @for (group of section.groups; track group.key) {
+        <div class="map-legend__group" [class.is-hidden]="group.hidden">
+          <div class="map-legend__row">
+            <button
+              type="button"
+              class="map-legend__chevron"
+              [attr.aria-expanded]="isExpanded(group.key)"
+              [matTooltip]="isExpanded(group.key) ? 'Recolher' : 'Expandir'"
+              (click)="toggleExpanded(group.key)"
+            >
+              <mat-icon>{{ isExpanded(group.key) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+            </button>
+
+            @if (group.kind === 'cable') {
+              <span
+                class="map-legend__swatch map-legend__swatch--line"
+                [class.is-dashed]="group.dashed"
+                [style.border-top-color]="group.color"
+              ></span>
+            } @else {
+              <span class="map-legend__swatch" [style.background]="group.color">{{ group.code }}</span>
+            }
+
+            <button type="button" class="map-legend__label-btn" (click)="toggleExpanded(group.key)">
+              {{ group.label }}
+            </button>
+
+            <span class="map-legend__count">{{ group.count }}</span>
+
+            <button
+              type="button"
+              class="map-legend__eye"
+              [attr.aria-pressed]="!group.hidden"
+              [matTooltip]="group.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
+              (click)="toggleGroup.emit(group)"
+            >
+              <mat-icon>{{ group.hidden ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+
+          @if (isExpanded(group.key)) {
+            @if (group.subgroups.length > 0) {
+              @for (subgroup of group.subgroups; track subgroup.key) {
+                <div class="map-legend__subgroup" [class.is-hidden]="subgroup.hidden">
+                  <div class="map-legend__row map-legend__row--sub">
+                    <button
+                      type="button"
+                      class="map-legend__chevron"
+                      [attr.aria-expanded]="isExpanded(subgroup.key)"
+                      [matTooltip]="isExpanded(subgroup.key) ? 'Recolher' : 'Expandir'"
+                      (click)="toggleExpanded(subgroup.key)"
+                    >
+                      <mat-icon>
+                        {{ isExpanded(subgroup.key) ? 'expand_more' : 'chevron_right' }}
+                      </mat-icon>
+                    </button>
+
+                    <span class="map-legend__label-btn">{{ subgroup.label }}</span>
+
+                    <span class="map-legend__count">{{ subgroup.count }}</span>
+
+                    <button
+                      type="button"
+                      class="map-legend__eye"
+                      [attr.aria-pressed]="!subgroup.hidden"
+                      [matTooltip]="subgroup.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
+                      (click)="toggleSubgroup.emit(subgroup)"
+                    >
+                      <mat-icon>{{ subgroup.hidden ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
+                  </div>
+
+                  @if (isExpanded(subgroup.key)) {
+                    @for (leaf of subgroup.items; track leaf.id) {
+                      <div class="map-legend__leaf" [class.is-hidden]="subgroup.hidden">
+                        <button
+                          type="button"
+                          class="map-legend__leaf-main"
+                          matTooltip="Centralizar no mapa"
+                          (click)="selectItem.emit(leaf)"
+                        >
+                          <span
+                            class="map-legend__dot"
+                            [style.background]="leaf.statusColor"
+                            [matTooltip]="leaf.statusLabel"
+                          ></span>
+                          <span class="map-legend__leaf-label">{{ leaf.label }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="map-legend__leaf-action"
+                          matTooltip="Editar"
+                          (click)="editItem.emit(leaf)"
+                        >
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button
+                          type="button"
+                          class="map-legend__leaf-action"
+                          matTooltip="Remover"
+                          (click)="removeItem.emit(leaf)"
+                        >
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            } @else {
+              @for (leaf of group.items; track leaf.id) {
+                <div class="map-legend__leaf" [class.is-hidden]="group.hidden">
+                  <button
+                    type="button"
+                    class="map-legend__leaf-main"
+                    matTooltip="Centralizar no mapa"
+                    (click)="selectItem.emit(leaf)"
+                  >
+                    <span
+                      class="map-legend__dot"
+                      [style.background]="leaf.statusColor"
+                      [matTooltip]="leaf.statusLabel"
+                    ></span>
+                    <span class="map-legend__leaf-label">{{ leaf.label }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="map-legend__leaf-action"
+                    matTooltip="Editar"
+                    (click)="editItem.emit(leaf)"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="map-legend__leaf-action"
+                    matTooltip="Remover"
+                    (click)="removeItem.emit(leaf)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              }
+            }
+          }
+        </div>
+      }
+    }
+
+    @if (isEmpty()) {
+      <p class="map-legend__empty">Nada para exibir.</p>
+    }
+  </div>
 </section>
