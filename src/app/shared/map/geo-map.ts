@@ -20,6 +20,7 @@ import {
 } from '../../core/constants/map.constants';
 import { GeoPath, GeoPoint, MapClickEvent, MapTool, MapViewState, PathVertexMoveEvent, PinMoveEvent } from '../../core/models/geo.model';
 import { Pin } from '../../core/models/pin.model';
+import { MapViewportService } from '../../core/services/map-viewport';
 import { NotificationService } from '../../core/services/notification';
 import { createGhostIcon, createPinIcon, createUserLocationIcon, pinTooltipHtml } from './pin-marker';
 
@@ -44,6 +45,7 @@ const SNAP_DISTANCE_PX = 15;
 export class GeoMapComponent implements OnDestroy {
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');
   private readonly notifications = inject(NotificationService);
+  private readonly viewport = inject(MapViewportService);
 
   /** Visão inicial — aplicada apenas na criação do mapa. */
   readonly initialCenter = input<GeoPoint>(DEFAULT_MAP_VIEW.center);
@@ -171,6 +173,7 @@ export class GeoMapComponent implements OnDestroy {
     this.resizeObserver = null;
     this.map?.remove();
     this.map = null;
+    this.viewport.register(null);
     this.markers.clear();
     this.pathLines.clear();
     this.vertexMarkers.length = 0;
@@ -188,39 +191,6 @@ export class GeoMapComponent implements OnDestroy {
   getCenter(): GeoPoint | null {
     const center = this.map?.getCenter();
     return center ? { lat: center.lat, lng: center.lng } : null;
-  }
-
-  flyTo(position: GeoPoint, zoom?: number): void {
-    if (!this.map) {
-      return;
-    }
-    this.map.flyTo([position.lat, position.lng], zoom ?? this.map.getZoom(), { duration: 0.6 });
-  }
-
-  /** Enquadra todos os PINs informados; retorna `false` se não houver nada a exibir. */
-  fitToPins(pins: readonly Pin[] = this.pins(), maxZoom = 17): boolean {
-    if (!this.map || pins.length === 0) {
-      return false;
-    }
-    const bounds = L.latLngBounds(pins.map((pin) => L.latLng(pin.position.lat, pin.position.lng)));
-    if (!bounds.isValid()) {
-      return false;
-    }
-    this.map.fitBounds(bounds, { padding: [56, 56], maxZoom, animate: true });
-    return true;
-  }
-
-  /** Enquadra uma lista de vértices livres (ex.: traçado de um cabo). */
-  fitToPoints(points: readonly GeoPoint[], maxZoom = 17): boolean {
-    if (!this.map || points.length === 0) {
-      return false;
-    }
-    const bounds = L.latLngBounds(points.map((point) => L.latLng(point.lat, point.lng)));
-    if (!bounds.isValid()) {
-      return false;
-    }
-    this.map.fitBounds(bounds, { padding: [56, 56], maxZoom, animate: true });
-    return true;
   }
 
   zoomIn(): void {
@@ -318,6 +288,7 @@ export class GeoMapComponent implements OnDestroy {
     map.on('moveend zoomend', () => this.emitView());
 
     this.observeResize(container);
+    this.viewport.register(map);
     this.mapReady.emit(map);
     this.emitView();
   }

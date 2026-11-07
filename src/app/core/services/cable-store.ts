@@ -53,16 +53,12 @@ export class CableStoreService {
     return counts;
   });
 
-  /** Cabos que passam pelos filtros e pela busca — é o que vai para o mapa. */
-  readonly visibleCables = computed<readonly Cable[]>(() => {
+  /** Cabos que passam pela busca e pelo filtro de situação (ignora a visibilidade por tipo). */
+  readonly filteredCables = computed<readonly Cable[]>(() => {
     const term = this._search().trim().toLowerCase();
     const statuses = this._statusFilter();
-    const hidden = this._hiddenTypes();
 
     return this._cables().filter((cable) => {
-      if (hidden.has(cable.type)) {
-        return false;
-      }
       if (statuses.size > 0 && !statuses.has(cable.status)) {
         return false;
       }
@@ -72,6 +68,12 @@ export class CableStoreService {
       const haystack = `${cable.name} ${cable.description} ${cable.tags.join(' ')}`.toLowerCase();
       return haystack.includes(term);
     });
+  });
+
+  /** Cabos que passam por todos os filtros — é o que vai para o mapa. */
+  readonly visibleCables = computed<readonly Cable[]>(() => {
+    const hidden = this._hiddenTypes();
+    return this.filteredCables().filter((cable) => !hidden.has(cable.type));
   });
 
   readonly hiddenCount = computed(() => this._cables().length - this.visibleCables().length);

@@ -172,6 +172,29 @@ export function pinColor(pin: Pick<Pin, 'type' | 'color'>): string {
   return pin.color ?? pinTypeDefinition(pin.type).color;
 }
 
+/** Variante efetiva da CTO (a primeira do catálogo quando não informada); `null` nos demais tipos. */
+export function ctoVariantOf(pin: Pick<Pin, 'type' | 'ctoVariant'>): CtoVariant | null {
+  return pin.type === 'cto' ? (pin.ctoVariant ?? CTO_VARIANTS[0].value) : null;
+}
+
+/**
+ * Chave do subgrupo do PIN na legenda (ex.: `cto:1x16`).
+ * Retorna `null` para os tipos que não possuem variantes.
+ */
+export function pinSubgroupKey(pin: Pick<Pin, 'type' | 'ctoVariant'>): string | null {
+  const variant = ctoVariantOf(pin);
+  return variant === null ? null : `${pin.type}:${variant}`;
+}
+
+/** Rótulo do subgrupo de um PIN (ex.: `CTO 1x16`); `null` quando não há variante. */
+export function pinSubgroupLabel(pin: Pick<Pin, 'type' | 'ctoVariant'>): string | null {
+  const variant = ctoVariantOf(pin);
+  if (variant === null) {
+    return null;
+  }
+  return CTO_VARIANTS.find((definition) => definition.value === variant)?.label ?? variant;
+}
+
 export function createPinId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();

@@ -7,8 +7,10 @@ import {
   PinStatus,
   PinType,
   createPin,
+  isCtoVariant,
   isPinStatus,
   isPinType,
+  pinSubgroupKey,
   pinTypeDefinition,
 } from '../models/pin.model';
 
@@ -26,6 +28,8 @@ export class PinStoreService {
   private readonly _search = signal('');
   private readonly _statusFilter = signal<ReadonlySet<PinStatus>>(new Set());
   private readonly _hiddenTypes = signal<ReadonlySet<PinType>>(new Set());
+  /** Subgrupos ocultos (ex.: `cto:1x8`). */
+  private readonly _hiddenGroups = signal<ReadonlySet<string>>(new Set());
 
   /** Todos os PINs cadastrados. */
   readonly pins = this._pins.asReadonly();
@@ -41,6 +45,8 @@ export class PinStoreService {
   readonly statusFilter = this._statusFilter.asReadonly();
   /** Tipos ocultos no mapa e na lista. */
   readonly hiddenTypes = this._hiddenTypes.asReadonly();
+  /** Subgrupos ocultos no mapa e na lista (chaves como `cto:1x8`). */
+  readonly hiddenGroups = this._hiddenGroups.asReadonly();
 
   /** Quantidade total de PINs. */
   readonly total = computed(() => this._pins().length);
@@ -54,16 +60,12 @@ export class PinStoreService {
     return counts;
   });
 
-  /** PINs que passam pelos filtros e pela busca — é o que vai para o mapa. */
-  readonly visiblePins = computed<readonly Pin[]>(() => {
+  /** PINs que passam pela busca e pelo filtro de situação (ignora a visibilidade por tipo). */
+  readonly filteredPins = computed<readonly Pin[]>(() => {
     const term = this._search().trim().toLowerCase();
     const statuses = this._statusFilter();
-    const hidden = this._hiddenTypes();
 
     return this._pins().filter((pin) => {
-      if (hidden.has(pin.type)) {
-        return false;
-      }
       if (statuses.size > 0 && !statuses.has(pin.status)) {
         return false;
       }
@@ -75,6 +77,20 @@ export class PinStoreService {
     });
   });
 
+  /** PINs que passam por todos os filtros — é o que vai para o mapa. */
+  readonly visiblePins = computed<readonly Pin[]>(() => {
+    const hiddenTypes = this._hiddenTypes();
+    const hiddenGroups = this._hiddenGroups();
+
+    return this.filteredPins().filter((pin) => {
+      if (hiddenTypes.has(pin.type)) {
+        return false;
+      }
+      const group = pinSubgroupKey(pin);
+      return group === null || !hiddenGroups.has(group);
+    });
+  });
+
   /** Nº de PINs escondidos por filtros/busca. */
   readonly hiddenCount = computed(() => this._pins().length - this.visiblePins().length);
 
@@ -82,7 +98,8 @@ export class PinStoreService {
     () =>
       this._search().trim().length > 0 ||
       this._statusFilter().size > 0 ||
-      this._hiddenTypes().size > 0,
+      this._hiddenTypes().size > 0 ||
+      this._hiddenGroups().size > 0,
   );
 
   constructor() {
@@ -154,10 +171,16 @@ export class PinStoreService {
     this._hiddenTypes.update((current) => toggleValue(current, type));
   }
 
+  /** Mostra/oculta um subgrupo (ex.: `cto:1x8`) no mapa e na lista. */
+  toggleGroupVisibility(groupKey: string): void {
+    this._hiddenGroups.update((current) => toggleValue(current, groupKey));
+  }
+
   resetFilters(): void {
     this._search.set('');
     this._statusFilter.set(new Set());
     this._hiddenTypes.set(new Set());
+    this._hiddenGroups.set(new Set());
   }
 
   /** Próximo nome livre para o tipo informado (ex.: `CTO-03`). */
@@ -218,6 +241,7 @@ function normalizePin(pin: PinLike): Pin {
   const now = new Date().toISOString();
   return {
     ...pin,
+    ctoVariant: isCtoVariant(pin.ctoVariant) ? pin.ctoVariant : undefined,
     description: typeof pin.description === 'string' ? pin.description : '',
     tags: Array.isArray(pin.tags) ? pin.tags.filter((tag) => typeof tag === 'string') : [],
     createdAt: typeof pin.createdAt === 'string' ? pin.createdAt : now,

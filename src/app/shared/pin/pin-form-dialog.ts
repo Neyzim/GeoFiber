@@ -29,6 +29,8 @@ export interface PinFormDialogData {
   pin?: Pin;
   /** Posição sugerida (clique no mapa ou centro atual). */
   position?: GeoPoint;
+  /** Tipo pré-selecionado na criação (vem da ferramenta ativa no mapa). */
+  type?: PinType;
 }
 
 /** Resultado do diálogo: os dados salvos ou o pedido de mover o PIN no mapa. */
@@ -141,7 +143,7 @@ export class PinFormDialogComponent {
       return;
     }
 
-    const type: PinType = 'cto';
+    const type: PinType = this.data.type ?? 'cto';
     const suggestedName = this.store.suggestName(type);
     this.lastSuggestion.set(suggestedName);
     this.form.patchValue({

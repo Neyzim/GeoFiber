@@ -17,10 +17,14 @@ import {
   PinStatus,
   PinType,
   isPinType,
+  pinStatusDefinition,
+  pinSubgroupKey,
+  pinSubgroupLabel,
   pinTypeDefinition,
 } from '../../core/models/pin.model';
 import { CableStoreService } from '../../core/services/cable-store';
 import { MapPreferencesService } from '../../core/services/map-preferences';
+import { MapViewportService } from '../../core/services/map-viewport';
 import { NotificationService } from '../../core/services/notification';
 import { PinStoreService } from '../../core/services/pin-store';
 import {
@@ -29,7 +33,13 @@ import {
   CableFormResult,
 } from '../../shared/cable/cable-form-dialog';
 import { GeoMapComponent } from '../../shared/map/geo-map';
-import { LegendItem, MapLegendComponent } from '../../shared/map/map-legend';
+import {
+  LegendGroup,
+  LegendLeaf,
+  LegendSection,
+  LegendSubgroup,
+  MapLegendComponent,
+} from '../../shared/map/map-legend';
 import { MapLayerPanelComponent } from '../../shared/map/map-layer-panel';
 import { MapStatusBarComponent } from '../../shared/map/map-status-bar';
 import { MapToolbarComponent } from '../../shared/map/map-toolbar';
@@ -63,6 +73,7 @@ export class NetworkMapPage {
   private readonly preferences = inject(MapPreferencesService);
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
+  private readonly viewport = inject(MapViewportService);
   private readonly geoMap = viewChild.required(GeoMapComponent);
 
   protected readonly baseLayers = BASE_LAYERS;
@@ -71,7 +82,9 @@ export class NetworkMapPage {
   protected readonly pins = this.store.visiblePins;
   protected readonly selectedId = this.store.selectedId;
   protected readonly search = this.store.search;
-  protected readonly hasActiveFilters = this.store.hasActiveFilters;
+  protected readonly hasActiveFilters = computed(
+    () => this.store.hasActiveFilters() || this.cableStore.hasActiveFilters(),
+  );
   protected readonly totalPins = this.store.total;
 
   protected readonly cables = this.cableStore.visibleCables;
@@ -182,33 +195,95 @@ export class NetworkMapPage {
     }));
   });
 
-  protected readonly legendPinItems = computed<readonly LegendItem[]>(() => {
-    const counts = this.store.typeCounts();
-    const hidden = this.store.hiddenTypes();
-    return PIN_TYPES.map((definition) => ({
-      key: definition.type,
-      kind: 'pin' as const,
-      label: definition.label,
-      code: definition.code,
-      color: definition.color,
-      count: counts.get(definition.type) ?? 0,
-      hidden: hidden.has(definition.type),
-    }));
+  /**
+   * Árvore da legenda: elementos e cabos agrupados por tipo e, quando o tipo
+   * possui variantes (ex.: CTO 1x16 / 1x8), por subgrupo. Usa os itens que
+   * passam por busca/situação para que a árvore sirva de listagem ao mesmo
+   * tempo em que os "olhos" funcionam como filtro de visibilidade.
+   */
+  protected readonly legendSections = computed<readonly LegendSection[]>(() =>
+    [this.legendPinSection(), this.legendCableSection()],
+  );
+
+  private readonly legendPinSection = computed<LegendSection>(() => {
+    const pins = this.store.filteredPins();
+    const hiddenTypes = this.store.hiddenTypes();
+    const hiddenGroups = this.store.hiddenGroups();
+
+    const groups: LegendGroup[] = [];
+    for (const definition of PIN_TYPES) {
+      const typePins = pins.filter((pin) => pin.type === definition.type);
+      if (typePins.length === 0) {
+        continue;
+      }
+      const typeHidden = hiddenTypes.has(definition.type);
+
+      const buckets = new Map<string, { key: string; label: string; items: LegendLeaf[] }>();
+      for (const pin of typePins) {
+        const key = pinSubgroupKey(pin);
+        if (key === null) {
+          continue;
+        }
+        const bucket = buckets.get(key) ?? {
+          key,
+          label: pinSubgroupLabel(pin) ?? key,
+          items: [],
+        };
+        bucket.items.push(toPinLeaf(pin));
+        buckets.set(key, bucket);
+      }
+
+      const subgroups: LegendSubgroup[] = [...buckets.values()].map((bucket) => ({
+        key: bucket.key,
+        label: bucket.label,
+        count: bucket.items.length,
+        hidden: typeHidden || hiddenGroups.has(bucket.key),
+        items: bucket.items,
+      }));
+
+      groups.push({
+        key: definition.type,
+        type: definition.type,
+        kind: 'pin',
+        label: definition.label,
+        code: definition.code,
+        color: definition.color,
+        count: typePins.length,
+        hidden: typeHidden,
+        subgroups,
+        items: subgroups.length > 0 ? [] : typePins.map(toPinLeaf),
+      });
+    }
+
+    return { key: 'pins', label: 'Elementos', total: pins.length, groups };
   });
 
-  protected readonly legendCableItems = computed<readonly LegendItem[]>(() => {
-    const counts = this.cableStore.typeCounts();
-    const hidden = this.cableStore.hiddenTypes();
-    return CABLE_TYPES.map((definition) => ({
-      key: definition.type,
-      kind: 'cable' as const,
-      label: definition.label,
-      code: definition.code,
-      color: definition.color,
-      count: counts.get(definition.type) ?? 0,
-      hidden: hidden.has(definition.type),
-      dashed: Boolean(definition.dashArray),
-    }));
+  private readonly legendCableSection = computed<LegendSection>(() => {
+    const cables = this.cableStore.filteredCables();
+    const hiddenTypes = this.cableStore.hiddenTypes();
+
+    const groups: LegendGroup[] = [];
+    for (const definition of CABLE_TYPES) {
+      const typeCables = cables.filter((cable) => cable.type === definition.type);
+      if (typeCables.length === 0) {
+        continue;
+      }
+      groups.push({
+        key: definition.type,
+        type: definition.type,
+        kind: 'cable',
+        label: definition.label,
+        code: definition.code,
+        color: definition.color,
+        count: typeCables.length,
+        hidden: hiddenTypes.has(definition.type),
+        dashed: Boolean(definition.dashArray),
+        subgroups: [],
+        items: typeCables.map(toCableLeaf),
+      });
+    }
+
+    return { key: 'cables', label: 'Cabos', total: cables.length, groups };
   });
 
   // --- Ferramentas ---------------------------------------------------------
@@ -271,7 +346,11 @@ export class NetworkMapPage {
 
   protected onMapClick(event: MapClickEvent): void {
     if (event.tool === 'addPin') {
-      this.openPinForm({ mode: 'create', position: event.position });
+      this.openPinForm({
+        mode: 'create',
+        position: event.position,
+        type: this.activePinType(),
+      });
       return;
     }
     if (event.tool === 'addCable') {
@@ -399,9 +478,9 @@ export class NetworkMapPage {
     });
   }
 
-  /** Seleciona e centraliza o PIN escolhido na lista. */
+  /** Seleciona e centraliza o PIN escolhido na legenda/lista. */
   protected zoomToPin(pin: Pin): void {
-    this.geoMap().flyTo(pin.position, 17);
+    this.viewport.focus(pin.position);
     this.store.select(pin.id);
     this.cableStore.select(null);
   }
@@ -442,9 +521,9 @@ export class NetworkMapPage {
     this.openCableForm({ mode: 'edit', cable });
   }
 
-  /** Seleciona e centraliza o cabo escolhido na lista. */
+  /** Seleciona e enquadra o cabo escolhido na legenda/lista. */
   protected zoomToCable(cable: Cable): void {
-    if (!this.geoMap().fitToPoints(cable.points)) {
+    if (!this.viewport.focusAll(cable.points)) {
       this.notifications.warning('Não foi possível enquadrar o cabo.');
       return;
     }
@@ -470,7 +549,7 @@ export class NetworkMapPage {
   // --- Navegação -----------------------------------------------------------
 
   protected fitToPins(): void {
-    if (!this.geoMap().fitToPins(this.pins())) {
+    if (!this.viewport.focusAll(this.pins().map((pin) => pin.position))) {
       this.notifications.warning('Nenhum PIN visível para enquadrar.');
     }
   }
@@ -505,25 +584,76 @@ export class NetworkMapPage {
     this.preferences.setBaseLayerOpacity(opacity);
   }
 
-  protected onSearchChange(term: string): void {
+  /** Busca da legenda: aplica o mesmo termo a elementos e cabos. */
+  protected onLegendSearch(term: string): void {
     this.store.setSearch(term);
+    this.cableStore.setSearch(term);
   }
 
-  protected clearSearch(): void {
-    this.store.setSearch('');
-  }
-
-  protected onStatusFilterChange(statuses: readonly PinStatus[]): void {
+  /** Filtro de situação da legenda: vale para elementos e cabos. */
+  protected onLegendStatusChange(statuses: readonly PinStatus[]): void {
     this.store.setStatusFilter(statuses);
+    this.cableStore.setStatusFilter(statuses);
   }
 
-  protected onLegendToggle(item: LegendItem): void {
-    if (item.kind === 'pin' && isPinType(item.key)) {
-      this.store.toggleTypeVisibility(item.key);
+  /** "Olho" de um grupo: oculta/mostra o tipo inteiro no mapa e na árvore. */
+  protected onLegendToggleGroup(group: LegendGroup): void {
+    if (group.kind === 'pin' && isPinType(group.type)) {
+      this.store.toggleTypeVisibility(group.type);
       return;
     }
-    if (item.kind === 'cable' && isCableType(item.key)) {
-      this.cableStore.toggleTypeVisibility(item.key);
+    if (group.kind === 'cable' && isCableType(group.type)) {
+      this.cableStore.toggleTypeVisibility(group.type);
+    }
+  }
+
+  /** "Olho" de um subgrupo (ex.: CTO 1x8). */
+  protected onLegendToggleSubgroup(subgroup: LegendSubgroup): void {
+    this.store.toggleGroupVisibility(subgroup.key);
+  }
+
+  /** Clique em um item da árvore: seleciona e centraliza no mapa. */
+  protected onLegendSelectItem(leaf: LegendLeaf): void {
+    if (leaf.kind === 'pin') {
+      const pin = this.store.findById(leaf.id);
+      if (pin) {
+        this.zoomToPin(pin);
+      }
+      return;
+    }
+    const cable = this.cableStore.findById(leaf.id);
+    if (cable) {
+      this.zoomToCable(cable);
+    }
+  }
+
+  /** Abre o diálogo de edição do item escolhido na árvore. */
+  protected onLegendEditItem(leaf: LegendLeaf): void {
+    if (leaf.kind === 'pin') {
+      const pin = this.store.findById(leaf.id);
+      if (pin) {
+        this.editPin(pin);
+      }
+      return;
+    }
+    const cable = this.cableStore.findById(leaf.id);
+    if (cable) {
+      this.editCable(cable);
+    }
+  }
+
+  /** Remove o item escolhido na árvore (com confirmação). */
+  protected onLegendRemoveItem(leaf: LegendLeaf): void {
+    if (leaf.kind === 'pin') {
+      const pin = this.store.findById(leaf.id);
+      if (pin) {
+        this.removePin(pin);
+      }
+      return;
+    }
+    const cable = this.cableStore.findById(leaf.id);
+    if (cable) {
+      this.removeCable(cable);
     }
   }
 
@@ -629,4 +759,28 @@ export class NetworkMapPage {
       .afterClosed()
       .pipe(map((confirmed) => confirmed === true));
   }
+}
+
+/** Converte um PIN em uma folha da árvore da legenda. */
+function toPinLeaf(pin: Pin): LegendLeaf {
+  const status = pinStatusDefinition(pin.status);
+  return {
+    id: pin.id,
+    kind: 'pin',
+    label: pin.name,
+    statusColor: status.color,
+    statusLabel: status.label,
+  };
+}
+
+/** Converte um cabo em uma folha da árvore da legenda. */
+function toCableLeaf(cable: Cable): LegendLeaf {
+  const status = pinStatusDefinition(cable.status);
+  return {
+    id: cable.id,
+    kind: 'cable',
+    label: cable.name,
+    statusColor: status.color,
+    statusLabel: status.label,
+  };
 }

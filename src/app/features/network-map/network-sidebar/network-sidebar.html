@@ -37,83 +37,9 @@
       </p>
     }
 
-    @if (listMode() === 'pins') {
-      <mat-form-field class="sidebar__search" appearance="outline" subscriptSizing="dynamic">
-        <mat-icon matPrefix>search</mat-icon>
-        <mat-label>Buscar PIN</mat-label>
-        <input
-          matInput
-          type="search"
-          [value]="search()"
-          (input)="onSearchInput($event)"
-          placeholder="Nome, descrição ou tag"
-        />
-        @if (search()) {
-          <button
-            matIconSuffix
-            mat-icon-button
-            type="button"
-            matTooltip="Limpar busca"
-            (click)="clearSearch.emit()"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
-        }
-      </mat-form-field>
-
-      <div class="sidebar__filters">
-        <span class="sidebar__filters-label">Situação</span>
-        <mat-button-toggle-group
-          multiple
-          class="sidebar__status-group"
-          [value]="activeStatuses()"
-          (change)="onStatusToggle($event)"
-        >
-          @for (status of statuses; track status.status) {
-            <mat-button-toggle [value]="status.status" [matTooltip]="status.label">
-              <span class="sidebar__status-dot" [style.background]="status.color"></span>
-              {{ status.label }}
-            </mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
-    }
-
-    <div class="sidebar__list-header">
-      <mat-button-toggle-group
-        class="sidebar__list-switch"
-        [value]="listMode()"
-        (change)="onListModeChange($event)"
-      >
-        <mat-button-toggle value="pins">PINs {{ totalPins() }}</mat-button-toggle>
-        <mat-button-toggle value="cables">Cabos {{ totalCables() }}</mat-button-toggle>
-      </mat-button-toggle-group>
-      @if (listMode() === 'pins' && hasActiveFilters()) {
-        <button mat-button type="button" (click)="clearFilters.emit()">
-          <mat-icon>filter_alt_off</mat-icon>
-          Limpar
-        </button>
-      }
-    </div>
-
-    <div class="sidebar__list">
-      @if (listMode() === 'pins') {
-        <app-pin-list
-          [pins]="pins()"
-          [selectedId]="selectedPinId()"
-          (select)="pinSelect.emit($event)"
-          (edit)="pinEdit.emit($event)"
-          (remove)="pinRemove.emit($event)"
-        />
-      } @else {
-        <app-cable-list
-          [cables]="cables()"
-          [selectedId]="selectedCableId()"
-          (select)="cableSelect.emit($event)"
-          (edit)="cableEdit.emit($event)"
-          (remove)="cableRemove.emit($event)"
-        />
-      }
-    </div>
+    <p class="sidebar__placeholder">
+      <mat-icon>construction</mat-icon>
+      Área reservada para os cadastros do sistema (tipos de cabo, CTO e equipamentos).
+    </p>
   }
 </aside>
