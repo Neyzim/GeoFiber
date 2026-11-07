@@ -1,0 +1,119 @@
+<aside class="sidebar" [class.is-collapsed]="collapsed()">
+  @if (collapsed()) {
+    <div class="sidebar__rail">
+      <button
+        mat-icon-button
+        type="button"
+        matTooltip="Expandir painel"
+        matTooltipPosition="right"
+        (click)="toggleCollapsed()"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      <span class="sidebar__logo" aria-hidden="true">GF</span>
+    </div>
+  } @else {
+    <header class="sidebar__brand">
+      <span class="sidebar__logo" aria-hidden="true">GF</span>
+      <span class="sidebar__brand-text">
+        <strong>GeoFiber</strong>
+        <small>Mapeador de redes FTTH</small>
+      </span>
+      <button
+        mat-icon-button
+        type="button"
+        class="sidebar__collapse"
+        matTooltip="Recolher painel"
+        (click)="toggleCollapsed()"
+      >
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+    </header>
+
+    @if (isCreating()) {
+      <p class="sidebar__hint">
+        <mat-icon>keyboard</mat-icon>
+        Clique no mapa para criar. Pressione <kbd>ESC</kbd> para sair da ferramenta.
+      </p>
+    }
+
+    @if (listMode() === 'pins') {
+      <mat-form-field class="sidebar__search" appearance="outline" subscriptSizing="dynamic">
+        <mat-icon matPrefix>search</mat-icon>
+        <mat-label>Buscar PIN</mat-label>
+        <input
+          matInput
+          type="search"
+          [value]="search()"
+          (input)="onSearchInput($event)"
+          placeholder="Nome, descrição ou tag"
+        />
+        @if (search()) {
+          <button
+            matIconSuffix
+            mat-icon-button
+            type="button"
+            matTooltip="Limpar busca"
+            (click)="clearSearch.emit()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <div class="sidebar__filters">
+        <span class="sidebar__filters-label">Situação</span>
+        <mat-button-toggle-group
+          multiple
+          class="sidebar__status-group"
+          [value]="activeStatuses()"
+          (change)="onStatusToggle($event)"
+        >
+          @for (status of statuses; track status.status) {
+            <mat-button-toggle [value]="status.status" [matTooltip]="status.label">
+              <span class="sidebar__status-dot" [style.background]="status.color"></span>
+              {{ status.label }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    }
+
+    <div class="sidebar__list-header">
+      <mat-button-toggle-group
+        class="sidebar__list-switch"
+        [value]="listMode()"
+        (change)="onListModeChange($event)"
+      >
+        <mat-button-toggle value="pins">PINs {{ totalPins() }}</mat-button-toggle>
+        <mat-button-toggle value="cables">Cabos {{ totalCables() }}</mat-button-toggle>
+      </mat-button-toggle-group>
+      @if (listMode() === 'pins' && hasActiveFilters()) {
+        <button mat-button type="button" (click)="clearFilters.emit()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpar
+        </button>
+      }
+    </div>
+
+    <div class="sidebar__list">
+      @if (listMode() === 'pins') {
+        <app-pin-list
+          [pins]="pins()"
+          [selectedId]="selectedPinId()"
+          (select)="pinSelect.emit($event)"
+          (edit)="pinEdit.emit($event)"
+          (remove)="pinRemove.emit($event)"
+        />
+      } @else {
+        <app-cable-list
+          [cables]="cables()"
+          [selectedId]="selectedCableId()"
+          (select)="cableSelect.emit($event)"
+          (edit)="cableEdit.emit($event)"
+          (remove)="cableRemove.emit($event)"
+        />
+      }
+    </div>
+  }
+</aside>

@@ -23,14 +23,6 @@
           <button
             mat-icon-button
             type="button"
-            matTooltip="Centralizar no mapa"
-            (click)="$event.stopPropagation(); zoomTo.emit(pin)"
-          >
-            <mat-icon>center_focus_strong</mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            type="button"
             matTooltip="Editar PIN"
             (click)="$event.stopPropagation(); edit.emit(pin)"
           >

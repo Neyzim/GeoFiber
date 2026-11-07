@@ -18,12 +18,25 @@ export interface GeoBounds {
 }
 
 /** Ferramenta de interação ativa no mapa. */
-export type MapTool = 'select' | 'addPin' | 'move';
+export type MapTool = 'select' | 'addPin' | 'addCable' | 'move' | 'editCable';
 
 /** Estado de visualização atual do mapa. */
 export interface MapViewState {
   center: GeoPoint;
   zoom: number;
+}
+
+/** Polilinha desenhada sobre o mapa (cabos e pré-visualizações). */
+export interface GeoPath {
+  id: string;
+  points: GeoPoint[];
+  color: string;
+  /** Espessura em pixels. */
+  weight: number;
+  /** Padrão de tracejado SVG (ex.: `12 7`); ausente = linha contínua. */
+  dashArray?: string;
+  /** Desenha um marcador em cada vértice (usado na pré-visualização). */
+  showVertices?: boolean;
 }
 
 /** Emitido quando o usuário clica no mapa. */
@@ -35,6 +48,13 @@ export interface MapClickEvent {
 /** Emitido quando um PIN é reposicionado por arrasto. */
 export interface PinMoveEvent {
   pinId: string;
+  position: GeoPoint;
+}
+
+/** Emitido quando um vértice de um cabo é arrastado para outra posição. */
+export interface PathVertexMoveEvent {
+  pathId: string;
+  index: number;
   position: GeoPoint;
 }
 

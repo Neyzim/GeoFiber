@@ -2,18 +2,21 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { PinType } from '../../core/models/pin.model';
 
 export interface LegendItem {
-  type: PinType;
+  /** Tipo do elemento (`PinType` ou `CableType`). */
+  key: string;
+  kind: 'pin' | 'cable';
   label: string;
   code: string;
   color: string;
   count: number;
   hidden: boolean;
+  /** Cabos tracejados são exibidos com traço interrompido na legenda. */
+  dashed?: boolean;
 }
 
-/** Legenda dos tipos de elemento, com contagem e visibilidade alternável. */
+/** Legenda dos elementos e cabos, com contagem e visibilidade alternável. */
 @Component({
   selector: 'app-map-legend',
   imports: [MatButtonModule, MatIconModule, MatTooltipModule],
@@ -22,9 +25,11 @@ export interface LegendItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MapLegendComponent {
-  readonly items = input<readonly LegendItem[]>([]);
-  readonly total = input(0);
+  readonly pinItems = input<readonly LegendItem[]>([]);
+  readonly cableItems = input<readonly LegendItem[]>([]);
+  readonly totalPins = input(0);
+  readonly totalCables = input(0);
 
-  readonly toggleType = output<PinType>();
+  readonly toggleItem = output<LegendItem>();
   readonly close = output<void>();
 }

@@ -46,6 +46,18 @@
         </mat-select>
       </mat-form-field>
 
+      @if (showCtoVariant()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Portas da CTO</mat-label>
+          <mat-select formControlName="ctoVariant">
+            @for (variant of ctoVariants; track variant.value) {
+              <mat-option [value]="variant.value">{{ variant.label }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Variante do divisor óptico.</mat-hint>
+        </mat-form-field>
+      }
+
       <div class="pin-form__color-field">
         <span class="pin-form__color-label">Cor do marcador</span>
         <div class="pin-form__color-row">
@@ -97,6 +109,13 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
+    @if (isEdit) {
+      <button mat-button type="button" (click)="moveOnMap()">
+        <mat-icon>open_with</mat-icon>
+        Mover no mapa
+      </button>
+    }
+    <span class="pin-form__spacer"></span>
     <button mat-button type="button" (click)="cancel()">Cancelar</button>
     <button mat-flat-button type="submit" [disabled]="form.invalid">{{ submitLabel }}</button>
   </mat-dialog-actions>

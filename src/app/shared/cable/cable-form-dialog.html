@@ -1,0 +1,94 @@
+<h2 mat-dialog-title class="cable-form__title">
+  <span class="cable-form__title-badge" [style.background]="previewColor()">
+    {{ selectedType().code }}
+  </span>
+  {{ title }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="cable-form">
+    <div class="cable-form__grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="name" maxlength="60" placeholder="BB-01" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Informe um nome para o cabo.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de cabo</mat-label>
+        <mat-select formControlName="type" (selectionChange)="onTypeChange($event.value)">
+          @for (type of types; track type.type) {
+            <mat-option [value]="type.type">
+              <span class="cable-form__option">
+                <span class="cable-form__option-badge" [style.background]="type.color">
+                  {{ type.code }}
+                </span>
+                {{ type.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Situação</mat-label>
+        <mat-select formControlName="status">
+          @for (status of statuses; track status.status) {
+            <mat-option [value]="status.status">
+              <span class="cable-form__option">
+                <span class="cable-form__option-dot" [style.background]="status.color"></span>
+                {{ status.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="cable-form__color-field">
+        <span class="cable-form__color-label">Cor do traçado</span>
+        <div class="cable-form__color-row">
+          <input
+            type="color"
+            class="cable-form__color-input"
+            [value]="previewColor()"
+            aria-label="Cor do traçado"
+            (input)="onColorInput($event)"
+          />
+          <button mat-button type="button" matTooltip="Usar a cor padrão do tipo" (click)="resetColor()">
+            Padrão
+          </button>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline" class="cable-form__full">
+        <mat-label>Etiquetas</mat-label>
+        <input matInput formControlName="tags" placeholder="troncal, projeto 2026" />
+        <mat-hint>Separe as etiquetas por vírgula.</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cable-form__full">
+        <mat-label>Descrição</mat-label>
+        <textarea matInput formControlName="description" rows="3" maxlength="400"></textarea>
+      </mat-form-field>
+    </div>
+
+    <p class="cable-form__hint">
+      <strong>{{ nodeCount }}</strong> vértice(s) no traçado ·
+      {{ selectedType().label }} · {{ selectedStatus().label }}
+    </p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    @if (isEdit) {
+      <button mat-button type="button" (click)="moveOnMap()">
+        <mat-icon>open_with</mat-icon>
+        Mover (vértices)
+      </button>
+    }
+    <span class="cable-form__spacer"></span>
+    <button mat-button type="button" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid">{{ submitLabel }}</button>
+  </mat-dialog-actions>
+</form>

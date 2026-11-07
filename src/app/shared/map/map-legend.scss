@@ -20,15 +20,29 @@
 }
 
 .map-legend__title {
+  flex: 1;
   margin: 0;
   font: var(--mat-sys-title-small, 500 14px/1.4 sans-serif);
 }
 
-.map-legend__total {
-  flex: 1;
-  text-align: right;
-  font: var(--mat-sys-label-medium, 500 12px/1.3 sans-serif);
+.map-legend__section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 14px 2px;
+  font: var(--mat-sys-label-medium, 500 11px/1.3 sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.map-legend__empty {
+  margin: 0;
+  padding: 16px 14px;
+  font: var(--mat-sys-body-small, 400 12px/1.4 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #78909c);
 }
 
 .map-legend__close {
@@ -81,6 +95,18 @@
   color: #fff;
   font: 700 9px/1 Roboto, Arial, sans-serif;
   letter-spacing: 0.02em;
+}
+
+.map-legend__line {
+  height: 0;
+  border-top-width: 4px;
+  border-top-style: solid;
+  border-radius: 0;
+  background: none;
+}
+
+.map-legend__line.is-dashed {
+  border-top-style: dashed;
 }
 
 .map-legend__label {

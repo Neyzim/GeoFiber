@@ -1,7 +1,6 @@
 <section class="map-legend" aria-label="Legenda de elementos">
   <header class="map-legend__header">
     <h3 class="map-legend__title">Legenda</h3>
-    <span class="map-legend__total">{{ total() }} PIN(s)</span>
     <button
       mat-icon-button
       type="button"
@@ -13,25 +12,67 @@
     </button>
   </header>
 
-  <ul class="map-legend__list">
-    @for (item of items(); track item.type) {
-      <li>
-        <button
-          type="button"
-          class="map-legend__item"
-          [class.is-hidden]="item.hidden"
-          [attr.aria-pressed]="!item.hidden"
-          [matTooltip]="item.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
-          (click)="toggleType.emit(item.type)"
-        >
-          <span class="map-legend__swatch" [style.background]="item.color">{{ item.code }}</span>
-          <span class="map-legend__label">{{ item.label }}</span>
-          <span class="map-legend__count">{{ item.count }}</span>
-          <mat-icon class="map-legend__eye">
-            {{ item.hidden ? 'visibility_off' : 'visibility' }}
-          </mat-icon>
-        </button>
-      </li>
-    }
-  </ul>
+  @if (pinItems().length > 0) {
+    <p class="map-legend__section">
+      <span>Elementos</span>
+      <span>{{ totalPins() }}</span>
+    </p>
+    <ul class="map-legend__list">
+      @for (item of pinItems(); track item.key) {
+        <li>
+          <button
+            type="button"
+            class="map-legend__item"
+            [class.is-hidden]="item.hidden"
+            [attr.aria-pressed]="!item.hidden"
+            [matTooltip]="item.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
+            (click)="toggleItem.emit(item)"
+          >
+            <span class="map-legend__swatch" [style.background]="item.color">{{ item.code }}</span>
+            <span class="map-legend__label">{{ item.label }}</span>
+            <span class="map-legend__count">{{ item.count }}</span>
+            <mat-icon class="map-legend__eye">
+              {{ item.hidden ? 'visibility_off' : 'visibility' }}
+            </mat-icon>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (cableItems().length > 0) {
+    <p class="map-legend__section">
+      <span>Cabos</span>
+      <span>{{ totalCables() }}</span>
+    </p>
+    <ul class="map-legend__list">
+      @for (item of cableItems(); track item.key) {
+        <li>
+          <button
+            type="button"
+            class="map-legend__item"
+            [class.is-hidden]="item.hidden"
+            [attr.aria-pressed]="!item.hidden"
+            [matTooltip]="item.hidden ? 'Mostrar no mapa' : 'Ocultar do mapa'"
+            (click)="toggleItem.emit(item)"
+          >
+            <span
+              class="map-legend__swatch map-legend__line"
+              [class.is-dashed]="item.dashed"
+              [style.border-top-color]="item.color"
+            ></span>
+            <span class="map-legend__label">{{ item.label }}</span>
+            <span class="map-legend__count">{{ item.count }}</span>
+            <mat-icon class="map-legend__eye">
+              {{ item.hidden ? 'visibility_off' : 'visibility' }}
+            </mat-icon>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (pinItems().length === 0 && cableItems().length === 0) {
+    <p class="map-legend__empty">Nada para exibir.</p>
+  }
 </section>
