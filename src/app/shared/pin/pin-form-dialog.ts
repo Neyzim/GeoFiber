@@ -9,9 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GeoPoint } from '../../core/models/geo.model';
+import { NetworkModel, networkModelSummary } from '../../core/models/network-model.model';
 import {
-  CTO_VARIANTS,
-  CtoVariant,
   PIN_STATUSES,
   PIN_TYPES,
   Pin,
@@ -21,6 +20,7 @@ import {
   pinStatusDefinition,
   pinTypeDefinition,
 } from '../../core/models/pin.model';
+import { NetworkModelStoreService } from '../../core/services/network-model-store';
 import { PinStoreService } from '../../core/services/pin-store';
 import { CoordinatePipe } from '../pipes/coordinate-pipe';
 
@@ -31,6 +31,8 @@ export interface PinFormDialogData {
   position?: GeoPoint;
   /** Tipo pré-selecionado na criação (vem da ferramenta ativa no mapa). */
   type?: PinType;
+  /** Modelo pré-selecionado na criação (vem da ferramenta ativa no mapa). */
+  modelId?: string;
 }
 
 /** Resultado do diálogo: os dados salvos ou o pedido de mover o PIN no mapa. */
@@ -41,7 +43,7 @@ interface PinFormValue {
   name: string;
   type: PinType;
   status: PinStatus;
-  ctoVariant: CtoVariant | '';
+  modelId: string;
   description: string;
   latitude: number;
   longitude: number;
@@ -71,9 +73,9 @@ export class PinFormDialogComponent {
   protected readonly data = inject<PinFormDialogData>(MAT_DIALOG_DATA);
   protected readonly types = PIN_TYPES;
   protected readonly statuses = PIN_STATUSES;
-  protected readonly ctoVariants = CTO_VARIANTS;
 
   private readonly store = inject(PinStoreService);
+  private readonly models = inject(NetworkModelStoreService);
   private readonly dialogRef = inject(MatDialogRef<PinFormDialogComponent, PinFormResult>);
   private readonly formBuilder = inject(FormBuilder);
   private readonly lastSuggestion = signal('');
@@ -82,7 +84,7 @@ export class PinFormDialogComponent {
     name: ['', [Validators.required, Validators.maxLength(60)]],
     type: ['cto' as PinType, [Validators.required]],
     status: ['planejado' as PinStatus, [Validators.required]],
-    ctoVariant: ['' as CtoVariant | ''],
+    modelId: [''],
     description: ['', [Validators.maxLength(400)]],
     latitude: [0, [Validators.required, Validators.min(-90), Validators.max(90)]],
     longitude: [0, [Validators.required, Validators.min(-180), Validators.max(180)]],
@@ -101,7 +103,7 @@ export class PinFormDialogComponent {
       name: current.name ?? '',
       type: current.type ?? 'cto',
       status: current.status ?? 'planejado',
-      ctoVariant: current.ctoVariant ?? '',
+      modelId: current.modelId ?? '',
       description: current.description ?? '',
       latitude: current.latitude ?? 0,
       longitude: current.longitude ?? 0,
@@ -115,9 +117,22 @@ export class PinFormDialogComponent {
   protected readonly submitLabel = this.isEdit ? 'Salvar alterações' : 'Criar PIN';
 
   protected readonly selectedType = computed(() => pinTypeDefinition(this.value().type));
-  protected readonly previewColor = computed(() => this.value().color || this.selectedType().color);
-  /** O seletor de variante só aparece para CTO. */
-  protected readonly showCtoVariant = computed(() => this.value().type === 'cto');
+  /** Modelos cadastrados que geram o tipo de PIN selecionado (CTO/CEO). */
+  protected readonly modelOptions = computed<readonly NetworkModel[]>(() =>
+    this.models.modelsForPinType(this.value().type),
+  );
+  protected readonly selectedModel = computed<NetworkModel | null>(() =>
+    this.models.findById(this.value().modelId || null),
+  );
+  /** O seletor de modelo só aparece para os tipos que possuem cadastro. */
+  protected readonly showModel = computed(() => this.modelOptions().length > 0);
+  protected readonly previewColor = computed(
+    () => this.value().color || this.selectedModel()?.color || this.selectedType().color,
+  );
+  protected readonly modelSummary = computed(() => {
+    const model = this.selectedModel();
+    return model ? networkModelSummary(model) : '';
+  });
   protected readonly previewPosition = computed<GeoPoint | null>(() => {
     const { latitude, longitude } = this.value();
     return Number.isFinite(latitude) && Number.isFinite(longitude)
@@ -132,7 +147,7 @@ export class PinFormDialogComponent {
         name: pin.name,
         type: pin.type,
         status: pin.status,
-        ctoVariant: pin.ctoVariant ?? '',
+        modelId: pin.modelId ?? '',
         description: pin.description,
         latitude: pin.position.lat,
         longitude: pin.position.lng,
@@ -149,13 +164,15 @@ export class PinFormDialogComponent {
     this.form.patchValue({
       name: suggestedName,
       type,
+      modelId: this.data.modelId ?? this.models.modelsForPinType(type)[0]?.id ?? '',
       latitude: this.data.position?.lat ?? 0,
       longitude: this.data.position?.lng ?? 0,
     });
   }
 
-  /** Ao trocar o tipo, sugere um novo nome enquanto o usuário não personalizar. */
+  /** Ao trocar o tipo, ajusta o modelo e sugere um novo nome (na criação). */
   protected onTypeChange(type: PinType): void {
+    this.form.controls.modelId.setValue(this.models.modelsForPinType(type)[0]?.id ?? '');
     if (this.isEdit) {
       return;
     }
@@ -195,7 +212,7 @@ export class PinFormDialogComponent {
       name: value.name.trim(),
       type: value.type,
       status: value.status,
-      ctoVariant: value.type === 'cto' && value.ctoVariant ? value.ctoVariant : undefined,
+      modelId: value.modelId.trim() || undefined,
       description: value.description.trim(),
       position: { lat: value.latitude, lng: value.longitude },
       color: value.color.trim() || undefined,

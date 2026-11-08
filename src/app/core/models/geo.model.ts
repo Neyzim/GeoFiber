@@ -37,6 +37,8 @@ export interface GeoPath {
   dashArray?: string;
   /** Desenha um marcador em cada vértice (usado na pré-visualização). */
   showVertices?: boolean;
+  /** HTML do balão de informações exibido quando o cabo é selecionado. */
+  popupHtml?: string;
 }
 
 /** Emitido quando o usuário clica no mapa. */

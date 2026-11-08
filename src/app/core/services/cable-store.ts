@@ -220,6 +220,7 @@ function normalizeCable(cable: CableLike): Cable {
   const now = new Date().toISOString();
   return {
     ...cable,
+    modelId: typeof cable.modelId === 'string' ? cable.modelId : undefined,
     description: typeof cable.description === 'string' ? cable.description : '',
     tags: Array.isArray(cable.tags) ? cable.tags.filter((tag) => typeof tag === 'string') : [],
     createdAt: typeof cable.createdAt === 'string' ? cable.createdAt : now,

@@ -11,6 +11,23 @@
         <mat-icon>chevron_right</mat-icon>
       </button>
       <span class="sidebar__logo" aria-hidden="true">GF</span>
+      <a
+        mat-icon-button
+        routerLink="/modelos"
+        matTooltip="Modelos de rede"
+        matTooltipPosition="right"
+      >
+        <mat-icon>category</mat-icon>
+      </a>
+      <button
+        mat-icon-button
+        type="button"
+        [matTooltip]="isDark() ? 'Modo claro' : 'Modo escuro'"
+        matTooltipPosition="right"
+        (click)="toggleTheme()"
+      >
+        <mat-icon>{{ isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
     </div>
   } @else {
     <header class="sidebar__brand">
@@ -37,9 +54,27 @@
       </p>
     }
 
-    <p class="sidebar__placeholder">
-      <mat-icon>construction</mat-icon>
-      Área reservada para os cadastros do sistema (tipos de cabo, CTO e equipamentos).
-    </p>
+    <nav class="sidebar__nav">
+      <a routerLink="/modelos" class="sidebar__nav-item">
+        <mat-icon>category</mat-icon>
+        <span class="sidebar__nav-text">
+          <strong>Modelos de rede</strong>
+          <small>Tipos de cabo, CTO e CEO</small>
+        </span>
+        <mat-icon class="sidebar__nav-arrow">chevron_right</mat-icon>
+      </a>
+    </nav>
+
+    <footer class="sidebar__footer">
+      <button
+        mat-stroked-button
+        type="button"
+        class="sidebar__theme"
+        (click)="toggleTheme()"
+      >
+        <mat-icon>{{ isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        {{ isDark() ? 'Modo claro' : 'Modo escuro' }}
+      </button>
+    </footer>
   }
 </aside>

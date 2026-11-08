@@ -62,7 +62,7 @@
           hint="Clique no mapa para traçar e finalize com duplo clique."
           sample="cable"
           [options]="cableTypeOptions()"
-          [activeKey]="activeCableType()"
+          [activeKey]="activeCableKey()"
           (pick)="onCableTypePicked($event)"
           (close)="closePicker()"
         />

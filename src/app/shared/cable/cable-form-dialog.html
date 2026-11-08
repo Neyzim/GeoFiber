@@ -46,6 +46,26 @@
         </mat-select>
       </mat-form-field>
 
+      @if (modelOptions().length > 0) {
+        <mat-form-field appearance="outline">
+          <mat-label>Modelo</mat-label>
+          <mat-select formControlName="modelId">
+            <mat-option value="">Sem modelo</mat-option>
+            @for (model of modelOptions(); track model.id) {
+              <mat-option [value]="model.id">
+                <span class="cable-form__option">
+                  <span class="cable-form__option-badge" [style.background]="model.color">
+                    {{ model.code }}
+                  </span>
+                  {{ model.name }}
+                </span>
+              </mat-option>
+            }
+          </mat-select>
+          <mat-hint>{{ modelSummary() || 'Parametriza cor, fibras e espessura.' }}</mat-hint>
+        </mat-form-field>
+      }
+
       <div class="cable-form__color-field">
         <span class="cable-form__color-label">Cor do traçado</span>
         <div class="cable-form__color-row">

@@ -46,15 +46,23 @@
         </mat-select>
       </mat-form-field>
 
-      @if (showCtoVariant()) {
+      @if (showModel()) {
         <mat-form-field appearance="outline">
-          <mat-label>Portas da CTO</mat-label>
-          <mat-select formControlName="ctoVariant">
-            @for (variant of ctoVariants; track variant.value) {
-              <mat-option [value]="variant.value">{{ variant.label }}</mat-option>
+          <mat-label>Modelo</mat-label>
+          <mat-select formControlName="modelId">
+            <mat-option value="">Sem modelo</mat-option>
+            @for (model of modelOptions(); track model.id) {
+              <mat-option [value]="model.id">
+                <span class="pin-form__option">
+                  <span class="pin-form__option-badge" [style.background]="model.color">
+                    {{ model.code }}
+                  </span>
+                  {{ model.name }}
+                </span>
+              </mat-option>
             }
           </mat-select>
-          <mat-hint>Variante do divisor óptico.</mat-hint>
+          <mat-hint>{{ modelSummary() || 'Parametriza cor e configuração do elemento.' }}</mat-hint>
         </mat-form-field>
       }
 

@@ -17,8 +17,10 @@ import {
   cableTypeDefinition,
 } from '../../core/models/cable.model';
 import { GeoPoint } from '../../core/models/geo.model';
+import { NetworkModel, networkModelSummary } from '../../core/models/network-model.model';
 import { PIN_STATUSES, PinStatus, pinStatusDefinition } from '../../core/models/pin.model';
 import { CableStoreService } from '../../core/services/cable-store';
+import { NetworkModelStoreService } from '../../core/services/network-model-store';
 
 export interface CableFormDialogData {
   mode: 'create' | 'edit';
@@ -27,6 +29,8 @@ export interface CableFormDialogData {
   points?: readonly GeoPoint[];
   /** Tipo pré-selecionado pela ferramenta ativa. */
   type?: CableType;
+  /** Modelo pré-selecionado pela ferramenta ativa. */
+  modelId?: string;
 }
 
 /** Resultado do diálogo: os dados salvos ou o pedido de editar os vértices. */
@@ -37,6 +41,7 @@ interface CableFormValue {
   name: string;
   type: CableType;
   status: CableStatus;
+  modelId: string;
   description: string;
   color: string;
   tags: string;
@@ -65,6 +70,7 @@ export class CableFormDialogComponent {
   protected readonly statuses = PIN_STATUSES;
 
   private readonly store = inject(CableStoreService);
+  private readonly models = inject(NetworkModelStoreService);
   private readonly dialogRef = inject(MatDialogRef<CableFormDialogComponent, CableFormResult>);
   private readonly formBuilder = inject(FormBuilder);
   private readonly lastSuggestion = signal('');
@@ -73,6 +79,7 @@ export class CableFormDialogComponent {
     name: ['', [Validators.required, Validators.maxLength(60)]],
     type: [(this.data.type ?? this.data.cable?.type ?? 'backbone') as CableType, [Validators.required]],
     status: ['planejado' as CableStatus, [Validators.required]],
+    modelId: [''],
     description: ['', [Validators.maxLength(400)]],
     color: [''],
     tags: [''],
@@ -88,6 +95,7 @@ export class CableFormDialogComponent {
       name: current.name ?? '',
       type: current.type ?? 'backbone',
       status: current.status ?? 'planejado',
+      modelId: current.modelId ?? '',
       description: current.description ?? '',
       color: current.color ?? '',
       tags: current.tags ?? '',
@@ -103,7 +111,20 @@ export class CableFormDialogComponent {
   protected readonly nodeCount = this.points.length;
 
   protected readonly selectedType = computed(() => cableTypeDefinition(this.value().type));
-  protected readonly previewColor = computed(() => this.value().color || this.selectedType().color);
+  /** Modelos de cabo cadastrados para a categoria selecionada. */
+  protected readonly modelOptions = computed<readonly NetworkModel[]>(() =>
+    this.models.modelsForCableType(this.value().type),
+  );
+  protected readonly selectedModel = computed<NetworkModel | null>(() =>
+    this.models.findById(this.value().modelId || null),
+  );
+  protected readonly previewColor = computed(
+    () => this.value().color || this.selectedModel()?.color || this.selectedType().color,
+  );
+  protected readonly modelSummary = computed(() => {
+    const model = this.selectedModel();
+    return model ? networkModelSummary(model) : '';
+  });
   protected readonly selectedStatus = computed(() => pinStatusDefinition(this.value().status));
 
   constructor() {
@@ -113,6 +134,7 @@ export class CableFormDialogComponent {
         name: cable.name,
         type: cable.type,
         status: cable.status,
+        modelId: cable.modelId ?? '',
         description: cable.description,
         color: cable.color ?? '',
         tags: cable.tags.join(', '),
@@ -124,11 +146,15 @@ export class CableFormDialogComponent {
     const type = this.form.controls.type.value;
     const suggestedName = this.store.suggestName(type);
     this.lastSuggestion.set(suggestedName);
-    this.form.patchValue({ name: suggestedName });
+    this.form.patchValue({
+      name: suggestedName,
+      modelId: this.data.modelId ?? this.models.modelsForCableType(type)[0]?.id ?? '',
+    });
   }
 
-  /** Ao trocar o tipo, sugere um novo nome enquanto o usuário não personalizar. */
+  /** Ao trocar o tipo (categoria), ajusta o modelo e sugere um novo nome. */
   protected onTypeChange(type: CableType): void {
+    this.form.controls.modelId.setValue(this.models.modelsForCableType(type)[0]?.id ?? '');
     if (this.isEdit) {
       return;
     }
@@ -169,6 +195,7 @@ export class CableFormDialogComponent {
       type: value.type,
       status: value.status,
       points: [...this.points],
+      modelId: value.modelId.trim() || undefined,
       description: value.description.trim(),
       color: value.color.trim() || undefined,
       tags: value.tags

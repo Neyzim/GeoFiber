@@ -1,0 +1,83 @@
+<div class="models">
+  <header class="models__header">
+    <a mat-icon-button routerLink="/" matTooltip="Voltar ao mapa" class="models__back">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+
+    <div class="models__titles">
+      <h1>Cadastro de modelos</h1>
+      <p>
+        Parametrize os tipos de cabo, CTO e CEO usados na criação dos elementos no mapa. Os
+        elementos guardam o vínculo com o modelo, então editar aqui reflete em todos eles.
+      </p>
+    </div>
+
+    <span class="models__count">{{ total() }} modelo(s)</span>
+
+    <button mat-stroked-button type="button" (click)="restoreDefaults()">
+      <mat-icon>restore</mat-icon>
+      Restaurar padrões
+    </button>
+    <button mat-flat-button type="button" (click)="create()">
+      <mat-icon>add</mat-icon>
+      Novo modelo
+    </button>
+    <button
+      mat-icon-button
+      type="button"
+      [matTooltip]="isDark() ? 'Modo claro' : 'Modo escuro'"
+      (click)="toggleTheme()"
+    >
+      <mat-icon>{{ isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+  </header>
+
+  @for (section of sections(); track section.definition.kind) {
+    <section class="models__section">
+      <div class="models__section-head">
+        <span class="models__section-icon" [style.background]="section.definition.color">
+          <mat-icon>{{ section.definition.icon }}</mat-icon>
+        </span>
+        <div class="models__section-titles">
+          <h2>{{ section.definition.label }}</h2>
+          <p>{{ section.definition.description }}</p>
+        </div>
+        <button
+          mat-icon-button
+          type="button"
+          matTooltip="Novo modelo nesta categoria"
+          (click)="create(section.definition.kind)"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+
+      @if (section.models.length === 0) {
+        <p class="models__empty">Nenhum modelo cadastrado nesta categoria.</p>
+      } @else {
+        <div class="models__grid">
+          @for (model of section.models; track model.id) {
+            <article class="model-card">
+              <span class="model-card__badge" [style.background]="model.color">{{ model.code }}</span>
+              <div class="model-card__body">
+                <strong>{{ model.name }}</strong>
+                <small>{{ summary(model) }}</small>
+                @if (model.description) {
+                  <span class="model-card__desc">{{ model.description }}</span>
+                }
+              </div>
+              <div class="model-card__actions">
+                <button mat-icon-button type="button" matTooltip="Editar" (click)="edit(model)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" matTooltip="Remover" (click)="remove(model)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

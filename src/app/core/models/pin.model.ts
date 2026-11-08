@@ -14,9 +14,6 @@ export type PinType =
 /** Situação operacional do elemento. */
 export type PinStatus = 'planejado' | 'ativo' | 'inativo' | 'manutencao';
 
-/** Variante de portas de uma CTO (divisor óptico). */
-export type CtoVariant = '1x16' | '1x8';
-
 /** Elemento posicionado no mapa (o "PIN"). */
 export interface Pin {
   id: string;
@@ -24,10 +21,13 @@ export interface Pin {
   type: PinType;
   status: PinStatus;
   position: GeoPoint;
-  /** Variante de portas, usada apenas quando `type === 'cto'`. */
-  ctoVariant?: CtoVariant;
+  /**
+   * Modelo cadastrado (CTO/CEO) que parametriza o elemento: cor, divisor ou
+   * capacidade de emendas. Ausente nos elementos sem modelo.
+   */
+  modelId?: string;
   description: string;
-  /** Cor personalizada; quando ausente usa a cor padrão do tipo. */
+  /** Cor personalizada; quando ausente usa a cor do modelo ou do tipo. */
   color?: string;
   tags: string[];
   createdAt: string;
@@ -132,22 +132,6 @@ export const PIN_STATUSES: readonly PinStatusDefinition[] = [
   { status: 'manutencao', label: 'Manutenção', color: '#e53935', icon: 'build_circle' },
 ];
 
-export interface CtoVariantDefinition {
-  value: CtoVariant;
-  label: string;
-  description: string;
-}
-
-/** Variantes de portas oferecidas para as CTO. */
-export const CTO_VARIANTS: readonly CtoVariantDefinition[] = [
-  { value: '1x16', label: 'CTO 1x16', description: 'Divisor com 16 portas de atendimento.' },
-  { value: '1x8', label: 'CTO 1x8', description: 'Divisor com 8 portas de atendimento.' },
-];
-
-export function isCtoVariant(value: unknown): value is CtoVariant {
-  return CTO_VARIANTS.some((definition) => definition.value === value);
-}
-
 const FALLBACK_TYPE: PinTypeDefinition = PIN_TYPES[PIN_TYPES.length - 1];
 const FALLBACK_STATUS: PinStatusDefinition = PIN_STATUSES[0];
 
@@ -172,27 +156,12 @@ export function pinColor(pin: Pick<Pin, 'type' | 'color'>): string {
   return pin.color ?? pinTypeDefinition(pin.type).color;
 }
 
-/** Variante efetiva da CTO (a primeira do catálogo quando não informada); `null` nos demais tipos. */
-export function ctoVariantOf(pin: Pick<Pin, 'type' | 'ctoVariant'>): CtoVariant | null {
-  return pin.type === 'cto' ? (pin.ctoVariant ?? CTO_VARIANTS[0].value) : null;
-}
-
 /**
- * Chave do subgrupo do PIN na legenda (ex.: `cto:1x16`).
- * Retorna `null` para os tipos que não possuem variantes.
+ * Chave do subgrupo do PIN na legenda (ex.: `model:<id>`), agrupando os
+ * elementos pelo modelo vinculado. Elementos sem modelo usam `model:sem-modelo`.
  */
-export function pinSubgroupKey(pin: Pick<Pin, 'type' | 'ctoVariant'>): string | null {
-  const variant = ctoVariantOf(pin);
-  return variant === null ? null : `${pin.type}:${variant}`;
-}
-
-/** Rótulo do subgrupo de um PIN (ex.: `CTO 1x16`); `null` quando não há variante. */
-export function pinSubgroupLabel(pin: Pick<Pin, 'type' | 'ctoVariant'>): string | null {
-  const variant = ctoVariantOf(pin);
-  if (variant === null) {
-    return null;
-  }
-  return CTO_VARIANTS.find((definition) => definition.value === variant)?.label ?? variant;
+export function pinSubgroupKey(pin: Pick<Pin, 'modelId'>): string {
+  return `model:${pin.modelId ?? 'sem-modelo'}`;
 }
 
 export function createPinId(): string {
