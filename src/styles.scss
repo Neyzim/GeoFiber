@@ -2,6 +2,8 @@
 
 // --- Tema Material 3 --------------------------------------------------------
 // Define os tokens de sistema (--mat-sys-*) usados por todos os componentes.
+// O tema é emitido com `theme-type: color-scheme`, ou seja, os tokens viram
+// `light-dark(...)`: alternar o `color-scheme` do <html> troca claro/escuro.
 html {
   color-scheme: light;
 
@@ -21,6 +23,11 @@ html {
   body {
     height: 100%;
   }
+}
+
+// Modo escuro: basta trocar o esquema de cores; os tokens `light-dark()` seguem.
+html.dark-theme {
+  color-scheme: dark;
 }
 
 body {
@@ -190,6 +197,108 @@ body {
   padding: 6px 10px;
   border: 0;
   border-radius: 8px;
+  background: var(--mat-sys-surface-container-highest, #fff);
+  color: var(--mat-sys-on-surface, #1f2933);
   font: 500 12px/1.45 Roboto, system-ui, sans-serif;
   box-shadow: 0 4px 14px rgb(15 23 42 / 0.24);
 }
+
+.leaflet-tooltip.gf-pin-tooltip:before {
+  border-top-color: var(--mat-sys-surface-container-highest, #fff);
+}
+
+// --- Fundo do mapa e controles do Leaflet -----------------------------------
+
+.leaflet-container {
+  background: var(--mat-sys-surface-variant, #dfe6ec);
+}
+
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+  background: var(--mat-sys-surface-container-high, #fff);
+  color: var(--mat-sys-on-surface-variant, #52606d);
+  border-color: var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+}
+
+.leaflet-control-attribution a {
+  color: var(--mat-sys-primary, #1e88e5);
+}
+
+// --- Balão de informações do elemento selecionado ---------------------------
+
+.leaflet-popup.gf-popup-wrapper .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high, #fff);
+  color: var(--mat-sys-on-surface, #1f2933);
+  box-shadow: 0 10px 26px rgb(15 23 42 / 0.28);
+}
+
+.leaflet-popup.gf-popup-wrapper .leaflet-popup-tip {
+  background: var(--mat-sys-surface-container-high, #fff);
+}
+
+.leaflet-popup.gf-popup-wrapper .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.gf-popup {
+  min-width: 168px;
+  padding: 10px 12px;
+  color: var(--mat-sys-on-surface, #1f2933);
+  font: 400 12px/1.45 Roboto, system-ui, sans-serif;
+}
+
+.gf-popup__title {
+  margin: 0 0 6px;
+  font: 600 14px/1.25 Roboto, system-ui, sans-serif;
+}
+
+.gf-popup__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.gf-popup__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: 6px;
+  color: #fff;
+  font: 700 10px/1 Roboto, system-ui, sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.gf-popup__type {
+  font-weight: 500;
+}
+
+.gf-popup__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant, #52606d);
+}
+
+.gf-popup__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.gf-popup__hint {
+  margin: 8px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--mat-sys-outline-variant, #d8dee6);
+  color: var(--mat-sys-on-surface-variant, #52606d);
+  font-size: 11px;
+}
+

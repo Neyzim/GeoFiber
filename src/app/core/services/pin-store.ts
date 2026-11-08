@@ -7,12 +7,12 @@ import {
   PinStatus,
   PinType,
   createPin,
-  isCtoVariant,
   isPinStatus,
   isPinType,
   pinSubgroupKey,
   pinTypeDefinition,
 } from '../models/pin.model';
+import { LEGACY_CTO_VARIANT_MODEL_IDS } from '../models/network-model.model';
 
 /**
  * Fonte única de verdade dos PINs do projeto.
@@ -86,8 +86,7 @@ export class PinStoreService {
       if (hiddenTypes.has(pin.type)) {
         return false;
       }
-      const group = pinSubgroupKey(pin);
-      return group === null || !hiddenGroups.has(group);
+      return !hiddenGroups.has(pinSubgroupKey(pin));
     });
   });
 
@@ -216,7 +215,12 @@ function restorePins(): readonly Pin[] {
   }
 }
 
-type PinLike = Omit<Pin, 'type' | 'status'> & { type: PinType; status: PinStatus };
+type PinLike = Omit<Pin, 'type' | 'status'> & {
+  type: PinType;
+  status: PinStatus;
+  /** Campo legado (`ctoVariant`), migrado para `modelId` na leitura. */
+  ctoVariant?: unknown;
+};
 
 function isPinLike(value: unknown): value is PinLike {
   if (typeof value !== 'object' || value === null) {
@@ -239,12 +243,18 @@ function isPinLike(value: unknown): value is PinLike {
 
 function normalizePin(pin: PinLike): Pin {
   const now = new Date().toISOString();
+  const { ctoVariant, ...rest } = pin;
   return {
-    ...pin,
-    ctoVariant: isCtoVariant(pin.ctoVariant) ? pin.ctoVariant : undefined,
+    ...rest,
+    modelId: typeof pin.modelId === 'string' ? pin.modelId : legacyModelId(ctoVariant),
     description: typeof pin.description === 'string' ? pin.description : '',
     tags: Array.isArray(pin.tags) ? pin.tags.filter((tag) => typeof tag === 'string') : [],
     createdAt: typeof pin.createdAt === 'string' ? pin.createdAt : now,
     updatedAt: typeof pin.updatedAt === 'string' ? pin.updatedAt : now,
   };
+}
+
+/** Converte a antiga variante da CTO (`1x16`/`1x8`) no id do modelo equivalente. */
+function legacyModelId(ctoVariant: unknown): string | undefined {
+  return typeof ctoVariant === 'string' ? LEGACY_CTO_VARIANT_MODEL_IDS[ctoVariant] : undefined;
 }

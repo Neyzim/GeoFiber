@@ -21,8 +21,15 @@ import {
 import { GeoPath, GeoPoint, MapClickEvent, MapTool, MapViewState, PathVertexMoveEvent, PinMoveEvent } from '../../core/models/geo.model';
 import { Pin } from '../../core/models/pin.model';
 import { MapViewportService } from '../../core/services/map-viewport';
+import { NetworkModelStoreService } from '../../core/services/network-model-store';
 import { NotificationService } from '../../core/services/notification';
-import { createGhostIcon, createPinIcon, createUserLocationIcon, pinTooltipHtml } from './pin-marker';
+import {
+  createGhostIcon,
+  createPinIcon,
+  createUserLocationIcon,
+  pinPopupHtml,
+  pinTooltipHtml,
+} from './pin-marker';
 
 /** Distância (px) dentro da qual um clique no mapa "gruda" em um PIN. */
 const SNAP_DISTANCE_PX = 15;
@@ -46,6 +53,7 @@ export class GeoMapComponent implements OnDestroy {
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');
   private readonly notifications = inject(NotificationService);
   private readonly viewport = inject(MapViewportService);
+  private readonly models = inject(NetworkModelStoreService);
 
   /** Visão inicial — aplicada apenas na criação do mapa. */
   readonly initialCenter = input<GeoPoint>(DEFAULT_MAP_VIEW.center);
@@ -103,6 +111,7 @@ export class GeoMapComponent implements OnDestroy {
   private accuracyCircle: L.Circle | null = null;
   private rubberBand: L.Polyline | null = null;
   private snapMarker: L.CircleMarker | null = null;
+  private popup: L.Popup | null = null;
   private cursorPoint: GeoPoint | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private readonly markers = new Map<string, L.Marker>();
@@ -151,6 +160,17 @@ export class GeoMapComponent implements OnDestroy {
       }
     });
 
+    // Balão do elemento selecionado: reage à seleção e aos dados do elemento.
+    effect(() => {
+      const pinId = this.selectedPinId();
+      const pathId = this.selectedPathId();
+      const pins = this.pins();
+      const paths = this.paths();
+      if (this.map) {
+        this.refreshPopup(pinId, pathId, pins, paths);
+      }
+    });
+
     effect(() => {
       const tool = this.activeTool();
       const origin = this.draftOrigin();
@@ -173,6 +193,7 @@ export class GeoMapComponent implements OnDestroy {
     this.resizeObserver = null;
     this.map?.remove();
     this.map = null;
+    this.popup = null;
     this.viewport.register(null);
     this.markers.clear();
     this.pathLines.clear();
@@ -347,11 +368,12 @@ export class GeoMapComponent implements OnDestroy {
     }
 
     for (const pin of pins) {
+      const model = this.models.findById(pin.modelId);
       const existing = this.markers.get(pin.id);
       if (existing) {
         existing.setLatLng([pin.position.lat, pin.position.lng]);
-        existing.setIcon(createPinIcon(pin, this.selectedPinId() === pin.id));
-        existing.setTooltipContent(pinTooltipHtml(pin));
+        existing.setIcon(createPinIcon(pin, this.selectedPinId() === pin.id, model));
+        existing.setTooltipContent(pinTooltipHtml(pin, model));
         continue;
       }
 
@@ -363,8 +385,9 @@ export class GeoMapComponent implements OnDestroy {
   }
 
   private createMarker(pin: Pin): L.Marker {
+    const model = this.models.findById(pin.modelId);
     const marker = L.marker([pin.position.lat, pin.position.lng], {
-      icon: createPinIcon(pin, this.selectedPinId() === pin.id),
+      icon: createPinIcon(pin, this.selectedPinId() === pin.id, model),
       draggable: true,
       autoPan: true,
       riseOnHover: true,
@@ -373,7 +396,7 @@ export class GeoMapComponent implements OnDestroy {
       zIndexOffset: this.selectedPinId() === pin.id ? 1000 : 0,
     });
 
-    marker.bindTooltip(pinTooltipHtml(pin), {
+    marker.bindTooltip(pinTooltipHtml(pin, model), {
       direction: 'top',
       offset: L.point(0, -8),
       opacity: 0.95,
@@ -386,7 +409,7 @@ export class GeoMapComponent implements OnDestroy {
 
     marker.on('dragend', () => {
       const position = marker.getLatLng();
-      marker.setIcon(createPinIcon(pin, this.selectedPinId() === pin.id));
+      marker.setIcon(createPinIcon(pin, this.selectedPinId() === pin.id, model));
       this.pinMoved.emit({
         pinId: pin.id,
         position: { lat: position.lat, lng: position.lng },
@@ -410,6 +433,70 @@ export class GeoMapComponent implements OnDestroy {
       const element = marker.getElement()?.querySelector('.gf-pin');
       element?.classList.toggle('is-selected', id === selectedId);
       marker.setZIndexOffset(id === selectedId ? 1000 : 0);
+    }
+  }
+
+  // --- Balão de informações do elemento selecionado ------------------------
+
+  /**
+   * Mostra o balão do elemento atualmente selecionado (PIN tem prioridade sobre
+   * o cabo) e o fecha quando não há seleção. A seleção em si é decidida pela
+   * página: o primeiro clique seleciona; o segundo abre a edição.
+   */
+  private refreshPopup(
+    pinId: string | null,
+    pathId: string | null,
+    pins: readonly Pin[],
+    paths: readonly GeoPath[],
+  ): void {
+    const pin = pinId ? pins.find((item) => item.id === pinId) : undefined;
+    if (pin) {
+      const model = this.models.findById(pin.modelId);
+      this.showPopup([pin.position.lat, pin.position.lng], pinPopupHtml(pin, model), -34);
+      return;
+    }
+
+    const line = pathId ? this.pathLines.get(pathId) : undefined;
+    const path = pathId ? paths.find((item) => item.id === pathId) : undefined;
+    if (line && path?.popupHtml) {
+      const center = line.getCenter();
+      this.showPopup([center.lat, center.lng], path.popupHtml, -14);
+      return;
+    }
+
+    this.hidePopup();
+  }
+
+  private showPopup(latlng: L.LatLngExpression, content: string, offsetY: number): void {
+    const map = this.map;
+    if (!map) {
+      return;
+    }
+
+    if (!this.popup) {
+      // Popup próprio: o Leaflet não o fecha ao clicar e não o alterna no
+      // segundo clique — quem controla isso é a seleção da página.
+      this.popup = L.popup({
+        className: 'gf-popup-wrapper',
+        closeButton: false,
+        closeOnClick: false,
+        autoPan: false,
+        minWidth: 168,
+        maxWidth: 260,
+      });
+    }
+
+    this.popup.options.offset = L.point(0, offsetY);
+    this.popup.setLatLng(latlng).setContent(content);
+    if (!map.hasLayer(this.popup)) {
+      this.popup.openOn(map);
+    }
+  }
+
+  private hidePopup(): void {
+    const map = this.map;
+    if (map && this.popup && map.hasLayer(this.popup)) {
+      map.closePopup(this.popup);
     }
   }
 

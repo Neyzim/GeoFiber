@@ -6,11 +6,15 @@ import {
   CABLE_TYPES,
   Cable,
   CableType,
-  cableColor,
   cableTypeDefinition,
   isCableType,
 } from '../../core/models/cable.model';
 import { GeoPath, GeoPoint, MapClickEvent, MapTool, MapViewState, PathVertexMoveEvent, PinMoveEvent } from '../../core/models/geo.model';
+import {
+  NetworkModel,
+  networkModelSummary,
+  resolveElementColor,
+} from '../../core/models/network-model.model';
 import {
   PIN_TYPES,
   Pin,
@@ -19,12 +23,12 @@ import {
   isPinType,
   pinStatusDefinition,
   pinSubgroupKey,
-  pinSubgroupLabel,
   pinTypeDefinition,
 } from '../../core/models/pin.model';
 import { CableStoreService } from '../../core/services/cable-store';
 import { MapPreferencesService } from '../../core/services/map-preferences';
 import { MapViewportService } from '../../core/services/map-viewport';
+import { NetworkModelStoreService } from '../../core/services/network-model-store';
 import { NotificationService } from '../../core/services/notification';
 import { PinStoreService } from '../../core/services/pin-store';
 import {
@@ -33,6 +37,7 @@ import {
   CableFormResult,
 } from '../../shared/cable/cable-form-dialog';
 import { GeoMapComponent } from '../../shared/map/geo-map';
+import { escapeHtml } from '../../shared/map/pin-marker';
 import {
   LegendGroup,
   LegendLeaf,
@@ -74,6 +79,7 @@ export class NetworkMapPage {
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly viewport = inject(MapViewportService);
+  private readonly models = inject(NetworkModelStoreService);
   private readonly geoMap = viewChild.required(GeoMapComponent);
 
   protected readonly baseLayers = BASE_LAYERS;
@@ -96,8 +102,15 @@ export class NetworkMapPage {
   protected readonly activePinType = signal<PinType>(PIN_TYPES[0].type);
   /** Tipo usado pela ferramenta "Traçar cabo". */
   protected readonly activeCableType = signal<CableType>(CABLE_TYPES[0].type);
+  /** Modelo de cabo que parametriza o traçado em construção. */
+  protected readonly activeCableModelId = signal<string | null>(null);
   /** Vértices livremente lançados no traçado em construção. */
   protected readonly cableDraftPoints = signal<readonly GeoPoint[]>([]);
+
+  /** Chave ativa da paleta de cabo: id do modelo ou tipo base. */
+  protected readonly activeCableKey = computed<string>(
+    () => this.activeCableModelId() ?? this.activeCableType(),
+  );
 
   protected readonly pickerVisible = signal(true);
   protected readonly showLayerPanel = signal(false);
@@ -126,7 +139,11 @@ export class NetworkMapPage {
       return pinTypeDefinition(this.activePinType()).color;
     }
     if (this.activeTool() === 'addCable') {
-      return cableTypeDefinition(this.activeCableType()).color;
+      return resolveElementColor(
+        undefined,
+        this.models.findById(this.activeCableModelId()),
+        cableTypeDefinition(this.activeCableType()).color,
+      );
     }
     return null;
   });
@@ -149,23 +166,26 @@ export class NetworkMapPage {
       if (cable.points.length < 2) {
         continue;
       }
+      const model = this.models.findById(cable.modelId);
       result.push({
         id: cable.id,
         points: cable.points,
-        color: cableColor(cable),
-        weight: definition.weight,
-        dashArray: definition.dashArray,
+        color: resolveElementColor(cable.color, model, definition.color),
+        weight: model?.weight ?? definition.weight,
+        dashArray: model?.dashArray ?? definition.dashArray,
+        popupHtml: cablePopupHtml(cable, model),
       });
     }
 
     const draftPoints = this.cableDraftPoints();
     if (this.activeTool() === 'addCable' && draftPoints.length > 0) {
       const definition = cableTypeDefinition(this.activeCableType());
+      const model = this.models.findById(this.activeCableModelId());
       result.push({
         id: '__draft__',
         points: [...draftPoints],
-        color: definition.color,
-        weight: definition.weight + 1,
+        color: resolveElementColor(undefined, model, definition.color),
+        weight: (model?.weight ?? definition.weight) + 1,
         dashArray: '6 6',
       });
     }
@@ -173,6 +193,10 @@ export class NetworkMapPage {
     return result;
   });
 
+  /**
+   * Paleta de PINs agrupada por tipo: todos os CTOs em uma única opção e a
+   * variante (ex.: 1x8) é definida depois, no diálogo de criação/edição.
+   */
   protected readonly pinTypeOptions = computed<readonly TypePickerOption[]>(() => {
     const counts = this.store.typeCounts();
     return PIN_TYPES.map((definition) => ({
@@ -184,7 +208,26 @@ export class NetworkMapPage {
     }));
   });
 
+  /** Paleta de cabos: modelos cadastrados (ou os tipos base como reserva). */
   protected readonly cableTypeOptions = computed<readonly TypePickerOption[]>(() => {
+    const modelCounts = new Map<string, number>();
+    for (const cable of this.cableStore.cables()) {
+      if (cable.modelId) {
+        modelCounts.set(cable.modelId, (modelCounts.get(cable.modelId) ?? 0) + 1);
+      }
+    }
+
+    const models = this.models.cableModels();
+    if (models.length > 0) {
+      return models.map((model) => ({
+        key: model.id,
+        label: model.name,
+        code: model.code,
+        color: model.color,
+        count: modelCounts.get(model.id) ?? 0,
+      }));
+    }
+
     const counts = this.cableStore.typeCounts();
     return CABLE_TYPES.map((definition) => ({
       key: definition.type,
@@ -221,12 +264,9 @@ export class NetworkMapPage {
       const buckets = new Map<string, { key: string; label: string; items: LegendLeaf[] }>();
       for (const pin of typePins) {
         const key = pinSubgroupKey(pin);
-        if (key === null) {
-          continue;
-        }
         const bucket = buckets.get(key) ?? {
           key,
-          label: pinSubgroupLabel(pin) ?? key,
+          label: this.pinSubgroupLabel(pin),
           items: [],
         };
         bucket.items.push(toPinLeaf(pin));
@@ -286,6 +326,12 @@ export class NetworkMapPage {
     return { key: 'cables', label: 'Cabos', total: cables.length, groups };
   });
 
+  /** Rótulo do subgrupo de um PIN: nome do modelo vinculado ou "Sem modelo". */
+  private pinSubgroupLabel(pin: Pin): string {
+    const model = this.models.findById(pin.modelId);
+    return model ? `${model.name} (${model.code})` : 'Sem modelo';
+  }
+
   // --- Ferramentas ---------------------------------------------------------
 
   protected setTool(tool: MapTool): void {
@@ -335,10 +381,23 @@ export class NetworkMapPage {
   }
 
   protected onCableTypePicked(key: string): void {
+    const model = this.models.findById(key);
+    if (model) {
+      if (model.kind !== 'cabo') {
+        return;
+      }
+      if (model.category) {
+        this.activeCableType.set(model.category);
+      }
+      this.activeCableModelId.set(model.id);
+      this.notifications.info(`${model.name} selecionado.`);
+      return;
+    }
     if (!isCableType(key)) {
       return;
     }
     this.activeCableType.set(key);
+    this.activeCableModelId.set(null);
     this.notifications.info(`Cabo ${cableTypeDefinition(key).label} selecionado.`);
   }
 
@@ -365,7 +424,7 @@ export class NetworkMapPage {
     this.cableStore.select(null);
   }
 
-  /** Clique no PIN: cria um vértice (traçado) ou abre a edição do elemento. */
+  /** Clique no PIN: seleciona/mostra o balão; o segundo clique abre a edição. */
   protected onPinClick(pin: Pin): void {
     const tool = this.activeTool();
     if (tool === 'addCable') {
@@ -375,9 +434,11 @@ export class NetworkMapPage {
     if (tool === 'move' || tool === 'editCable') {
       return;
     }
-    this.store.select(pin.id);
-    this.cableStore.select(null);
-    this.openPinForm({ mode: 'edit', pin });
+    if (this.selectedId() === pin.id) {
+      this.openPinForm({ mode: 'edit', pin });
+      return;
+    }
+    this.zoomToPin(pin);
   }
 
   /** Duplo clique em um PIN conclui o traçado em construção. */
@@ -390,7 +451,7 @@ export class NetworkMapPage {
     this.finishCable();
   }
 
-  /** Clique no cabo: abre a edição do elemento (apenas na ferramenta selecionar). */
+  /** Clique no cabo: seleciona/mostra o balão; o segundo clique abre a edição. */
   protected onPathClick(path: GeoPath): void {
     if (this.activeTool() !== 'select') {
       return;
@@ -399,9 +460,11 @@ export class NetworkMapPage {
     if (!cable) {
       return;
     }
-    this.cableStore.select(cable.id);
-    this.store.select(null);
-    this.openCableForm({ mode: 'edit', cable });
+    if (this.selectedCableId() === cable.id) {
+      this.openCableForm({ mode: 'edit', cable });
+      return;
+    }
+    this.zoomToCable(cable);
   }
 
   /** Um vértice do cabo foi arrastado no mapa (ferramenta "Mover cabo"). */
@@ -514,6 +577,7 @@ export class NetworkMapPage {
       mode: 'create',
       points,
       type: this.activeCableType(),
+      modelId: this.activeCableModelId() ?? undefined,
     });
   }
 
@@ -784,3 +848,34 @@ function toCableLeaf(cable: Cable): LegendLeaf {
     statusLabel: status.label,
   };
 }
+
+/**
+ * Conteúdo do balão exibido ao selecionar um cabo no mapa.
+ *
+ * O Leaflet injeta este HTML via `innerHTML`, por isso os valores dinâmicos
+ * passam por `escapeHtml`; a aparência fica em `styles.scss`.
+ */
+function cablePopupHtml(cable: Cable, model?: NetworkModel | null): string {
+  const definition = cableTypeDefinition(cable.type);
+  const status = pinStatusDefinition(cable.status);
+  const color = resolveElementColor(cable.color, model, definition.color);
+  const typeText = model ? `${definition.label} · ${model.name}` : definition.label;
+  const summary = model ? networkModelSummary(model) : '';
+
+  return `
+    <div class="gf-popup">
+      <p class="gf-popup__title">${escapeHtml(cable.name)}</p>
+      <p class="gf-popup__row">
+        <span class="gf-popup__badge" style="background:${escapeHtml(color)}">
+          ${escapeHtml(model?.code ?? definition.code)}
+        </span>
+        <span class="gf-popup__type">${escapeHtml(typeText)}</span>
+      </p>
+      <p class="gf-popup__meta">
+        <span class="gf-popup__dot" style="background:${escapeHtml(status.color)}"></span>
+        ${escapeHtml(status.label)}${summary ? ` · ${escapeHtml(summary)}` : ''} · ${cable.points.length} vértices
+      </p>
+      <p class="gf-popup__hint">Clique novamente para editar</p>
+    </div>`;
+}
+

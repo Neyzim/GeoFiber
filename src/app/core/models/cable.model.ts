@@ -15,8 +15,13 @@ export interface Cable {
   status: CableStatus;
   /** Vértices do traçado, na ordem do lançamento (mínimo 2). */
   points: GeoPoint[];
+  /**
+   * Modelo de cabo cadastrado que parametriza o traçado: cor, fibras,
+   * espessura e tracejado. Ausente nos cabos sem modelo.
+   */
+  modelId?: string;
   description: string;
-  /** Cor personalizada; quando ausente usa a cor padrão do tipo. */
+  /** Cor personalizada; quando ausente usa a cor do modelo ou do tipo. */
   color?: string;
   tags: string[];
   createdAt: string;

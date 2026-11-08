@@ -1,0 +1,135 @@
+<h2 mat-dialog-title class="model-form__title">
+  <span class="model-form__title-badge" [style.background]="previewColor()">
+    {{ value().code || '—' }}
+  </span>
+  {{ title }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="model-form">
+    <div class="model-form__grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de modelo</mat-label>
+        <mat-select formControlName="kind" (selectionChange)="onKindChange($event.value)">
+          @for (kind of kinds; track kind.kind) {
+            <mat-option [value]="kind.kind">
+              <span class="model-form__option">
+                <mat-icon [style.color]="kind.color">{{ kind.icon }}</mat-icon>
+                {{ kind.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="name" maxlength="60" placeholder="CTO 1x8 residencial" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Informe um nome para o modelo.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Código curto</mat-label>
+        <input matInput formControlName="code" maxlength="12" placeholder="CTO-08" />
+        <mat-hint>Exibido nos marcadores e nas listas.</mat-hint>
+        @if (form.controls.code.hasError('required')) {
+          <mat-error>Informe um código curto.</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="model-form__color-field">
+        <span class="model-form__color-label">Cor</span>
+        <div class="model-form__color-row">
+          <input
+            type="color"
+            class="model-form__color-input"
+            [value]="previewColor()"
+            aria-label="Cor do modelo"
+            (input)="onColorInput($event)"
+          />
+        </div>
+      </div>
+
+      @if (selectedKind() === 'cabo') {
+        <mat-form-field appearance="outline">
+          <mat-label>Categoria</mat-label>
+          <mat-select formControlName="category" (selectionChange)="onDependentChange()">
+            @for (type of cableTypes; track type.type) {
+              <mat-option [value]="type.type">
+                <span class="model-form__option">
+                  <span class="model-form__option-badge" [style.background]="type.color">
+                    {{ type.code }}
+                  </span>
+                  {{ type.label }}
+                </span>
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fibras</mat-label>
+          <mat-select formControlName="fibers" (selectionChange)="onDependentChange()">
+            @for (fiber of fiberOptions; track fiber) {
+              <mat-option [value]="fiber">{{ fiber }} fibras</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Espessura</mat-label>
+          <input matInput type="number" formControlName="weight" min="1" max="12" step="1" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Tracejado</mat-label>
+          <mat-select formControlName="dashArray">
+            @for (dash of dashPresets; track dash.value) {
+              <mat-option [value]="dash.value">{{ dash.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedKind() === 'cto') {
+        <mat-form-field appearance="outline">
+          <mat-label>Divisor (portas)</mat-label>
+          <mat-select formControlName="ports" (selectionChange)="onDependentChange()">
+            @for (ports of portOptions; track ports) {
+              <mat-option [value]="ports">{{ ports }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (selectedKind() === 'ceo') {
+        <mat-form-field appearance="outline">
+          <mat-label>Capacidade de emendas</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="splices"
+            min="1"
+            max="288"
+            step="1"
+            (input)="onDependentChange()"
+          />
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline" class="model-form__full">
+        <mat-label>Descrição</mat-label>
+        <textarea matInput formControlName="description" rows="2" maxlength="200"></textarea>
+      </mat-form-field>
+    </div>
+
+    <p class="model-form__hint">{{ summaryText() }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid">{{ submitLabel }}</button>
+  </mat-dialog-actions>
+</form>

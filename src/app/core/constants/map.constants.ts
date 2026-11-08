@@ -57,9 +57,11 @@ export const DEFAULT_MAP_VIEW: MapViewState = {
 export const MAP_MIN_ZOOM = 3;
 export const MAP_MAX_ZOOM = 20;
 
+export const THEME_STORAGE_KEY = 'geofiber.theme.v1';
 export const PINS_STORAGE_KEY = 'geofiber.pins.v1';
 export const CABLES_STORAGE_KEY = 'geofiber.cables.v1';
 export const MAP_PREFERENCES_STORAGE_KEY = 'geofiber.map-preferences.v1';
+export const NETWORK_MODELS_STORAGE_KEY = 'geofiber.network-models.v1';
 
 export const TOOL_LABELS: Record<MapTool, string> = {
   select: 'Selecionar',
