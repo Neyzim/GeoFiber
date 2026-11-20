@@ -40,6 +40,7 @@ import {
   elementTooltipHtml,
 } from './pin-marker';
 import { bindElementMarker, canDragMarker, elementChanged, pathClickIntent } from './marker-sync';
+import { MAP_FOCUS_CLASS, pathOpacity } from './map-focus';
 
 /** Distância (px) dentro da qual um clique no mapa "gruda" em um elemento. */
 const SNAP_DISTANCE_PX = 15;
@@ -160,6 +161,15 @@ export class GeoMapComponent implements OnDestroy {
       }
     });
 
+    // Foco: com elemento ou cabo selecionado, o resto do mapa esmaece.
+    effect(() => {
+      const key = this.selectedElementKey();
+      const pathId = this.selectedPathId();
+      if (this.map) {
+        this.applyFocus(!!key || !!pathId);
+      }
+    });
+
     effect(() => {
       const highlighted = this.highlightedKeys();
       if (this.map) {
@@ -186,9 +196,10 @@ export class GeoMapComponent implements OnDestroy {
     effect(() => {
       const paths = this.paths();
       const selectedPathId = this.selectedPathId();
+      const elementKey = this.selectedElementKey();
       const tool = this.activeTool();
       if (this.map) {
-        this.syncPaths(paths, selectedPathId);
+        this.syncPaths(paths, selectedPathId, !!selectedPathId || !!elementKey);
         this.syncVertexHandles(paths, selectedPathId, tool);
       }
     });
@@ -302,7 +313,8 @@ export class GeoMapComponent implements OnDestroy {
     });
     this.map = map;
 
-    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+    // Escala à direita: o canto inferior esquerdo é da ajuda ("O que estou vendo?", glossário).
+    L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
     this.applyBaseLayer(this.baseLayerKey(), this.baseLayerOpacity());
     const clusterOptions: L.MarkerClusterGroupOptions = {
@@ -314,7 +326,12 @@ export class GeoMapComponent implements OnDestroy {
     this.customerCluster = L.markerClusterGroup(clusterOptions).addTo(map);
     this.syncMarkers(this.elements());
     this.applyTool(this.activeTool());
-    this.syncPaths(this.paths(), this.selectedPathId());
+    this.syncPaths(
+      this.paths(),
+      this.selectedPathId(),
+      !!this.selectedPathId() || !!this.selectedElementKey(),
+    );
+    this.applyFocus(!!this.selectedPathId() || !!this.selectedElementKey());
 
     map.on('click', (event: L.LeafletMouseEvent) => this.emitMapClick(event.latlng));
 
@@ -711,7 +728,16 @@ export class GeoMapComponent implements OnDestroy {
 
   // --- Cabos (polilinhas) --------------------------------------------------
 
-  private syncPaths(paths: readonly GeoPath[], selectedPathId: string | null): void {
+  /** Liga ou desliga o esmaecimento dos outros marcadores (CSS em `styles.scss`). */
+  private applyFocus(hasFocus: boolean): void {
+    this.map?.getContainer().classList.toggle(MAP_FOCUS_CLASS, hasFocus);
+  }
+
+  private syncPaths(
+    paths: readonly GeoPath[],
+    selectedPathId: string | null,
+    hasFocus: boolean,
+  ): void {
     const map = this.map;
     if (!map) {
       return;
@@ -732,7 +758,7 @@ export class GeoMapComponent implements OnDestroy {
         color: path.color,
         weight: selected ? path.weight + 3 : path.weight,
         dashArray: path.dashArray,
-        opacity: selected ? 1 : (path.opacity ?? 0.9),
+        opacity: pathOpacity(selected, hasFocus, path.opacity ?? 0.9),
         lineCap: 'round',
         lineJoin: 'round',
       };

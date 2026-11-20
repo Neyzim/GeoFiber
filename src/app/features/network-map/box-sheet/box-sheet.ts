@@ -1,5 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+} from '@angular/core';
 import { TermHintComponent } from '../../../shared/help/term-hint';
+import { DiagramLineComponent } from '../../../shared/diagram/diagram-line.component';
+import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
+import { SheetTabsComponent } from '../../../shared/common/sheet-tabs';
+import { UnifilarSummaryComponent } from '../../../shared/diagram/unifilar-summary';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,19 +28,26 @@ import {
   AttachedCableResponse,
   ConnectionResponse,
   ServicePortResponse,
-  SpliceResponse,
   SplitterPortResponse,
   SplitterRatio,
   SplitterResponse,
 } from '../../../core/api/api-types';
 import {
   DEFAULT_ENDS,
+  DiagramEnd,
+  DiagramMiddle,
   SPLITTER_RATIOS,
+  connectorMiddle,
   describeServicePortSource,
+  diagramEnd,
   fiberLabel,
   outputNumber,
   splitterLabel,
 } from '../../../core/network/box-interior';
+import { lineStateOf } from '../../../core/network/line-state-style';
+import { Occupancy, servicePortOccupancy, splitterOccupancy } from '../../../core/network/occupancy';
+import { boxSides } from '../../../core/network/unifilar';
+import { describeTraySummary } from '../../../core/network/splice-board';
 import { MapElement } from '../../../core/network/map-element';
 import {
   groupDefinition,
@@ -35,6 +56,7 @@ import {
 } from '../../../core/network/network-catalog';
 import { portStatusDefinition } from '../../../core/network/optical-catalog';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/ui/confirm-dialog';
+import { boxTabs } from '../sheet-support';
 import { BoxSheetStore, PortSource } from './box-sheet-store';
 import {
   FiberLinkData,
@@ -63,6 +85,11 @@ interface FreeOutput {
   selector: 'app-box-sheet',
   imports: [
     TermHintComponent,
+    DiagramLineComponent,
+    OccupancyBadgeComponent,
+    SheetTabsComponent,
+    UnifilarSummaryComponent,
+    NgTemplateOutlet,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -73,7 +100,7 @@ interface FreeOutput {
     MatTooltipModule,
   ],
   templateUrl: './box-sheet.html',
-  styleUrls: ['../cable-sheet/cable-sheet.scss', './box-sheet.scss'],
+  styleUrls: ['../sheet-frame.scss', './box-sheet.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoxSheetComponent {
@@ -86,10 +113,10 @@ export class BoxSheetComponent {
   readonly closed = output<void>();
   readonly editData = output<void>();
   readonly openCable = output<string>();
+  /** "Ver fusões": abre a tela de fusões desta caixa. */
+  readonly openSplices = output<void>();
 
   protected readonly ratios = SPLITTER_RATIOS;
-  protected readonly trayCapacities = [6, 12, 24, 36, 48];
-  protected readonly newTrayCapacity = signal(12);
   protected readonly newRatio = signal<SplitterRatio>('RATIO_1_8');
   protected readonly newBalanced = signal(true);
   protected readonly newWithPorts = signal(true);
@@ -97,6 +124,24 @@ export class BoxSheetComponent {
   protected readonly group = computed(() => groupDefinition(this.box().group));
   protected readonly status = computed(() => statusDefinition(this.box().status));
   protected readonly isCto = computed(() => this.box().group === 'CTO');
+
+  /** Aba aberta; volta para o Resumo sempre que outra caixa é selecionada. */
+  protected readonly tab = linkedSignal<string, string>({
+    source: () => this.box().id,
+    computation: () => 'resumo',
+  });
+  protected readonly tabs = computed(() =>
+    boxTabs(
+      this.box().group,
+      this.store.trays().length > 0 || this.store.connectors().length > 0,
+    ),
+  );
+  protected readonly sides = computed(() => boxSides(this.store.cables()));
+  protected readonly lineState = computed(() => lineStateOf(this.box().status));
+  protected readonly spliceSummary = computed(() =>
+    describeTraySummary(this.store.splices().length, this.store.trays().length),
+  );
+  protected readonly portUse = computed(() => servicePortOccupancy(this.store.servicePorts()));
 
   protected readonly freeOutputs = computed<FreeOutput[]>(() =>
     this.store.splitters().flatMap((splitter) =>
@@ -121,13 +166,6 @@ export class BoxSheetComponent {
 
   protected fiber(id: string | undefined): string {
     return fiberLabel(id ? this.store.fiberIndex().get(id) : undefined);
-  }
-
-  protected splicesOf(trayNumber: number | undefined): SpliceResponse[] {
-    return this.store
-      .splices()
-      .filter((splice) => splice.trayNumber === trayNumber)
-      .sort((a, b) => (a.positionNumber ?? 0) - (b.positionNumber ?? 0));
   }
 
   protected splitterName(splitter: SplitterResponse): string {
@@ -172,64 +210,18 @@ export class BoxSheetComponent {
     return this.store.customers().get(port.customerId)?.name ?? 'Cliente';
   }
 
-  protected connectorText(connection: ConnectionResponse): string {
-    return `${this.fiber(connection.fiberAId)} ⟷ ${this.fiber(connection.fiberBId)}`;
+  /** Ponta do diagrama: sem fibra = nada ligado; fibra fora dos cabos da caixa = outro cabo. */
+  protected end(id: string | undefined): DiagramEnd | undefined {
+    if (!id) return undefined;
+    return diagramEnd(this.store.fiberIndex().get(id)) ?? { cable: 'Fibra de outro cabo' };
   }
 
-  // --- Bandejas e fusões --------------------------------------------------------
-
-  protected addTray(): void {
-    this.store.addTray(this.newTrayCapacity());
+  protected connectorMiddle(): DiagramMiddle {
+    return connectorMiddle();
   }
 
-  protected deleteTray(trayId: string | undefined, trayNumber: number | undefined): void {
-    if (!trayId) return;
-    this.confirmDelete(`a bandeja ${trayNumber}`, () => this.store.deleteTray(trayId));
-  }
-
-  protected newSplice(): void {
-    const trays = this.store.trays().map((tray) => ({
-      number: tray.trayNumber ?? 0,
-      label: `Bandeja ${tray.trayNumber} (${tray.usedPositions ?? 0} de ${tray.capacity} posições)`,
-    }));
-    if (trays.length === 0) {
-      this.dialog.open(ConfirmDialogComponent, {
-        data: {
-          title: 'Crie uma bandeja primeiro',
-          message: 'As fusões ficam guardadas em bandejas. Crie uma bandeja e tente de novo.',
-          confirmLabel: 'Entendi',
-        } satisfies ConfirmDialogData,
-      });
-      return;
-    }
-    this.pickFibers({
-      title: 'Nova fusão',
-      intro: 'A fusão emenda duas fibras de forma permanente.',
-      slots: [
-        { label: 'Fibra que chega', defaultEnd: DEFAULT_ENDS.spliceInput },
-        { label: 'Fibra que sai', defaultEnd: DEFAULT_ENDS.spliceOutput },
-      ],
-      trays,
-      showAttenuation: true,
-      confirmLabel: 'Registrar fusão',
-    }).subscribe(({ choices: [input, outputChoice], trayNumber, attenuationDb }) =>
-      this.store.addSplice({
-        trayNumber: trayNumber ?? trays[0].number,
-        inputFiberId: input.fiberId,
-        inputFiberEnd: input.fiberEnd,
-        outputFiberId: outputChoice.fiberId,
-        outputFiberEnd: outputChoice.fiberEnd,
-        ...(attenuationDb !== undefined ? { attenuationDb } : {}),
-      }),
-    );
-  }
-
-  protected deleteSplice(splice: SpliceResponse): void {
-    if (!splice.id) return;
-    const id = splice.id;
-    this.confirmDelete(`a fusão da posição ${splice.positionNumber}`, () =>
-      this.store.deleteSplice(id),
-    );
+  protected splitterUse(splitter: SplitterResponse): Occupancy {
+    return splitterOccupancy(splitter);
   }
 
   // --- Conectores ---------------------------------------------------------------

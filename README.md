@@ -57,12 +57,16 @@ Use os tipos pelos aliases de `src/app/core/api/api-types.ts` (ex.: `BoxResponse
 | `src/app/core/api/` | Comunicação com o backend: URL, idioma, tipos, coordenadas, erros e um serviço por recurso (`resources/`). |
 | `src/app/core/network/` | Camada do mapa: catálogo visual, conversão para marcadores/linhas, repositório (fala com a API) e estado da tela. |
 | `src/app/features/network-map/cable-sheet/` | Ficha do cabo: por onde passa (lista editável), tubos e fibras. |
-| `src/app/features/network-map/box-sheet/` | Ficha da caixa: fusões, conectores, splitters e portas de atendimento. |
+| `src/app/features/network-map/box-sheet/` | Ficha da caixa: resumo das fusões, conectores, splitters e portas de atendimento. |
+| `src/app/features/box-splices/` | Tela de fusões (`/caixas/:boxId/fusoes`): a bandeja como a física, cabos abertos e emenda com dois toques nas fibras coloridas. |
 | `src/app/features/network-map/olt-sheet/` | Ficha da OLT: portas PON por placa e ligação com as fibras. |
 | `src/app/features/network-map/customer-sheet/` | Ficha do cliente: situação, quem atende e histórico. |
 | `src/app/shared/help/` | Ajuda para leigos: glossário, "?" nos termos e "O que estou vendo?". |
+| `src/app/shared/common/` | Peças do visual "Esquema Unifilar": bolinha de fibra ABNT, selo de ocupação ("3/12") e abas das fichas. |
+| `src/app/shared/diagram/` | Linha "chega → elemento → sai" do topo das fichas e diagrama de cada emenda. |
+| `src/theme/` | `_tokens.scss`: cores (tema claro/escuro), raios, sombra e fontes `--gf-*` usados em todo o app. |
 | `src/app/core/` | Modelos, constantes e serviços de estado (tema, preferências, modelos de rede). |
-| `src/app/features/` | Telas (mapa da rede, modelos). |
+| `src/app/features/` | Telas (mapa da rede, fusões da caixa, modelos). |
 | `src/app/shared/` | Componentes reutilizáveis (mapa Leaflet, legenda, formulários de OLT, caixa e cabo). |
 | `src/testing/` | Utilitários usados só pelos testes. |
 

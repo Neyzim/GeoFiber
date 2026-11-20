@@ -1,5 +1,6 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import {
+  BASE_LAYERS,
   DEFAULT_BASE_LAYER_KEY,
   MAP_PREFERENCES_STORAGE_KEY,
   MIN_BASE_LAYER_OPACITY,
@@ -73,8 +74,9 @@ function restorePreferences(): MapPreferences {
     }
     const parsed = JSON.parse(raw) as Partial<MapPreferences>;
     return {
-      baseLayerKey:
-        typeof parsed.baseLayerKey === 'string' ? parsed.baseLayerKey : DEFAULTS.baseLayerKey,
+      baseLayerKey: BASE_LAYERS.some((layer) => layer.key === parsed.baseLayerKey)
+        ? (parsed.baseLayerKey as string)
+        : DEFAULTS.baseLayerKey,
       baseLayerOpacity:
         typeof parsed.baseLayerOpacity === 'number'
           ? parsed.baseLayerOpacity

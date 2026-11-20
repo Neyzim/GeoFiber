@@ -34,10 +34,39 @@ Tudo o que aparece no mapa vem do servidor e fica salvo nele: recarregar a pági
 - **Modelos:** atalhos que preenchem o formulário (ex.: "CTO 1x8", "Alimentação 12 fibras").
   Editar um modelo não muda o que já está no mapa.
 - **Clientes** aparecem no mapa em verde, por enquanto só para consulta.
+- **Foco:** ao selecionar um item, o resto do mapa fica mais apagado para o item escolhido se
+  destacar. Os elementos do cabo aberto continuam normais.
+- **Tema claro/escuro:** o tema muda só os painéis, fichas e janelas. O mapa continua o mesmo
+  (ruas ou satélite, à sua escolha no seletor de mapas).
+
+### Como ler as fichas
+
+Toda ficha (cabo, caixa, OLT e cliente) abre com **uma linha só** no alto:
+
+- **À esquerda, o que chega; no meio, o item; à direita, o que sai.** Numa caixa, por exemplo,
+  "CABO-01 → CTO-05 → CABO-03" quer dizer que o CABO-01 traz o sinal e o CABO-03 leva adiante. Se
+  houver muitos, aparecem 3 e um "+2".
+- **A forma da linha diz a situação** (a cor só reforça):
+
+  | Linha | Quer dizer |
+  |---|---|
+  | cheia | funcionando (instalado ou ativo) |
+  | tracejada (– – –) | planejado, ainda não existe na rua |
+  | traço longo (—— ——) | reservado ou bloqueado |
+  | pontilhada (· · ·) | desativado ou cancelado |
+  | traço e ponto (—·—·) | danificado ou rompido |
+
+- **Abas:** logo abaixo da linha. A ficha sempre abre no **Resumo**; só a parte de baixo rola, as
+  abas ficam sempre à vista.
+- **"3/12":** é sempre **ocupado/total** — "3/12 posições" é uma bandeja com 3 emendas e espaço para
+  12; "6/8 ocupadas" são 6 portas em uso de 8.
+- **Bolinhas coloridas** são fibras e tubos nas cores da norma, sempre com o número por cima. Passe
+  o mouse para ver o nome ("Fibra 3 · Branco").
+- No celular (ou janela estreita), a ficha vira uma gaveta que sobe da parte de baixo da tela.
 
 ### Ficha do cabo
 
-Ao clicar num cabo, abre à direita a **ficha do cabo**:
+Ao clicar num cabo, abre à direita a **ficha do cabo**, com as abas **Resumo** e **Fibras**:
 
 - No alto, uma frase diz **de onde o cabo sai, por onde passa e onde termina** (ex.: "Este cabo sai
   de OLT-CENTRO, passa por CTO-01 e termina em CEO-01"). As caixas e OLTs do cabo ganham um anel
@@ -56,9 +85,14 @@ Ao clicar numa caixa (CTO, CEO ou DIO), abre à direita a **ficha da caixa**. No
 resume o que há nela (ex.: "Esta caixa recebe 2 cabos. Tem 1 splitter e 8 portas de atendimento
 (3 com cliente).").
 
+Abas: na **CEO** e no **DIO**, Resumo · Fusões · Splitters; na **CTO**, Resumo · Portas (e Fusões,
+se a caixa tiver bandeja ou conector). Em Fusões, cada conector aparece como uma linha: a fibra de
+um lado à esquerda, a fibra do outro lado à direita.
+
 - **Cabos nesta caixa:** clique num cabo para abrir a ficha dele.
-- **Bandejas e fusões** (CEO/DIO): crie uma bandeja e use "Nova fusão" para emendar a fibra que
-  chega com a fibra que sai. As fibras aparecem pelo nome do cabo, tubo e cor.
+- **Fusões:** a ficha mostra quantas fusões e bandejas existem (ex.: "5 fusões em 2 bandejas") e o
+  botão **Ver fusões**, que abre a tela de fusões (veja abaixo). Toda caixa tem o botão no Resumo,
+  inclusive a CTO sem bandeja.
 - **Conectores:** ligações removíveis entre duas fibras (comuns no DIO).
 - **Splitters:** dividem o sinal de uma fibra em várias saídas. Escolha a divisão (1:2 a 1:64) e
   ligue a fibra de entrada. Numa CTO, o splitter já cria uma porta de atendimento para cada saída.
@@ -68,10 +102,40 @@ resume o que há nela (ex.: "Esta caixa recebe 2 cabos. Tem 1 splitter e 8 porta
 As pontas da fibra (A e B) ficam escondidas; o padrão serve na maioria dos casos. Quem precisar
 pode ligar "Mostrar pontas (avançado)" no diálogo.
 
+### Registrar fusões
+
+A tela de fusões imita a caixa aberta na sua frente. Ela tem endereço próprio (ex.:
+`/caixas/…/fusoes`): dá para mandar o link para outro técnico ou para o atendimento.
+
+- **No alto, os cabos da caixa:** cada barra mostra o nome do cabo, se ele chega, sai ou passa por
+  aqui, quantas fibras tem e as cores dos tubos. Toque na barra para **abrir o cabo**: aparecem os
+  tubos e cada fibra com a cor, o número e onde está emendada ("emendada na bandeja 1, posição 5"
+  ou "livre nesta caixa"). Toque de novo para fechar.
+- **No centro, a bandeja:** uma aba por bandeja ("Bandeja 1 · 3/12") e todas as posições, de 1 até a
+  última, como na bandeja de verdade. Posição ocupada mostra a fibra que chega, o protetor de emenda
+  com as duas cores e a fibra que sai. Posição livre mostra **+ emendar aqui**.
+- **Para emendar:** toque numa posição livre. Abre o painel "Emenda na posição 6 · Bandeja 1" com
+  duas colunas: **lado que chega** e **lado que sai**. Em cada uma, escolha o cabo e toque na fibra
+  pela cor. Fibras apagadas já estão em uso; toque nelas para saber onde ("já emendada na bandeja 1,
+  posição 2", "ligada a um splitter"…). A frase no alto do painel diz o próximo passo. Se quiser,
+  informe a perda (dB) e toque em **Registrar emenda**.
+- **Para consultar:** toque numa posição ocupada para ver de onde a fibra chega, para onde sai e a
+  perda. Dali dá para ver cada cabo no mapa ou **excluir a emenda** (para corrigir, exclua e
+  registre de novo).
+- **Bandejas:** "+ bandeja" cria uma bandeja (escolha quantas posições ela tem). Uma bandeja vazia
+  mostra **Excluir bandeja**.
+- **Sem posição definida:** emendas registradas antes da posição exata aparecem numa faixa abaixo
+  da bandeja. Exclua e registre de novo na posição certa.
+- **Voltar** leva ao mapa com a caixa selecionada, no mesmo lugar em que você estava.
+
+No celular, o painel de emenda sobe por cima da parte de baixo da tela; no computador ele fica à
+direita da bandeja.
+
 ### Portas PON da OLT
 
 Ao clicar numa OLT, abre a **ficha da OLT**: quantas portas PON existem, quantas estão em uso e os
-cabos que saem dela (clique para abrir a ficha do cabo).
+cabos que saem dela (clique para abrir a ficha do cabo). Abas: **Resumo** e **Portas PON** (cada
+placa mostra quantas portas estão ocupadas, ex.: "6/8 ocupadas").
 
 - **Adicionar portas:** escolha a placa e quantas portas (1, 4, 8 ou 16). A numeração continua de
   onde a placa parou.
@@ -85,7 +149,8 @@ cabos que saem dela (clique para abrir a ficha do cabo).
   e uma **porta de atendimento**. Só dá para escolher portas livres e com sinal; as outras aparecem
   apagadas com o motivo.
 - **Ficha do cliente:** ao clicar num cliente, a ficha diz quem o atende ("Atendido pela CTO-01,
-  porta 3"), o que a situação significa e o histórico de mudanças.
+  porta 3"), o que a situação significa e o histórico de mudanças. Abas: **Resumo** e **Histórico**;
+  na linha do alto, a CTO e a porta que atendem o cliente ficam à esquerda (ele é o ponto final).
 - **Situações:** **Ativo** (recebe o serviço), **Bloqueado** (serviço suspenso, porta continua com
   ele), **Cancelado** (contrato encerrado, a porta é liberada). Para reativar um cancelado, escolha
   de novo uma porta.
@@ -93,7 +158,7 @@ cabos que saem dela (clique para abrir a ficha do cabo).
 
 ### Ajuda dentro do sistema
 
-- **O que estou vendo?** (botão no mapa): diz em uma frase o que está na tela ("Você está vendo
+- **O que estou vendo?** (botão no canto inferior esquerdo do mapa): diz em uma frase o que está na tela ("Você está vendo
   1 OLT, 3 CTOs e 12 clientes, ligados por 5 cabos"), avisa se algum filtro esconde parte da rede e
   explica as cores dos pontos e das linhas.
 - **Glossário:** procure qualquer palavra (OLT, splitter, fusão, porta PON…); não precisa de acento.
@@ -105,6 +170,7 @@ cabos que saem dela (clique para abrir a ficha do cabo).
   Drop amarelo, Interconexão marrom. Linhas mais grossas são cabos mais importantes.
 - A **linha** diz a situação: **tracejada** = planejado (ainda não existe na rua); **contínua** =
   instalado ou ativo; **vermelha pontilhada** = danificado; **cinza clara** = desativado.
+- Nas fichas, a linha do alto e os diagramas usam as formas de "Como ler as fichas".
 
 ### "Não foi possível carregar a rede"
 

@@ -107,17 +107,17 @@ export interface StatusDefinition<S extends string = string> {
 }
 
 export const INFRA_STATUSES: readonly StatusDefinition<InfrastructureStatus>[] = [
-  { status: 'PLANNED', label: 'Planejado', color: '#fbc02d' },
-  { status: 'INSTALLED', label: 'Instalado', color: '#1e88e5' },
-  { status: 'ACTIVE', label: 'Ativo', color: '#2e7d32' },
-  { status: 'DAMAGED', label: 'Danificado', color: '#e53935' },
-  { status: 'DEACTIVATED', label: 'Desativado', color: '#9e9e9e' },
+  { status: 'PLANNED', label: 'Planejado', color: 'var(--gf-status-alert)' },
+  { status: 'INSTALLED', label: 'Instalado', color: 'var(--gf-status-info)' },
+  { status: 'ACTIVE', label: 'Ativo', color: 'var(--gf-status-normal)' },
+  { status: 'DAMAGED', label: 'Danificado', color: 'var(--gf-status-critical)' },
+  { status: 'DEACTIVATED', label: 'Desativado', color: 'var(--gf-status-inactive)' },
 ];
 
 export const CUSTOMER_STATUSES: readonly StatusDefinition<CustomerStatus>[] = [
-  { status: 'ACTIVE', label: 'Ativo', color: '#2e7d32' },
-  { status: 'BLOCKED', label: 'Bloqueado', color: '#fb8c00' },
-  { status: 'CANCELLED', label: 'Cancelado', color: '#9e9e9e' },
+  { status: 'ACTIVE', label: 'Ativo', color: 'var(--gf-status-normal)' },
+  { status: 'BLOCKED', label: 'Bloqueado', color: 'var(--gf-status-alert)' },
+  { status: 'CANCELLED', label: 'Cancelado', color: 'var(--gf-status-inactive)' },
 ];
 
 export function groupDefinition(group: ElementGroup): GroupDefinition {
@@ -152,9 +152,9 @@ export function cableLineStyle(role: CableRole, status: InfrastructureStatus): L
     case 'PLANNED':
       return { ...base, dashArray: '10 8' };
     case 'DAMAGED':
-      return { ...base, color: '#e53935', dashArray: '4 6' };
+      return { ...base, color: '#d23c3c', dashArray: '4 6' };
     case 'DEACTIVATED':
-      return { ...base, color: '#9e9e9e', opacity: 0.5 };
+      return { ...base, color: '#8a96a3', opacity: 0.5 };
     default:
       return base;
   }

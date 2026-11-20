@@ -1,0 +1,76 @@
+// Tokens do GeoFiber (Esquema Unifilar). Spec: docs/superpowers/specs/2026-11-20-redesign-unifilar-app-design.md §3.
+// O tema vem do `color-scheme` do <html> (classe `dark-theme`); por isso `light-dark()`.
+
+@mixin tokens {
+  --gf-bg: light-dark(oklch(97.2% 0.003 247.9), oklch(21.8% 0.017 248.6));
+  --gf-surface: light-dark(oklch(100% 0 0), oklch(26.9% 0.023 251.3));
+  --gf-surface-2: light-dark(oklch(95.7% 0.005 247.9), oklch(31.1% 0.027 248.7));
+  --gf-border: light-dark(oklch(88.3% 0.014 233.8), oklch(40.2% 0.034 248.7));
+  --gf-text: light-dark(oklch(26.9% 0.023 251.3), oklch(97.2% 0.003 247.9));
+  --gf-text-2: light-dark(oklch(52.1% 0.027 246.3), oklch(76% 0.037 247));
+  --gf-accent: light-dark(oklch(51.5% 0.106 161.6), oklch(74.6% 0.181 152.3));
+  --gf-on-accent: light-dark(oklch(100% 0 0), oklch(26.9% 0.023 251.3));
+  --gf-accent-soft: light-dark(oklch(95% 0.03 161.6), oklch(32% 0.05 160));
+
+  --gf-status-normal: light-dark(oklch(61.8% 0.13 160.7), oklch(74.6% 0.181 152.3));
+  --gf-status-info: light-dark(oklch(53.4% 0.125 252.4), oklch(67.1% 0.109 247.5));
+  --gf-status-alert: light-dark(oklch(69.9% 0.146 67.7), oklch(76.3% 0.163 69.4));
+  --gf-status-critical: light-dark(oklch(57.9% 0.187 25.2), oklch(63.1% 0.194 29.4));
+  --gf-status-inactive: light-dark(oklch(66.8% 0.024 250.3), oklch(57.3% 0.029 248.3));
+  --gf-critical-soft: light-dark(oklch(95% 0.03 25), oklch(32% 0.07 25));
+  --gf-on-critical-soft: light-dark(oklch(45% 0.16 25), oklch(88% 0.06 25));
+
+  --gf-fiber-edge: light-dark(oklch(0% 0 0 / 0.35), oklch(100% 0 0 / 0.55));
+  --gf-ink-dark: oklch(26.9% 0.023 251.3);
+  --gf-ink-light: oklch(100% 0 0);
+
+  --gf-radius-control: 4px;
+  --gf-radius-panel: 6px;
+  --gf-shadow-float: 0 1px 2px oklch(0% 0 0 / 0.16), 0 2px 8px oklch(0% 0 0 / 0.1);
+  --gf-font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --gf-font-data: 'IBM Plex Mono', ui-monospace, monospace;
+  --gf-touch: 44px;
+}
+
+// Faz os componentes do Angular Material usarem os tokens acima.
+@mixin material-overrides {
+  --mat-sys-background: var(--gf-bg);
+  --mat-sys-surface: var(--gf-bg);
+  --mat-sys-surface-variant: var(--gf-surface-2);
+  --mat-sys-surface-container-lowest: var(--gf-surface);
+  --mat-sys-surface-container-low: var(--gf-surface);
+  --mat-sys-surface-container: var(--gf-surface-2);
+  --mat-sys-surface-container-high: var(--gf-surface);
+  --mat-sys-surface-container-highest: var(--gf-surface-2);
+  --mat-sys-on-background: var(--gf-text);
+  --mat-sys-on-surface: var(--gf-text);
+  --mat-sys-on-surface-variant: var(--gf-text-2);
+  --mat-sys-outline: var(--gf-text-2);
+  --mat-sys-outline-variant: var(--gf-border);
+  --mat-sys-primary: var(--gf-accent);
+  --mat-sys-on-primary: var(--gf-on-accent);
+  --mat-sys-primary-container: var(--gf-accent-soft);
+  --mat-sys-on-primary-container: var(--gf-text);
+  --mat-sys-error: var(--gf-status-critical);
+  --mat-sys-error-container: var(--gf-critical-soft);
+  --mat-sys-on-error-container: var(--gf-on-critical-soft);
+
+  --mat-sys-corner-extra-small: 4px;
+  --mat-sys-corner-small: 4px;
+  --mat-sys-corner-medium: 6px;
+  --mat-sys-corner-large: 6px;
+  --mat-sys-corner-extra-large: 6px;
+  --mat-button-filled-container-shape: 4px;
+  --mat-button-outlined-container-shape: 4px;
+  --mat-button-protected-container-shape: 4px;
+  --mat-button-text-container-shape: 4px;
+  --mat-button-tonal-container-shape: 4px;
+  --mat-dialog-container-shape: 6px;
+  --mat-menu-container-shape: 4px;
+  --mat-tooltip-container-shape: 4px;
+  --mat-snack-bar-container-shape: 4px;
+  --mat-form-field-outlined-container-shape: 4px;
+  --mat-card-elevated-container-shape: 6px;
+  --mat-card-filled-container-shape: 6px;
+  --mat-card-outlined-container-shape: 6px;
+}

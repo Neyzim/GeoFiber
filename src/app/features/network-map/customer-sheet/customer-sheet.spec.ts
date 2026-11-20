@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { CustomerResponse } from '../../../core/api/api-types';
@@ -66,12 +66,58 @@ async function setup(confirmed = true) {
   return { fixture, repository, dialog, component: fixture.componentInstance };
 }
 
+function clickTab(fixture: ComponentFixture<CustomerSheetComponent>, id: string): void {
+  const tab = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(`[data-tab="${id}"]`);
+  tab?.click();
+  fixture.detectChanges();
+}
+
 describe('CustomerSheetComponent', { timeout: 20000 }, () => {
+  it('shows Resumo and Histórico tabs', async () => {
+    const { fixture } = await setup();
+    const tabs = (fixture.nativeElement as HTMLElement).querySelectorAll('[role="tab"]');
+    expect(Array.from(tabs).map((tab) => tab.textContent?.trim())).toEqual(['Resumo', 'Histórico']);
+  });
+
+  it('unifilar shows CTO name and port, with Ponto final as outgoing', async () => {
+    const { fixture } = await setup();
+    const host = fixture.nativeElement as HTMLElement;
+    const group = host.querySelector('app-unifilar-summary [role="group"]');
+    expect(group?.getAttribute('aria-label')).toContain('Chega: CTO-01 · porta 3');
+    expect(host.textContent).toContain('Ponto final');
+  });
+
+  it('shows the history section only on the Histórico tab', async () => {
+    const { fixture } = await setup();
+    const host = fixture.nativeElement as HTMLElement;
+    const headings = () => Array.from(host.querySelectorAll('h3')).map((h) => h.textContent?.trim());
+    expect(headings()).not.toContain('Histórico');
+    clickTab(fixture, 'historico');
+    expect(headings()).toContain('Histórico');
+    expect(host.textContent).toContain('Bloqueado, com porta');
+  });
+
+  it('switching customers returns to Resumo', async () => {
+    const { fixture } = await setup();
+    clickTab(fixture, 'historico');
+    fixture.componentRef.setInput('element', {
+      ...fixture.componentInstance.element(),
+      id: 'k2',
+      key: 'customer:k2',
+    });
+    fixture.detectChanges();
+    const resumo = (fixture.nativeElement as HTMLElement).querySelector('[data-tab="resumo"]');
+    expect(resumo?.getAttribute('aria-selected')).toBe('true');
+  });
+
   it('explains the status, who serves the customer and the history, newest first', async () => {
     const { fixture } = await setup();
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('Ativo: o cliente recebe o serviço');
-    expect(text).toContain('Atendido pela CTO-01, porta 3.');
+    const host = fixture.nativeElement as HTMLElement;
+    const resumo = host.textContent ?? '';
+    expect(resumo).toContain('Ativo: o cliente recebe o serviço');
+    expect(resumo).toContain('Atendido pela CTO-01, porta 3.');
+    clickTab(fixture, 'historico');
+    const text = host.textContent ?? '';
     expect(text.indexOf('Bloqueado, com porta')).toBeLessThan(text.indexOf('Ativo, com porta'));
   });
 

@@ -2,7 +2,7 @@
   display: block;
   height: 100dvh;
   overflow: hidden;
-  background: var(--mat-sys-surface, #f5f7fa);
+  background: var(--gf-bg);
 }
 
 .project {
@@ -43,19 +43,20 @@
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   max-width: calc(100% - 32px);
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: var(--mat-sys-surface-container-high, #fff);
-  color: var(--mat-sys-on-surface, #1f2933);
-  box-shadow: 0 6px 18px rgb(15 23 42 / 0.22);
-  font: var(--mat-sys-body-medium, 400 14px/1.4 Roboto, sans-serif);
+  padding: 8px 16px;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  color: var(--gf-text);
+  box-shadow: var(--gf-shadow-float);
+  font: var(--mat-sys-body-medium);
 }
 
 .project__banner--error {
-  background: var(--mat-sys-error-container, #fdecea);
-  color: var(--mat-sys-on-error-container, #8c1d18);
+  background: var(--gf-critical-soft);
+  color: var(--gf-on-critical-soft);
 }
 
 .project__overlay {
@@ -64,7 +65,7 @@
   z-index: 1100;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   pointer-events: none;
 
   > * {
@@ -81,15 +82,37 @@
   }
 }
 
-// Botões de ajuda para quem não é técnico (Etapa 6).
+// Popup de escolha de tipo: ao lado da barra de ferramentas, sem empurrar nada.
+.project__popup {
+  position: absolute;
+  top: 0;
+  left: 48px;
+  max-height: calc(100dvh - 120px);
+}
+
+// Botões de ajuda para quem não é técnico (Etapa 6): canto inferior esquerdo, acima da barra de
+// situação.
 .project__help {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 1100;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  pointer-events: auto;
 
   button {
-    background: var(--mat-sys-surface-container-high, #fff);
-    box-shadow: 0 2px 8px rgb(15 23 42 / 0.18);
+    --mat-button-outlined-container-height: 32px;
+    --mat-button-outlined-horizontal-padding: 10px;
+    border: 1px solid var(--gf-border);
+    background: var(--gf-surface);
+    box-shadow: var(--gf-shadow-float);
+    font-size: 12px;
+
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+    }
   }
 }

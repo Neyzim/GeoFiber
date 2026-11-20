@@ -11,6 +11,7 @@ import {
   SplitterPortUpdateRequest,
   SplitterRatio,
 } from '../../../core/api/api-types';
+import { parseApiError } from '../../../core/api/api-error';
 import { BoxApi } from '../../../core/api/resources/box-api';
 import { CableApi } from '../../../core/api/resources/cable-api';
 import { ConnectionApi } from '../../../core/api/resources/connection-api';
@@ -142,9 +143,26 @@ export class BoxSheetStore {
     if (id) this.run(this.trayApi.delete(id, trayId), 'Bandeja excluída.');
   }
 
-  addSplice(body: SpliceRequest): void {
+  /**
+   * Registra a fusão (com posição exata, se informada). `done` recebe `null` quando deu certo ou a
+   * mensagem do erro já em português, para a tela mostrar no próprio painel.
+   */
+  saveSplice(body: SpliceRequest, done: (error: string | null) => void): void {
     const id = this._boxId();
-    if (id) this.run(this.spliceApi.create(id, body), 'Fusão registrada.');
+    if (!id || this._saving()) return;
+    this._saving.set(true);
+    this.spliceApi.create(id, body).subscribe({
+      next: () => {
+        this._saving.set(false);
+        this.notifications.success('Emenda registrada.');
+        done(null);
+        this.reload();
+      },
+      error: (error: unknown) => {
+        this._saving.set(false);
+        done(parseApiError(error).message);
+      },
+    });
   }
 
   deleteSplice(spliceId: string): void {

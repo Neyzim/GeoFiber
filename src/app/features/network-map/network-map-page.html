@@ -57,38 +57,29 @@
         (toggleLegend)="toggleLegend()"
       />
 
-      <div class="project__help" role="group" aria-label="Ajuda">
-        <button mat-stroked-button type="button" (click)="openViewHelp()">
-          <mat-icon>help</mat-icon>
-          O que estou vendo?
-        </button>
-        <button mat-stroked-button type="button" (click)="openGlossary()">
-          <mat-icon>menu_book</mat-icon>
-          Glossário
-        </button>
-      </div>
-
-      @if (showPicker() && activeTool() === 'addElement') {
-        <app-map-type-picker
-          title="Tipo de elemento"
-          hint="Escolha o elemento e clique no mapa."
-          [options]="elementOptions()"
-          [activeKey]="activeGroup()"
-          (pick)="onElementTypePicked($event)"
-          (close)="closePicker()"
-        />
-      }
-
-      @if (showPicker() && activeTool() === 'addCable') {
-        <app-map-type-picker
-          title="Função do cabo"
-          hint="Clique no mapa para traçar e finalize com duplo clique."
-          sample="cable"
-          [options]="roleOptions()"
-          [activeKey]="activeRole()"
-          (pick)="onRolePicked($event)"
-          (close)="closePicker()"
-        />
+      @if (showPicker()) {
+        <div class="project__popup">
+          @if (activeTool() === 'addElement') {
+            <app-map-type-picker
+              title="Tipo de elemento"
+              hint="Escolha e clique no mapa."
+              [options]="elementOptions()"
+              [activeKey]="activeGroup()"
+              (pick)="onElementTypePicked($event)"
+              (close)="closePicker()"
+            />
+          } @else if (activeTool() === 'addCable') {
+            <app-map-type-picker
+              title="Função do cabo"
+              hint="Clique para traçar; duplo clique termina."
+              sample="cable"
+              [options]="roleOptions()"
+              [activeKey]="activeRole()"
+              (pick)="onRolePicked($event)"
+              (close)="closePicker()"
+            />
+          }
+        </div>
       }
     </div>
 
@@ -110,6 +101,7 @@
           (closed)="closeSheet()"
           (editData)="editSelectedElement()"
           (openCable)="openCableFromSheet($event)"
+          (openSplices)="openSplices(box.id)"
         />
       } @else if (selectedCustomer(); as customer) {
         <app-customer-sheet
@@ -155,6 +147,18 @@
           (close)="toggleLegend()"
         />
       }
+    </div>
+
+    <!-- Ajuda para quem não é técnico: canto inferior esquerdo -->
+    <div class="project__help" role="group" aria-label="Ajuda">
+      <button mat-stroked-button type="button" (click)="openViewHelp()">
+        <mat-icon>help</mat-icon>
+        O que estou vendo?
+      </button>
+      <button mat-stroked-button type="button" (click)="openGlossary()">
+        <mat-icon>menu_book</mat-icon>
+        Glossário
+      </button>
     </div>
 
     <app-map-status-bar

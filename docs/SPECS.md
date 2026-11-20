@@ -35,6 +35,16 @@ Convenção: **RI** = regra de interface.
   técnicos das fichas.
 - Camadas base, legenda com busca e filtros, tema claro/escuro.
 - Cadastro de modelos (atalhos de preenchimento de CTO, CEO e cabo) no navegador.
+- **Visual "Esquema Unifilar"** ([design](superpowers/specs/2026-11-20-redesign-unifilar-app-design.md),
+  [plano](superpowers/plans/2026-11-20-redesign-unifilar-app.md)): tokens `--gf-*` com tema
+  claro/escuro, fichas com a linha "chega → elemento → sai" e abas, diagrama por emenda, bolinhas de
+  fibra ABNT, ocupação "ocupado/total" e foco no mapa. O tema escuro muda só a interface; o mapa
+  fica em ruas (OpenStreetMap) ou satélite.
+- **Tela de fusões** (`/caixas/:boxId/fusoes`; [design](superpowers/specs/2026-11-20-tela-de-fusoes-design.md),
+  [plano](superpowers/plans/2026-11-20-splice-screen-impl.md)): a bandeja desenhada como a física,
+  com todas as posições; emenda registrada com dois toques em fibras coloridas numa posição exata;
+  consulta da emenda; cabos "abertos" com onde cada fibra está emendada. Substitui a lista de fusões
+  e o diálogo "Nova fusão" da ficha da caixa.
 
 ### 1.2 Ainda não entregue
 - Rastreio do sinal de ponta a ponta (adiado no roadmap) e escala B (listas paginadas).
@@ -82,6 +92,10 @@ Todos os caminhos são relativos a `/api/v1`.
 | `network-map-repository.ts` | Único ponto em que o mapa fala com a API: carrega as 4 listas e aplica as escritas. |
 | `network-map-state.ts` | Estado da tela: `canEdit`, seleção, busca, filtro de situação, grupos ocultos e as listas filtradas/visíveis. |
 | `legend-sections.ts` | Monta a árvore da legenda ("Elementos" por tipo, "Cabos" por função). |
+| `line-state-style.ts` | Forma da linha por estado (`active`, `planned`, `reserved`, `disabled`, `broken`): `lineStateOf` (situação de infra/cliente), `fiberLineState` e `lineStyleByState` (`stroke-dasharray`). |
+| `unifilar.ts` | Lados da linha do topo das fichas: `boxSides`, `cableSides`, `oltSides`, `customerSides`; `splitVisible` mostra até 3 de cada lado e o "+N". |
+| `occupancy.ts` | Contas de ocupação: portas de atendimento, saídas de splitter, portas PON e fibras do tubo. |
+| `splice-board.ts` | Regras da tela de fusões: `trayPositions` (1..capacidade, vazias incluídas), `unplacedSplices`, `usedEnd` (ponta pelo papel do cabo), `fiberPick` / `fiberLocation` (livre ou o motivo), `cableTubes`, `defaultSpliceCables`, frases (`pickHint`, `fiberShortName`, `describeTraySummary`). |
 
 Os formulários ficam em `shared/network/` (OLT e caixa) e `shared/cable/` (cabo); cada um salva
 pelo repositório e só fecha depois da resposta do servidor. O início e o fim do cabo selecionado
@@ -99,8 +113,25 @@ são descritos por `features/network-map/cable-ends.ts`.
 |---|---|
 | Planejado | tracejada (`10 8`) |
 | Instalado / Ativo | contínua |
-| Danificado | vermelha, pontilhada (`4 6`) |
-| Desativado | cinza, opacidade 0,5 |
+| Danificado | vermelha `#d23c3c`, pontilhada (`4 6`) |
+| Desativado | cinza `#8a96a3`, opacidade 0,5 |
+
+As linhas do mapa são desenhadas em canvas e não leem variáveis CSS, por isso usam hex fixo. As
+linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-29).
+
+### 2.2.1 Visual e peças comuns (Esquema Unifilar)
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/theme/_tokens.scss` | Fonte única dos tokens `--gf-*` (cores com `light-dark()`, situação, tinta das fibras, raios, sombra, fontes, toque 44px) e ponte para os `--mat-sys-*` do Material. |
+| `shared/common/fiber-dot.ts` | `app-fiber-dot`: bolinha ABNT com borda, número com tinta legível, `aria-label` e `title` ("Fibra 3 · Branco"). |
+| `shared/common/occupancy-badge.component.ts` | `app-occupancy-badge`: "ocupado/total unidade" em `.gf-data`; não aparece com total 0. |
+| `shared/common/sheet-tabs.ts` | `app-sheet-tabs`: abas das fichas com sublinhado de 2px. |
+| `shared/diagram/unifilar-summary.ts` | `app-unifilar-summary`: linha "chega → elemento → sai" do topo da ficha, com a forma pela situação. |
+| `shared/diagram/diagram-line.component.ts` | `app-diagram-line`: uma linha por fusão/conector (entrada ─ posição/atenuação ─ saída) com `aria-label` da frase completa. |
+| `features/network-map/sheet-frame.scss` | Moldura comum das fichas: topo fixo, corpo rolável, 400px no computador, gaveta de 60dvh no celular (< 900px). |
+| `shared/map/map-focus.ts` | Foco no mapa: classe `gf-map--focus` e `pathOpacity` (cabos não selecionados a 0,35). |
+| `core/services/map-preferences.ts` | Camada base salva; uma chave que não existe mais (CARTO "Claro"/"Escuro") volta para ruas. |
 
 ### 2.3 Ficha do cabo (`features/network-map/cable-sheet`)
 
@@ -116,9 +147,20 @@ são descritos por `features/network-map/cable-ends.ts`.
 | Arquivo | Responsabilidade |
 |---|---|
 | `core/network/box-interior.ts` | Nome da fibra para leigos, fibras com ponta livre, pontas padrão, splitters (razões, saídas a partir de 1), origem do sinal da porta e o resumo da caixa. |
-| `box-sheet-store.ts` | Estado da ficha aberta: `GET /boxes/{id}/overview` + fibras de cada cabo; escritas de bandeja, fusão, conector, splitter e porta (sempre recarrega). |
-| `fiber-link-dialog.ts` | Diálogo único para escolher fibras (fusão, conector, splitter, porta); pontas A/B no modo avançado. |
-| `box-sheet.ts` | Painel à direita do mapa; seções conforme o tipo (CTO: splitters e portas; CEO/DIO: bandejas, fusões e conectores). |
+| `box-sheet-store.ts` | Estado da caixa aberta (ficha e tela de fusões): `GET /boxes/{id}/overview` + fibras de cada cabo; escritas de bandeja, fusão, conector, splitter e porta (sempre recarrega, sem apagar a tela). `saveSplice(body, done)` devolve o erro traduzido para o painel em vez do aviso. |
+| `fiber-link-dialog.ts` | Diálogo único para escolher fibras (conector, splitter, porta); pontas A/B no modo avançado. |
+| `box-sheet.ts` | Painel à direita do mapa; seções conforme o tipo (CTO: splitters e portas; CEO/DIO: fusões, conectores e splitters). Fusões: só o resumo e "Ver fusões" (também no Resumo). |
+
+### 2.4.1 Tela de fusões (`features/box-splices`)
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `box-splices-page.ts` | Página da rota `caixas/:boxId/fusoes` (provê o `BoxSheetStore`): cabeçalho com voltar, abas das bandejas, "+ bandeja", "Excluir bandeja", erro com "Tentar novamente"/"Voltar ao mapa" e o painel (direita ≥ 900px; por cima da parte de baixo no celular). |
+| `cable-strip.ts` | Faixa de cabos: barra com papel na caixa, fibras e listras dos tubos; abrir o cabo mostra cada fibra e onde está emendada. |
+| `tray-board.ts` | Posições 1..capacidade (vazia / "+ emendar aqui" / emenda com fibra que chega, protetor e fibra que sai) e a faixa "Sem posição definida". |
+| `splice-picker.ts` | Escolha das fibras: duas colunas (chega/sai) com cabos, tubos e fibras coloridas; frases de ajuda, perda, pontas no modo avançado e "Registrar emenda". |
+| `splice-detail.ts` | Consulta: posição, de onde chega, para onde sai, perda; "Ver cabo no mapa" e "Excluir emenda". |
+| `core/services/map-return.ts` | Recado em memória para o mapa: selecionar (e centralizar) a caixa ou o cabo quando a rede carregar. |
 
 ### 2.5 Ficha da OLT (`features/network-map/olt-sheet`)
 
@@ -127,7 +169,7 @@ são descritos por `features/network-map/cable-ends.ts`.
 | `core/network/olt-ports.ts` | Portas por placa, numeração de novas portas por placa e o resumo da OLT. |
 | `olt-sheet-store.ts` | Portas (`GET /olts/{id}/ports`), cabos (`GET /olts/{id}/cables`) e fibras deles; criação em lote sequencial, ligar/desligar fibra, situação manual e exclusão. |
 | `olt-sheet.ts` | Painel à direita do mapa (reaproveita o diálogo de fibras da Etapa 3). |
-| `../sheet-support.ts` | `loadCableFibers`: fibras de cada cabo ligado (usado pelas fichas de caixa e OLT). |
+| `../sheet-support.ts` | `loadCableFibers`: fibras de cada cabo ligado (usado pelas fichas de caixa e OLT); `boxTabs`: abas da ficha da caixa conforme o tipo (RI-29). |
 
 ### 2.6 Clientes
 
@@ -238,11 +280,45 @@ são descritos por `features/network-map/cable-ends.ts`.
   o formulário já como "Ativo" para escolher a porta. Mudança rápida reenvia todos os dados atuais.
 - **RI-23 Histórico.** Mais recente primeiro; recarrega sozinho quando a situação, a porta ou a CTO
   do cliente mudam. Excluir o cadastro é só para erro de cadastro (o texto orienta a cancelar).
-- **RI-24 Ajuda contextual.** Os botões "O que estou vendo?" e "Glossário" ficam sempre no mapa. A
+- **RI-24 Ajuda contextual.** Os botões "O que estou vendo?" e "Glossário" ficam sempre no mapa, no canto inferior esquerdo (a escala do mapa fica à direita). A
   frase conta OLTs, DIOs, CEOs, CTOs e clientes visíveis e os cabos, com singular/plural, e avisa
   quantos pontos e cabos estão escondidos por filtros, busca ou camadas ocultas.
 - **RI-25 Linguagem.** Nenhum código do backend aparece na tela (papéis, razões, situações e pontas
   são sempre traduzidos); pontas A/B só no modo avançado; títulos técnicos das fichas têm "?".
+- **RI-26 Tokens.** Cores, raios, sombra e fontes só por `--gf-*` (`src/theme/_tokens.scss`); o tema
+  é decidido pela classe `html.dark-theme` via `light-dark()`; nenhum estilo usa
+  `prefers-color-scheme`. Raios: 4px em controles, 6px em painéis (botão de ícone continua redondo).
+  Fontes: IBM Plex Sans (interface) e IBM Plex Mono (dados, classe `.gf-data`).
+- **RI-27 Situação.** A cor de situação nunca é cor de texto; aparece como bolinha, traço ou borda,
+  sempre ao lado de um texto em `--gf-text`.
+- **RI-28 Fibras.** A bolinha ABNT sempre tem borda, o número usa tinta legível sobre a cor e a
+  bolinha tem nome acessível (`app-fiber-dot`).
+- **RI-29 Ficha.** Topo fixo com a linha "chega → elemento → sai" e as abas; só o corpo rola; ao
+  trocar de elemento a ficha volta ao Resumo. Painel de 400px à direita no computador; gaveta
+  embaixo com 60dvh no celular (< 900px). Abas: caixa CEO/DIO Resumo · Fusões · Splitters; CTO
+  Resumo · Portas · Fusões (só com bandeja ou conector); cabo Resumo · Fibras; OLT Resumo · Portas
+  PON; cliente Resumo · Histórico.
+- **RI-30 Ocupação.** Sempre `ocupado/total unidade` (`app-occupancy-badge`); some quando o total
+  é 0 (a seção mostra o texto de vazio).
+- **RI-31 Foco no mapa.** Com um elemento ou cabo selecionado, os outros marcadores ficam a 45% e
+  os outros cabos a 35% (selecionados e destacados ficam normais). O tema não troca a camada base:
+  só há ruas (OpenStreetMap) e satélite (Esri); camada salva que não existe mais volta para ruas.
+- **RI-32 Tela de fusões.** Endereço próprio `/caixas/:boxId/fusoes` ("Ver fusões" na ficha da
+  caixa, também em CTO sem bandeja). A bandeja mostra todas as posições de 1 até a capacidade;
+  fusões sem posição válida ficam em "Sem posição definida" com "Excluir". Voltar leva ao mapa com
+  a caixa selecionada na mesma posição/zoom; se a caixa não estava selecionada (link direto), o
+  mapa centraliza nela. Sem `canEdit`: sem "+ emendar aqui", "+ bandeja" e exclusões.
+- **RI-33 Escolher fibras da emenda.** Sem tabelas nem listas suspensas: cabos em botões, tubos e
+  fibras como bolinhas (alvo de 44px). A ponta usada segue o papel do cabo na caixa (chega = B,
+  sai = A, passa = B na entrada e A na saída) e vai sempre explícita no `POST`; o modo avançado
+  troca. Fibra com a ponta em uso fica apagada e, ao ser tocada, diz o motivo (emenda nesta caixa
+  com bandeja/posição, outra caixa, conector, splitter, porta de atendimento, OLT, rompida,
+  reservada). A mesma fibra não vale dos dois lados. Erro do servidor aparece no painel e mantém as
+  escolhas; sucesso fecha o painel e a tela recarrega sem sumir.
+- **RI-34 Espaço do mapa.** A barra de ferramentas é uma coluna fina de 40px sobre o mapa (botões
+  de 34px, ícones de 20px, dicas à direita). O painel lateral expandido tem 232px (até 64% da
+  largura em telas < 820px) e recolhido 56px (48px no celular). A escolha do tipo (elemento ou
+  função do cabo) é um popup de 216px ao lado da barra, em grade de 2 colunas com rolagem própria.
 
 ---
 

@@ -1,119 +1,137 @@
 <aside class="sheet" aria-label="Ficha da OLT">
-  <header class="sheet__header">
-    <span class="sheet__badge" [style.background]="group().color">{{ group().code }}</span>
-    <div class="sheet__titles">
-      <h2>{{ olt().name }}</h2>
-      <p>{{ group().label }} · origem do sinal da rede</p>
-    </div>
-    <button mat-icon-button type="button" matTooltip="Fechar ficha" (click)="closed.emit()">
-      <mat-icon>close</mat-icon>
-    </button>
-  </header>
-
-  <p class="sheet__status">
-    <span class="sheet__dot" [style.background]="status().color"></span>
-    {{ status().label }}
-    @if (canEdit()) {
-      <button mat-button type="button" class="sheet__inline" (click)="editData.emit()">
-        <mat-icon>edit</mat-icon>
-        Editar dados
+  <div class="sheet__top">
+    <header class="sheet__header">
+      <span class="sheet__badge" [style.background]="group().color">{{ group().code }}</span>
+      <div class="sheet__titles">
+        <h2>{{ olt().name }}</h2>
+        <p class="sheet__status">
+          <span class="sheet__dot" [style.background]="status().color"></span>
+          {{ status().label }} · origem do sinal da rede
+        </p>
+      </div>
+      @if (canEdit()) {
+        <button mat-icon-button type="button" matTooltip="Editar dados" aria-label="Editar dados" (click)="editData.emit()">
+          <mat-icon>edit</mat-icon>
+        </button>
+      }
+      <button mat-icon-button type="button" matTooltip="Fechar ficha" aria-label="Fechar ficha" (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
       </button>
-    }
-  </p>
+    </header>
+    <app-unifilar-summary
+      [sides]="sides()"
+      [code]="group().code"
+      [color]="group().color"
+      [state]="lineState()"
+      emptyIncoming="Origem do sinal"
+    />
+    <app-sheet-tabs [tabs]="tabs" [(active)]="tab" />
+  </div>
 
   @if (store.state() === 'loading') {
     <mat-progress-bar mode="indeterminate" />
   }
 
-  @if (store.state() === 'error') {
-    <div class="sheet__error" role="alert">
-      <span>Não foi possível carregar a ficha da OLT.</span>
-      <button mat-stroked-button type="button" (click)="store.reload()">Tentar novamente</button>
-    </div>
-  } @else {
-    <p class="sheet__lead">{{ store.summary() }}</p>
+  <div class="sheet__body" role="tabpanel">
+    @if (store.state() === 'error') {
+      <div class="sheet__error" role="alert">
+        <span>Não foi possível carregar a ficha da OLT.</span>
+        <button mat-stroked-button type="button" (click)="store.reload()">Tentar novamente</button>
+      </div>
+    } @else {
+      @switch (tab()) {
+        @case ('resumo') {
+          <p class="sheet__lead">{{ store.summary() }}</p>
 
-    <section class="sheet__section">
-      <div class="sheet__section-head"><h3>Cabos que saem da OLT</h3></div>
-      @for (cable of store.cables(); track cable.cableId) {
-        <button type="button" class="box__row box__row--link" (click)="openCable.emit(cable.cableId ?? '')">
-          <span class="box__row-main">
-            <strong>{{ cable.name }}</strong>
-            <small>{{ roleLabel(cable) }} · {{ cable.fiberCapacity }} fibras</small>
-          </span>
-        </button>
-      } @empty {
-        <p class="sheet__empty">
-          Nenhum cabo ligado ainda. Abra a ficha de um cabo e coloque esta OLT como início.
-        </p>
-      }
-    </section>
+          <section class="sheet__section">
+            <div class="sheet__section-head"><h3>Cabos que saem da OLT</h3></div>
+            @for (cable of store.cables(); track cable.cableId) {
+              <button type="button" class="box__row box__row--link" (click)="openCable.emit(cable.cableId ?? '')">
+                <span class="box__row-main">
+                  <strong>{{ cable.name }}</strong>
+                  <small>{{ roleLabel(cable) }} · {{ cable.fiberCapacity }} fibras</small>
+                </span>
+              </button>
+            } @empty {
+              <p class="sheet__empty">
+                Nenhum cabo ligado ainda. Abra a ficha de um cabo e coloque esta OLT como início.
+              </p>
+            }
+          </section>
+        }
 
-    <section class="sheet__section">
-      <div class="sheet__section-head"><h3>Portas PON <app-term-hint key="porta-pon" /></h3></div>
-      <p class="sheet__hint">Cada porta PON manda o sinal para uma fibra, que segue até as caixas.</p>
+        @case ('portas') {
+          <section class="sheet__section">
+            <div class="sheet__section-head"><h3>Portas PON <app-term-hint key="porta-pon" /></h3></div>
+            <p class="sheet__hint">Cada porta PON manda o sinal para uma fibra, que segue até as caixas.</p>
 
-      @for (group of store.slots(); track group.slot) {
-        <div class="box__group">
-          <div class="box__group-head"><strong>Placa {{ group.slot }}</strong></div>
-          @for (port of group.ports; track port.id) {
-            <div class="box__row">
-              <span class="box__row-main">
-                <strong>PON {{ port.portNumber }}</strong>
-                <small>{{ portTarget(port) }}</small>
-              </span>
-              <span class="sheet__chip" [style.color]="portStatus(port).color" [matTooltip]="portStatus(port).hint">
-                {{ portStatus(port).label }}
-              </span>
-              @if (canEdit()) {
-                <button mat-icon-button type="button" matTooltip="Mais ações" [matMenuTriggerFor]="portMenu">
-                  <mat-icon>more_vert</mat-icon>
-                </button>
-                <mat-menu #portMenu="matMenu">
-                  <button mat-menu-item type="button" (click)="linkFiber(port)">
-                    {{ port.fiberId ? 'Trocar fibra…' : 'Ligar fibra…' }}
-                  </button>
-                  @if (port.fiberId) {
-                    <button mat-menu-item type="button" (click)="unlinkFiber(port)">Desligar fibra</button>
-                  } @else {
-                    @for (option of manualStatuses; track option.status) {
-                      @if (option.status !== port.status) {
-                        <button mat-menu-item type="button" (click)="setStatus(port, option.status)">
-                          Marcar como {{ option.label.toLowerCase() }}
+            @for (group of store.slots(); track group.slot) {
+              <div class="box__group">
+                <div class="box__group-head">
+                  <strong>Placa {{ group.slot }}</strong>
+                  <app-occupancy-badge [occupied]="slotUse(group).occupied" [capacity]="slotUse(group).capacity" unit="ocupadas" />
+                </div>
+                @for (port of group.ports; track port.id) {
+                  <div class="box__row">
+                    <span class="box__row-main">
+                      <strong>PON {{ port.portNumber }}</strong>
+                      <small>{{ portTarget(port) }}</small>
+                    </span>
+                    <span class="sheet__chip" [style.--gf-chip-color]="portStatus(port).color" [matTooltip]="portStatus(port).hint">
+                      {{ portStatus(port).label }}
+                    </span>
+                    @if (canEdit()) {
+                      <button mat-icon-button type="button" matTooltip="Mais ações" aria-label="Mais ações" [matMenuTriggerFor]="portMenu">
+                        <mat-icon>more_vert</mat-icon>
+                      </button>
+                      <mat-menu #portMenu="matMenu">
+                        <button mat-menu-item type="button" (click)="linkFiber(port)">
+                          {{ port.fiberId ? 'Trocar fibra…' : 'Ligar fibra…' }}
                         </button>
-                      }
+                        @if (port.fiberId) {
+                          <button mat-menu-item type="button" (click)="unlinkFiber(port)">Desligar fibra</button>
+                        } @else {
+                          @for (option of manualStatuses; track option.status) {
+                            @if (option.status !== port.status) {
+                              <button mat-menu-item type="button" (click)="setStatus(port, option.status)">
+                                Marcar como {{ option.label.toLowerCase() }}
+                              </button>
+                            }
+                          }
+                          <button mat-menu-item type="button" (click)="deletePort(port)">Excluir porta</button>
+                        }
+                      </mat-menu>
                     }
-                    <button mat-menu-item type="button" (click)="deletePort(port)">Excluir porta</button>
-                  }
-                </mat-menu>
-              }
-            </div>
-          }
-        </div>
-      } @empty {
-        <p class="sheet__empty">Nenhuma porta PON cadastrada.</p>
-      }
+                  </div>
+                }
+              </div>
+            } @empty {
+              <p class="sheet__empty">Nenhuma porta PON cadastrada.</p>
+            }
 
-      @if (canEdit()) {
-        <div class="sheet__add">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="olt__slot">
-            <mat-label>Placa</mat-label>
-            <input matInput type="number" min="1" [value]="newSlot()" (change)="setSlot($any($event.target).value)" />
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Quantas portas</mat-label>
-            <mat-select [value]="newCount()" (selectionChange)="newCount.set($event.value)">
-              @for (option of countOptions; track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <button mat-stroked-button type="button" [disabled]="store.saving()" (click)="addPorts()">
-            <mat-icon>add</mat-icon>
-            Adicionar portas
-          </button>
-        </div>
+            @if (canEdit()) {
+              <div class="sheet__add">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Placa</mat-label>
+                  <input matInput type="number" min="1" [value]="newSlot()" (change)="setSlot($any($event.target).value)" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Quantas portas</mat-label>
+                  <mat-select [value]="newCount()" (selectionChange)="newCount.set($event.value)">
+                    @for (option of countOptions; track option) {
+                      <mat-option [value]="option">{{ option }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button mat-stroked-button type="button" [disabled]="store.saving()" (click)="addPorts()">
+                  <mat-icon>add</mat-icon>
+                  Adicionar portas
+                </button>
+              </div>
+            }
+          </section>
+        }
       }
-    </section>
-  }
+    }
+  </div>
 </aside>

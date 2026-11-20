@@ -1,0 +1,94 @@
+<div class="page">
+  <header class="page__header">
+    <button mat-icon-button type="button" data-action="voltar" matTooltip="Voltar ao mapa" aria-label="Voltar ao mapa"
+      (click)="back()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    @if (group(); as definition) {
+      <span class="page__badge" [style.background]="definition.color">{{ definition.code }}</span>
+    }
+    <div class="page__titles">
+      <h1>{{ box()?.name ?? 'Caixa' }} <span class="page__subtitle">· Fusões</span></h1>
+      @if (status(); as situation) {
+        <p class="page__status">
+          <span class="page__dot" [style.background]="situation.color"></span>
+          {{ group()?.label }} · {{ situation.label }}
+        </p>
+      }
+    </div>
+  </header>
+
+  @if (store.state() === 'loading') {
+    <mat-progress-bar class="page__progress" mode="indeterminate" />
+  }
+
+  @if (store.state() === 'error' && !store.overview()) {
+    <div class="page__error" role="alert">
+      <p>Não foi possível carregar a caixa. Ela pode ter sido excluída ou o servidor está fora do ar.</p>
+      <div class="page__error-actions">
+        <button mat-flat-button type="button" data-action="tentar-de-novo" (click)="retry()">Tentar novamente</button>
+        <button mat-button type="button" data-action="voltar-ao-mapa" (click)="back()">Voltar ao mapa</button>
+      </div>
+    </div>
+  } @else if (store.overview()) {
+    <app-cable-strip class="page__cables" (openCable)="viewCable($event)" />
+
+    <div class="page__main" [class.has-panel]="panelOpen()">
+      <section class="page__board" aria-label="Bandejas">
+        <div class="trays" role="tablist" aria-label="Bandejas da caixa">
+          @for (item of store.trays(); track item.id) {
+            <button type="button" role="tab" class="trays__tab" [attr.data-tray-tab]="item.trayNumber"
+              [attr.aria-selected]="item.trayNumber === tray()?.trayNumber"
+              (click)="selectTray(item.trayNumber)">Bandeja {{ item.trayNumber }} · <span class="gf-data">{{ usedOf(item) }}/{{ item.capacity }}</span></button>
+          }
+          @if (canEdit()) {
+            <button type="button" class="trays__add" data-action="nova-bandeja" [attr.aria-expanded]="addingTray()"
+              [disabled]="store.saving()" (click)="addingTray.set(!addingTray())">+ bandeja</button>
+          }
+        </div>
+
+        @if (addingTray()) {
+          <div class="trays__capacities" role="group" aria-label="Quantas posições tem a bandeja?">
+            <span>Quantas posições?</span>
+            @for (capacity of capacities; track capacity) {
+              <button mat-stroked-button type="button" [attr.data-capacity]="capacity" (click)="addTray(capacity)">
+                {{ capacity }}
+              </button>
+            }
+          </div>
+        }
+
+        @if (tray(); as current) {
+          <app-tray-board [tray]="current" [canEdit]="canEdit()" [selected]="selectedPosition()"
+            (positionTapped)="openPosition($event)" (spliceTapped)="openSplice($event)"
+            (deleteRequested)="deleteSplice($event)" />
+          @if (canEdit() && trayIsEmpty()) {
+            <button mat-button type="button" class="page__danger" data-action="excluir-bandeja" (click)="deleteTray()">
+              <mat-icon>delete_outline</mat-icon>
+              Excluir bandeja
+            </button>
+          }
+        } @else {
+          <p class="page__empty">
+            Esta caixa ainda não tem bandejas.
+            @if (canEdit()) {
+              Toque em "+ bandeja" para criar a primeira e escolha quantas posições ela tem.
+            }
+          </p>
+        }
+      </section>
+
+      @if (panelOpen()) {
+        <aside class="page__panel" aria-label="Emenda">
+          @if (pick(); as current) {
+            <app-splice-picker [trayNumber]="current.trayNumber" [position]="current.position"
+              (done)="closePanel()" (closed)="closePanel()" (openCable)="viewCable($event)" />
+          } @else if (detail(); as splice) {
+            <app-splice-detail [splice]="splice" [canEdit]="canEdit()" (closed)="closePanel()"
+              (viewCable)="viewCable($event)" (deleteRequested)="deleteSplice($event)" />
+          }
+        </aside>
+      }
+    </div>
+  }
+</div>

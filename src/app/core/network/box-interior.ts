@@ -10,6 +10,7 @@ import {
   OpticalColor,
   ServicePortResponse,
   SplitterRatio,
+  SpliceResponse,
   SplitterResponse,
 } from '../api/api-types';
 import { opticalColor } from './optical-catalog';
@@ -196,4 +197,88 @@ export function describeBoxSummary(overview: BoxOverviewResponse): string {
 
 export function nextNumber(numbers: readonly number[]): number {
   return numbers.reduce((max, value) => Math.max(max, value), 0) + 1;
+}
+
+/** Um lado do diagrama de emenda: cabo, tubo e fibra. */
+export interface DiagramEnd {
+  cable: string;
+  tubeColor?: OpticalColor;
+  tubeNumber?: number;
+  fiberColor?: OpticalColor;
+  fiberNumber?: number;
+}
+
+/**
+ * O meio do diagrama: fusão (posição na bandeja e perda) ou conector.
+ * `label` é o texto pronto da perda (fusão) ou "Conector"; sem ele, a perda vem de `attenuationDb`.
+ */
+export interface DiagramMiddle {
+  type: 'splice' | 'connector';
+  label?: string;
+  positionNumber?: number;
+  attenuationDb?: number;
+}
+
+const DB_FORMAT = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** "0,05 dB". */
+export function formatAttenuation(attenuationDb: number | null | undefined): string | undefined {
+  return attenuationDb === undefined || attenuationDb === null
+    ? undefined
+    : `${DB_FORMAT.format(attenuationDb)} dB`;
+}
+
+export function diagramEnd(fiber: FiberInfo | undefined): DiagramEnd | undefined {
+  if (!fiber) return undefined;
+  return {
+    cable: fiber.cableName,
+    tubeColor: fiber.tubeColor,
+    tubeNumber: fiber.tubeNumber,
+    fiberColor: fiber.color,
+    fiberNumber: fiber.numberInTube,
+  };
+}
+
+/** "Entrada: CABO-01, tubo 1 (Verde), fibra 3 (Branco)" — com nomes de cor, nunca códigos. */
+export function describeDiagramEnd(end: DiagramEnd | undefined, role: 'entrada' | 'saída'): string {
+  const prefix = role === 'entrada' ? 'Entrada' : 'Saída';
+  if (!end) return `${prefix}: nada ligado`;
+  const parts = [`${prefix}: ${end.cable}`];
+  if (end.tubeNumber !== undefined || end.tubeColor) {
+    const color = end.tubeColor ? ` (${opticalColor(end.tubeColor).label})` : '';
+    parts.push(`tubo ${end.tubeNumber ?? '?'}${color}`);
+  }
+  if (end.fiberNumber !== undefined || end.fiberColor) {
+    const color = end.fiberColor ? ` (${opticalColor(end.fiberColor).label})` : '';
+    parts.push(`fibra ${end.fiberNumber ?? '?'}${color}`);
+  }
+  return parts.join(', ');
+}
+
+export function spliceMiddle(
+  splice: Pick<SpliceResponse, 'positionNumber' | 'attenuationDb'>,
+): DiagramMiddle {
+  return {
+    type: 'splice',
+    positionNumber: splice.positionNumber,
+    label: formatAttenuation(splice.attenuationDb),
+  };
+}
+
+export function connectorMiddle(): DiagramMiddle {
+  return { type: 'connector', label: 'Conector' };
+}
+
+/** "Posição 5 · 0,05 dB" ou "Conector". */
+export function describeDiagramMiddle(middle: DiagramMiddle | undefined): string {
+  if (!middle) return '';
+  if (middle.type === 'connector') return middle.label ?? 'Conector';
+  const parts: string[] = [];
+  if (middle.positionNumber !== undefined) parts.push(`Posição ${middle.positionNumber}`);
+  const loss = middle.label ?? formatAttenuation(middle.attenuationDb);
+  if (loss) parts.push(loss);
+  return parts.join(' · ');
 }

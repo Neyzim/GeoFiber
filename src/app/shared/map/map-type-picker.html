@@ -24,7 +24,7 @@
         [class.is-active]="activeKey() === option.key"
         [attr.aria-pressed]="activeKey() === option.key"
         [matTooltip]="option.label"
-        matTooltipPosition="right"
+        matTooltipPosition="above"
         (click)="pick.emit(option.key)"
       >
         @if (sample() === 'cable') {

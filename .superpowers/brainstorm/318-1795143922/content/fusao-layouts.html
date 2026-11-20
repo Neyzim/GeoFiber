@@ -1,0 +1,136 @@
+<style>
+  .phone { width: 300px; margin: 0 auto; border: 2px solid #555; border-radius: 22px; padding: 14px 12px; background: #fafafa; color: #222; font: 13px/1.35 system-ui, sans-serif; }
+  .phone h4 { margin: 0 0 2px; font-size: 15px; }
+  .phone .sub { color: #666; font-size: 11px; margin-bottom: 8px; }
+  .dot { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; font-weight: 700; border: 1.5px solid #0003; box-sizing: border-box; }
+  .dot.used { opacity: .35; }
+  .dot.sel { outline: 3px solid #1565c0; outline-offset: 2px; }
+  .tube { border-radius: 8px; padding: 4px 6px; margin-bottom: 6px; }
+  .tube b { font-size: 11px; display: block; margin-bottom: 3px; }
+  .hint { background: #e3f2fd; color: #0d47a1; border-radius: 8px; padding: 6px 8px; font-size: 12px; margin-top: 8px; }
+  .tile { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; width: 62px; padding: 6px 0; border-radius: 10px; border: 1px solid #ccc; background: #fff; font-size: 10px; margin: 2px; }
+  .tile .big { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #0003; }
+  .step { font-size: 11px; color: #666; margin: 6px 0 3px; text-transform: uppercase; letter-spacing: .04em; }
+  .pos { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-bottom: 1px solid #e0e0e0; }
+  .pos .n { width: 18px; color: #888; font-size: 11px; }
+  .half { flex: 1; display: flex; align-items: center; gap: 4px; font-size: 11px; }
+  .weld { width: 22px; height: 4px; background: #555; border-radius: 2px; }
+  .empty { flex: 1; text-align: center; border: 1.5px dashed #90a4ae; border-radius: 8px; color: #607d8b; padding: 4px; font-size: 11px; }
+  .sheetup { margin-top: 8px; border-top: 3px solid #90a4ae; border-radius: 12px 12px 0 0; padding: 8px 4px 0; background: #fff; }
+</style>
+
+<h2>Como registrar uma fusão na caixa?</h2>
+<p class="subtitle">Três jeitos de mostrar a mesma coisa. Imagine o técnico com a CEO aberta, celular na mão. Toque no que mais combina (pode escolher mais de um).</p>
+
+<div class="cards" data-multiselect>
+
+  <!-- A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="phone">
+        <h4>CEO-12 · Fusões</h4>
+        <div class="sub">CABO-01 (chega) ⟷ CABO-02 (sai)</div>
+        <div style="display:flex; justify-content:space-between; position:relative;">
+          <div style="width:105px">
+            <div class="tube" style="background:#2e9e4422"><b>Tubo 1 · Verde</b>
+              <div style="display:grid; grid-template-columns:repeat(3,26px); gap:5px;">
+                <span class="dot used" style="background:#2e9e44;color:#fff">1</span>
+                <span class="dot used" style="background:#fdd835">2</span>
+                <span class="dot sel" style="background:#fff">3</span>
+                <span class="dot" style="background:#1e88e5;color:#fff">4</span>
+                <span class="dot" style="background:#e53935;color:#fff">5</span>
+                <span class="dot" style="background:#8e24aa;color:#fff">6</span>
+              </div>
+            </div>
+            <div class="tube" style="background:#fdd83533"><b>Tubo 2 · Amarelo ▸</b></div>
+          </div>
+          <svg width="60" height="110" style="position:absolute; left:110px; top:14px">
+            <path d="M0 12 C30 12 30 12 60 12" stroke="#2e9e44" stroke-width="3" fill="none"/>
+            <path d="M0 12 C30 12 30 12 60 12" stroke="#000" stroke-opacity=".15" stroke-width="1" fill="none"/>
+            <path d="M0 12 C30 12, 30 40, 60 40" stroke="#fdd835" stroke-width="3" fill="none" transform="translate(0,0)"/>
+            <path d="M0 40 C30 40 30 40 60 40" stroke="#1565c0" stroke-width="2" stroke-dasharray="4 3" fill="none" opacity=".0"/>
+          </svg>
+          <div style="width:105px">
+            <div class="tube" style="background:#2e9e4422"><b>Tubo 1 · Verde</b>
+              <div style="display:grid; grid-template-columns:repeat(3,26px); gap:5px;">
+                <span class="dot used" style="background:#2e9e44;color:#fff">1</span>
+                <span class="dot" style="background:#fdd835">2</span>
+                <span class="dot used" style="background:#fff">3</span>
+                <span class="dot" style="background:#1e88e5;color:#fff">4</span>
+                <span class="dot" style="background:#e53935;color:#fff">5</span>
+                <span class="dot" style="background:#8e24aa;color:#fff">6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hint">Fibra 3 (Branco) escolhida. Toque na fibra do CABO-02 que está emendada nela.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · Dois cabos lado a lado</h3>
+      <p>Cada cabo vira uma coluna com os tubos e as fibras coloridas. Toca numa de cada lado e aparece a linha da emenda. Vê tudo de uma vez; num celular cabe bem até uns 12 por tubo, mais que isso rola a tela.</p>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="phone">
+        <h4>Nova fusão</h4>
+        <div class="sub">1 de 2 · fibra que chega</div>
+        <div class="step">Cabo</div>
+        <span class="tile" style="width:128px;border-color:#1565c0;border-width:2px"><b>CABO-01</b>chega · 24 fibras</span>
+        <span class="tile" style="width:128px"><b>CABO-02</b>sai · 12 fibras</span>
+        <div class="step">Tubo</div>
+        <span class="tile" style="border-color:#1565c0;border-width:2px"><span class="big" style="background:#2e9e44"></span>1 Verde</span>
+        <span class="tile"><span class="big" style="background:#fdd835"></span>2 Amarelo</span>
+        <div class="step">Fibra</div>
+        <div>
+          <span class="tile"><span class="big" style="background:#2e9e44;opacity:.35"></span>1 em uso</span>
+          <span class="tile"><span class="big" style="background:#fdd835;opacity:.35"></span>2 em uso</span>
+          <span class="tile" style="border-color:#1565c0;border-width:2px"><span class="big" style="background:#fff"></span>3 Branco</span>
+          <span class="tile"><span class="big" style="background:#1e88e5"></span>4 Azul</span>
+        </div>
+        <div class="hint">Próximo: escolher a fibra do outro lado ›</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Passo a passo por cores</h3>
+      <p>Cabo → tubo → fibra, com botões grandes e coloridos, um lado de cada vez. Mais difícil de errar e ótimo com luva, mas não mostra o conjunto: as fusões feitas ficam numa lista visual à parte.</p>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="phone">
+        <h4>CEO-12 · Bandeja 1</h4>
+        <div class="sub">3 de 12 posições ocupadas</div>
+        <div class="pos"><span class="n">1</span>
+          <span class="half"><span class="dot" style="background:#2e9e44;width:18px;height:18px"></span>C01 T1</span>
+          <span class="weld"></span>
+          <span class="half" style="justify-content:flex-end">C02 T1<span class="dot" style="background:#2e9e44;width:18px;height:18px"></span></span></div>
+        <div class="pos"><span class="n">2</span>
+          <span class="half"><span class="dot" style="background:#fdd835;width:18px;height:18px"></span>C01 T1</span>
+          <span class="weld"></span>
+          <span class="half" style="justify-content:flex-end">C02 T1<span class="dot" style="background:#fff;width:18px;height:18px"></span></span></div>
+        <div class="pos"><span class="n">3</span><span class="empty">+ tocar para emendar</span></div>
+        <div class="sheetup">
+          <div class="step">Posição 3 · fibra que chega</div>
+          <span class="dot sel" style="background:#fff">3</span>
+          <span class="dot" style="background:#1e88e5;color:#fff">4</span>
+          <span class="dot" style="background:#e53935;color:#fff">5</span>
+          <span class="dot" style="background:#8e24aa;color:#fff">6</span>
+          <span class="dot" style="background:#795548;color:#fff">7</span>
+          <span class="dot" style="background:#f48fb1">8</span>
+          <div style="font-size:11px;color:#666;margin-top:4px">CABO-01 · Tubo 1 Verde ▾</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · Como a bandeja de verdade</h3>
+      <p>Mostra a bandeja com as posições numeradas, igual à caixa física. Toca numa posição vazia e escolhe as duas fibras pelas cores. Bate com o que o técnico vê; para o atendente, cada linha já diz "verde com verde".</p>
+    </div>
+  </div>
+
+</div>

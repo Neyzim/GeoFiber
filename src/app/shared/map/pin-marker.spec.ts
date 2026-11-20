@@ -17,7 +17,7 @@ describe('pin-marker', () => {
     const html = String(createElementIcon(cto, false).options.html);
     expect(html).toContain('CTO');
     expect(html).toContain('#fb8c00');
-    expect(html).toContain('#2e7d32');
+    expect(html).toContain('var(--gf-status-normal)');
     expect(html).not.toContain('is-selected');
   });
 

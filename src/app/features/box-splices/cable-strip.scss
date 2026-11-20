@@ -1,0 +1,95 @@
+:host { display: flex; flex-direction: column; gap: 8px; }
+
+.strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  min-width: 220px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-control);
+  background: var(--gf-surface);
+  color: var(--gf-text);
+  font-family: var(--gf-font-ui);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: var(--gf-surface-2); }
+  &:focus-visible { outline: 2px solid var(--gf-accent); outline-offset: 1px; }
+  &[aria-expanded='true'] { border-color: var(--gf-accent); background: var(--gf-accent-soft); }
+}
+
+.bar__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong { font: 600 14px/1.2 var(--gf-font-data); }
+  small { color: var(--gf-text-2); font: var(--mat-sys-body-small); }
+}
+
+/* O cabo como uma barra com as listras de cor dos tubos. */
+.bar__stripes {
+  display: flex;
+  flex: 1;
+  min-width: 48px;
+  height: 14px;
+  overflow: hidden;
+  border: 1px solid var(--gf-fiber-edge);
+  border-radius: 7px;
+  background: var(--gf-surface-2);
+}
+
+.bar__stripe { flex: 1; }
+
+.bar__chevron { flex: none; color: var(--gf-text-2); }
+
+.strip__empty { margin: 0; color: var(--gf-text-2); font: var(--mat-sys-body-small); }
+
+.strip__detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+}
+
+.tube {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tube__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gf-text-2);
+  font: var(--mat-sys-label-medium);
+}
+
+.tube__fibers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li { display: flex; align-items: center; gap: 8px; min-height: 32px; font: var(--mat-sys-body-small); }
+}
+
+.tube__name { flex: none; width: 64px; }
+.tube__where { color: var(--gf-text-2); }

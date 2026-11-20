@@ -1,0 +1,91 @@
+// Base das quatro fichas. Spec: docs/superpowers/specs/2026-11-20-redesign-unifilar-app-design.md §5.
+:host { display: block; }
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 120px);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  color: var(--gf-text);
+  box-shadow: var(--gf-shadow-float);
+  font-family: var(--gf-font-ui);
+}
+
+.sheet__top { flex: none; display: flex; flex-direction: column; gap: 4px; padding: 12px 16px 0; }
+.sheet__body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px;
+}
+
+.sheet__header { display: flex; align-items: center; gap: 8px; }
+.sheet__badge {
+  display: inline-grid; place-items: center; flex: none; min-width: 36px; height: 28px; padding: 0 8px;
+  box-sizing: border-box; border-radius: var(--gf-radius-control); color: #fff; font: 700 11px/1 var(--gf-font-ui);
+}
+.sheet__titles {
+  flex: 1; min-width: 0;
+  h2 { margin: 0; font: var(--mat-sys-title-medium); overflow-wrap: anywhere; }
+}
+.sheet__status { display: flex; align-items: center; gap: 4px; margin: 0; color: var(--gf-text-2); font: var(--mat-sys-body-small); }
+.sheet__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.sheet__lead { margin: 0; padding: 8px 12px; border-radius: var(--gf-radius-control); background: var(--gf-surface-2); font: var(--mat-sys-body-medium); }
+
+.sheet__section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--gf-border); }
+.sheet__section:first-child { padding-top: 0; border-top: 0; }
+.sheet__section-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--gf-touch);
+  h3 { margin: 0; font: var(--mat-sys-title-small); }
+}
+.sheet__empty, .sheet__hint { margin: 0; color: var(--gf-text-2); font: var(--mat-sys-body-small); }
+.sheet__error {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px;
+  border-radius: var(--gf-radius-control); background: var(--gf-critical-soft); color: var(--gf-on-critical-soft);
+}
+.sheet__link {
+  min-height: var(--gf-touch); padding: 0; border: 0; background: none; color: var(--gf-accent);
+  font: inherit; text-align: left; cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+.sheet__add {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  mat-form-field { flex: 1 1 180px; }
+  .is-active { background: var(--gf-accent-soft); }
+}
+.sheet__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.sheet__count { color: var(--gf-text-2); font: var(--mat-sys-label-medium); }
+.sheet__chip {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--gf-text); font: var(--mat-sys-label-medium);
+  &::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--gf-chip-color, var(--gf-status-inactive)); }
+}
+
+.box__group { display: flex; flex-direction: column; padding: 4px 12px 8px; border: 1px solid var(--gf-border); border-radius: var(--gf-radius-control); }
+.box__group-head { display: flex; align-items: center; gap: 8px; min-height: var(--gf-touch); strong { flex: 1; } }
+.box__row {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: var(--gf-touch); padding: 4px 0;
+  box-sizing: border-box; border: 0; border-top: 1px dashed var(--gf-border); background: none;
+  color: inherit; font: var(--mat-sys-body-medium); text-align: left;
+}
+.box__row--compact { min-height: 0; }
+.box__row--link {
+  cursor: pointer; border-top: 0; border-radius: var(--gf-radius-control); padding: 4px 8px;
+  &:hover { background: var(--gf-surface-2); }
+  &:focus-visible { outline: 2px solid var(--gf-accent); outline-offset: -2px; }
+}
+.box__row-main {
+  display: flex; flex: 1; flex-direction: column; min-width: 0; overflow-wrap: anywhere;
+  small { color: var(--gf-text-2); }
+}
+
+@media (max-width: 899.98px) {
+  :host { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1150; }
+  .sheet {
+    width: 100%; max-width: none; height: 60dvh; max-height: none;
+    border-width: 1px 0 0; border-radius: var(--gf-radius-panel) var(--gf-radius-panel) 0 0;
+  }
+}

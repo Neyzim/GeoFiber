@@ -44,8 +44,8 @@ export interface GlossaryDialogData {
   styles: `
     .glossary { display: flex; flex-direction: column; gap: 12px; }
     .glossary__search { width: 100%; }
-    .glossary__list { display: flex; flex-direction: column; gap: 10px; margin: 0; }
-    .glossary__item { padding: 10px 12px; border-radius: 10px; background: var(--mat-sys-surface-container, #eef2f6); }
+    .glossary__list { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+    .glossary__item { padding: 12px; border-radius: var(--gf-radius-panel); background: var(--mat-sys-surface-container, #eef2f6); }
     dt { font: var(--mat-sys-title-small); }
     dd { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 0; font: var(--mat-sys-body-medium); }
     dd span { color: var(--mat-sys-on-surface-variant); }

@@ -1,0 +1,147 @@
+<style>
+  .row2 { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
+  .phone { width: 310px; border: 2px solid #555; border-radius: 22px; padding: 14px 12px; background: #fafafa; color: #222; font: 13px/1.35 system-ui, sans-serif; position: relative; }
+  .phone h4 { margin: 0 0 2px; font-size: 15px; }
+  .sub { color: #666; font-size: 11px; margin-bottom: 8px; }
+  .cap { text-align: center; font: 600 13px system-ui; margin-bottom: 6px; color: #444; }
+  .dot { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; font-weight: 700; border: 1.5px solid #0003; box-sizing: border-box; flex: none; }
+  .dot.s { width: 18px; height: 18px; font-size: 9px; }
+  .used { opacity: .3; }
+  .sel { outline: 3px solid #1565c0; outline-offset: 2px; }
+  .cablebar { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 5px 7px; margin-bottom: 5px; font-size: 11px; }
+  .stripes { display: flex; gap: 2px; }
+  .stripes span { width: 9px; height: 16px; border-radius: 3px; border: 1px solid #0002; }
+  .tabs { display: flex; gap: 4px; margin: 8px 0 4px; }
+  .tabs span { padding: 3px 9px; border-radius: 12px; background: #e0e0e0; font-size: 11px; }
+  .tabs .on { background: #37474f; color: #fff; }
+  .tray { background: #eceff1; border-radius: 12px; padding: 4px 6px; border: 2px solid #b0bec5; }
+  .pos { display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px dashed #cfd8dc; font-size: 10px; }
+  .pos:last-child { border-bottom: none; }
+  .n { width: 14px; color: #78909c; font-weight: 700; }
+  .side { flex: 1; display: flex; align-items: center; gap: 3px; min-width: 0; }
+  .side.r { justify-content: flex-end; text-align: right; }
+  .sleeve { width: 34px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--a) 50%, var(--b) 50%); border: 1px solid #0004; flex: none; }
+  .empty { flex: 1; text-align: center; border: 1.5px dashed #90a4ae; border-radius: 8px; color: #607d8b; padding: 3px; }
+  .empty.sel { border-color: #1565c0; color: #1565c0; outline: none; background: #e3f2fd; }
+  .sheet { position: relative; margin-top: 8px; background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 10px #0002; padding: 10px 8px; }
+  .grab { width: 36px; height: 4px; background: #bbb; border-radius: 2px; margin: 0 auto 6px; }
+  .cols { display: flex; justify-content: space-between; gap: 8px; }
+  .col { flex: 1; }
+  .col b { font-size: 11px; display: block; }
+  .tube { border-radius: 8px; padding: 4px; margin-top: 4px; }
+  .tube small { display: block; font-size: 10px; margin-bottom: 3px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 24px); gap: 4px; }
+  .hint { background: #e3f2fd; color: #0d47a1; border-radius: 8px; padding: 6px 8px; font-size: 11px; margin-top: 8px; }
+  .btn { display: block; text-align: center; background: #1565c0; color: #fff; border-radius: 18px; padding: 7px; margin-top: 8px; font-weight: 600; font-size: 12px; }
+  .detail { background: #fff; border-radius: 12px; border: 1px solid #ddd; padding: 8px; margin-top: 8px; font-size: 11px; }
+  .detail p { margin: 3px 0; }
+  .link { color: #1565c0; font-weight: 600; }
+</style>
+
+<h2>Mistura A + C: a caixa como ela é</h2>
+<p class="subtitle">Bandeja desenhada como a física (C) e escolha das fibras com os cabos lado a lado (A). Três momentos, da esquerda para a direita.</p>
+
+<div class="row2">
+
+  <!-- 1. Visão da caixa -->
+  <div>
+    <div class="cap">1 · Abrindo a caixa</div>
+    <div class="phone">
+      <h4>CEO-12</h4>
+      <div class="sub">Rua das Flores · 2 cabos · 1 bandeja</div>
+      <div class="cablebar"><b>CABO-01</b> chega · 24 fb
+        <span class="stripes"><span style="background:#2e9e44"></span><span style="background:#fdd835"></span></span>
+        <span style="margin-left:auto">▸</span></div>
+      <div class="cablebar"><b>CABO-02</b> sai · 12 fb
+        <span class="stripes"><span style="background:#2e9e44"></span></span>
+        <span style="margin-left:auto">▸</span></div>
+      <div class="tabs"><span class="on">Bandeja 1 · 3/12</span><span>+ bandeja</span></div>
+      <div class="tray">
+        <div class="pos"><span class="n">1</span>
+          <span class="side"><span class="dot s" style="background:#2e9e44"></span>C01 Verde·1</span>
+          <span class="sleeve" style="--a:#2e9e44;--b:#2e9e44"></span>
+          <span class="side r">C02 Verde·1<span class="dot s" style="background:#2e9e44"></span></span></div>
+        <div class="pos"><span class="n">2</span>
+          <span class="side"><span class="dot s" style="background:#fdd835"></span>C01 Verde·2</span>
+          <span class="sleeve" style="--a:#fdd835;--b:#fff"></span>
+          <span class="side r">C02 Verde·3<span class="dot s" style="background:#fff"></span></span></div>
+        <div class="pos"><span class="n">3</span><span class="empty">vazia</span></div>
+        <div class="pos"><span class="n">4</span><span class="empty">vazia</span></div>
+        <div class="pos"><span class="n">5</span>
+          <span class="side"><span class="dot s" style="background:#1e88e5"></span>C01 Verde·4</span>
+          <span class="sleeve" style="--a:#1e88e5;--b:#1e88e5"></span>
+          <span class="side r">C02 Verde·4<span class="dot s" style="background:#1e88e5"></span></span></div>
+        <div class="pos"><span class="n">6</span><span class="empty sel">+ emendar aqui</span></div>
+      </div>
+      <div class="hint">Cada linha é um protetor de emenda: a cor de cada lado é a fibra real.</div>
+    </div>
+  </div>
+
+  <!-- 2. Escolher as fibras -->
+  <div>
+    <div class="cap">2 · Tocou na posição 6</div>
+    <div class="phone">
+      <h4 style="opacity:.4">CEO-12</h4>
+      <div class="tray" style="opacity:.4"><div class="pos"><span class="n">6</span><span class="empty sel">+ emendar aqui</span></div></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <b style="font-size:13px">Emenda na posição 6</b>
+        <div class="cols" style="margin-top:6px">
+          <div class="col"><b>CABO-01 (chega)</b>
+            <div class="tube" style="background:#2e9e4422"><small>Tubo 1 · Verde</small>
+              <div class="grid">
+                <span class="dot used" style="background:#2e9e44"></span>
+                <span class="dot used" style="background:#fdd835"></span>
+                <span class="dot sel" style="background:#fff">3</span>
+                <span class="dot used" style="background:#1e88e5"></span>
+                <span class="dot" style="background:#e53935;color:#fff">5</span>
+                <span class="dot" style="background:#8e24aa;color:#fff">6</span>
+                <span class="dot" style="background:#795548;color:#fff">7</span>
+                <span class="dot" style="background:#f48fb1">8</span>
+              </div></div>
+            <div class="tube" style="background:#fdd83533"><small>Tubo 2 · Amarelo ▸</small></div>
+          </div>
+          <div class="col"><b>CABO-02 (sai)</b>
+            <div class="tube" style="background:#2e9e4422"><small>Tubo 1 · Verde</small>
+              <div class="grid">
+                <span class="dot used" style="background:#2e9e44"></span>
+                <span class="dot" style="background:#fdd835">2</span>
+                <span class="dot used" style="background:#fff"></span>
+                <span class="dot used" style="background:#1e88e5"></span>
+                <span class="dot" style="background:#e53935;color:#fff">5</span>
+                <span class="dot" style="background:#8e24aa;color:#fff">6</span>
+                <span class="dot" style="background:#795548;color:#fff">7</span>
+                <span class="dot" style="background:#f48fb1">8</span>
+              </div></div>
+          </div>
+        </div>
+        <div class="hint">Branco (fibra 3) do CABO-01 escolhida. Agora a fibra do CABO-02. Fibras apagadas já estão emendadas.</div>
+        <span class="btn" style="opacity:.4">Registrar emenda</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Consulta -->
+  <div>
+    <div class="cap">3 · Outro técnico consultando</div>
+    <div class="phone">
+      <h4>CEO-12</h4>
+      <div class="tray">
+        <div class="pos"><span class="n">2</span>
+          <span class="side"><span class="dot s" style="background:#fdd835"></span>C01 Verde·2</span>
+          <span class="sleeve sel" style="--a:#fdd835;--b:#fff"></span>
+          <span class="side r">C02 Verde·3<span class="dot s" style="background:#fff"></span></span></div>
+      </div>
+      <div class="detail">
+        <b>Posição 2 · Bandeja 1</b>
+        <p><span class="dot s" style="background:#fdd835"></span> Chega: CABO-01, tubo Verde, fibra Amarela (2)</p>
+        <p><span class="dot s" style="background:#fff"></span> Sai: CABO-02, tubo Verde, fibra Branca (3)</p>
+        <p>Perda medida: 0,05 dB</p>
+        <p class="link">Ver CABO-01 no mapa › &nbsp; Ver CABO-02 ›</p>
+        <p style="color:#888">Registrada por — (quando houver login)</p>
+      </div>
+      <div class="hint">Tocar num cabo no topo "abre" o cabo: mostra todos os tubos e fibras e onde cada uma está emendada.</div>
+    </div>
+  </div>
+
+</div>

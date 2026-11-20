@@ -13,6 +13,7 @@ import { ComponentType } from '@angular/cdk/portal';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { Observable, map } from 'rxjs';
 import { BoxType, CableRole, InfrastructureStatus } from '../../core/api/api-types';
 import { BASE_LAYERS, DEFAULT_MAP_VIEW } from '../../core/constants/map.constants';
@@ -38,6 +39,7 @@ import {
 import { NetworkMapRepository } from '../../core/network/network-map-repository';
 import { LegendGroupKey, NetworkMapState } from '../../core/network/network-map-state';
 import { MapPreferencesService } from '../../core/services/map-preferences';
+import { MapReturnService } from '../../core/services/map-return';
 import { MapViewportService } from '../../core/services/map-viewport';
 import { NotificationService } from '../../core/services/notification';
 import {
@@ -119,6 +121,8 @@ export class NetworkMapPage implements OnInit {
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly viewport = inject(MapViewportService);
+  private readonly mapReturn = inject(MapReturnService);
+  private readonly router = inject(Router);
   private readonly geoMap = viewChild.required(GeoMapComponent);
 
   protected readonly baseLayers = BASE_LAYERS;
@@ -337,6 +341,35 @@ export class NetworkMapPage implements OnInit {
       const olt = this.selectedOlt();
       untracked(() => (olt ? this.oltSheet.open(olt.id) : this.oltSheet.close()));
     });
+    // Volta de outra tela (ex.: fusões): seleciona o que foi pedido quando a rede carregar e o
+    // mapa Leaflet existir (`viewport.ready` lê um signal, então o efeito roda de novo).
+    effect(() => {
+      if (this.loadState() !== 'ready' || !this.viewport.ready) return;
+      untracked(() => this.applyReturn());
+    });
+  }
+
+  private applyReturn(): void {
+    const target = this.mapReturn.take();
+    if (!target) return;
+    // Seleciona sempre; centralizar não mostra aviso se falhar.
+    const { selection, focus } = target;
+    if (selection.type === 'element') {
+      const element = this.findElement(selection.key);
+      if (!element) return;
+      this.state.select(selection);
+      if (focus) this.viewport.focus(element.position);
+      return;
+    }
+    const cable = this.repository.mapCables().find((item) => item.id === selection.id);
+    if (!cable) return;
+    this.state.select(selection);
+    if (focus) this.viewport.focusAll(cable.points);
+  }
+
+  /** "Ver fusões" na ficha da caixa: abre a tela de fusões. */
+  protected openSplices(boxId: string): void {
+    void this.router.navigate(['/caixas', boxId, 'fusoes']);
   }
 
   ngOnInit(): void {

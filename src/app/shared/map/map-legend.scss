@@ -4,10 +4,10 @@
   display: flex;
   flex-direction: column;
   max-height: min(72vh, 640px);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px;
-  background: var(--mat-sys-surface-container-high);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  box-shadow: var(--gf-shadow-float);
   overflow: hidden;
 }
 
@@ -15,8 +15,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 6px 6px 14px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--gf-border);
 }
 
 .map-legend__title {
@@ -37,8 +37,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--gf-border);
 }
 
 .map-legend__search { width: 100%; }
@@ -55,14 +55,14 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  margin-right: 6px;
+  margin-right: 8px;
   border-radius: 50%;
 }
 
 .map-legend__tree {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 4px 6px 10px;
+  padding: 4px 8px 12px;
   overflow: auto;
 }
 
@@ -72,7 +72,7 @@
   justify-content: space-between;
   margin: 0;
   padding: 8px 8px 4px;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--gf-text-2);
   font: var(--mat-sys-label-medium);
 }
 
@@ -83,10 +83,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
-  border-radius: 8px;
+  padding: 4px 4px;
+  border-radius: var(--gf-radius-control);
 
-  &:hover { background: var(--mat-sys-surface-container); }
+  &:hover { background: var(--gf-surface-2); }
 }
 
 .map-legend__row--sub { padding-left: 20px; }
@@ -99,9 +99,9 @@
   place-items: center;
   flex: none;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--gf-radius-control);
   background: transparent;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--gf-text-2);
   cursor: pointer;
 }
 
@@ -111,7 +111,7 @@
   width: 28px;
   height: 28px;
 
-  &:hover { background: var(--mat-sys-surface-container-highest); }
+  &:hover { background: var(--gf-surface-2); }
 }
 
 .map-legend__chevron mat-icon,
@@ -123,9 +123,9 @@
   flex: none;
   width: 28px;
   height: 22px;
-  border-radius: 6px;
-  color: #fff;
-  font: 700 9px/1 Roboto, Arial, sans-serif;
+  border-radius: var(--gf-radius-control);
+  color: var(--gf-ink-light);
+  font: 700 9px/1 var(--gf-font-ui);
 }
 
 .map-legend__swatch--line {
@@ -140,7 +140,7 @@
 .map-legend__label-btn {
   flex: 1;
   min-width: 0;
-  padding: 4px 2px;
+  padding: 4px 4px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -157,19 +157,19 @@ button.map-legend__label-btn { cursor: pointer; }
   flex: none;
   min-width: 20px;
   text-align: right;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--gf-text-2);
   font: var(--mat-sys-label-medium);
 }
 
 .map-legend__leaf {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   padding-left: 36px;
-  border-radius: 8px;
+  border-radius: var(--gf-radius-control);
 
   &:hover {
-    background: var(--mat-sys-surface-container);
+    background: var(--gf-surface-2);
 
     .map-legend__leaf-action { opacity: 1; }
   }
@@ -181,7 +181,7 @@ button.map-legend__label-btn { cursor: pointer; }
   gap: 8px;
   flex: 1;
   min-width: 0;
-  padding: 5px 4px;
+  padding: 4px 4px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -207,8 +207,8 @@ button.map-legend__label-btn { cursor: pointer; }
 
   &:hover {
     opacity: 1;
-    background: var(--mat-sys-surface-container-highest);
-    color: var(--mat-sys-on-surface);
+    background: var(--gf-surface-2);
+    color: var(--gf-text);
   }
 
   mat-icon { font-size: 16px; width: 16px; height: 16px; }
@@ -216,7 +216,22 @@ button.map-legend__label-btn { cursor: pointer; }
 
 .map-legend__empty {
   margin: 0;
-  padding: 16px 14px;
-  color: var(--mat-sys-on-surface-variant);
+  padding: 16px 16px;
+  color: var(--gf-text-2);
   font: var(--mat-sys-body-small);
+}
+
+/* Toque (celular/tablet): alvos de no mínimo 44px. */
+@media (pointer: coarse) {
+  .map-legend__chevron,
+  .map-legend__eye,
+  .map-legend__leaf-action {
+    width: var(--gf-touch);
+    height: var(--gf-touch);
+  }
+
+  .map-legend__row,
+  .map-legend__leaf {
+    min-height: var(--gf-touch);
+  }
 }

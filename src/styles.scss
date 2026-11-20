@@ -1,4 +1,5 @@
 @use '@angular/material' as mat;
+@use './theme/tokens';
 
 // --- Tema Material 3 --------------------------------------------------------
 // Define os tokens de sistema (--mat-sys-*) usados por todos os componentes.
@@ -10,13 +11,19 @@ html {
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$green-palette,
+        primary: mat.$green-palette,
+        tertiary: mat.$azure-palette,
       ),
-      typography: Roboto,
+      typography: (
+        plain-family: 'IBM Plex Sans',
+        brand-family: 'IBM Plex Sans',
+      ),
       density: 0,
     )
   );
+
+  @include tokens.tokens;
+  @include tokens.material-overrides;
 
   // Reforça o token de fundo de app com uma leve camada de cor.
   &,
@@ -32,9 +39,15 @@ html.dark-theme {
 
 body {
   margin: 0;
-  font: var(--mat-sys-body-medium, 400 14px/1.5 Roboto, sans-serif);
-  background: var(--mat-sys-surface, #f5f7fa);
-  color: var(--mat-sys-on-surface, #1f2933);
+  font: var(--mat-sys-body-medium);
+  background: var(--gf-bg);
+  color: var(--gf-text);
+}
+
+// Dados técnicos: coordenadas, dB, números de fibra e porta, ocupação.
+.gf-data {
+  font-family: var(--gf-font-data);
+  font-variant-numeric: tabular-nums;
 }
 
 // --- Marcadores de PIN (HTML gerado pelo Leaflet) ---------------------------
@@ -56,7 +69,8 @@ body {
   height: 38px;
   transition:
     transform 0.16s ease,
-    filter 0.16s ease;
+    filter 0.16s ease,
+    opacity 160ms ease;
 }
 
 .gf-pin__head {
@@ -75,7 +89,7 @@ body {
 }
 
 .gf-pin__code {
-  font: 700 9px/1 Roboto, system-ui, sans-serif;
+  font: 700 9px/1 var(--gf-font-ui);
   letter-spacing: 0.02em;
   color: #fff;
   text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
@@ -122,6 +136,25 @@ body {
     0 0 0 4px rgb(255 255 255 / 0.9),
     0 0 0 7px var(--gf-pin-color),
     0 3px 10px rgb(0 0 0 / 0.4);
+}
+
+// --- Foco: com algo selecionado, os outros marcadores esmaecem --------------
+// A classe vem de `MAP_FOCUS_CLASS` (shared/map/map-focus.ts); os cabos usam `pathOpacity`.
+
+.gf-map--focus .gf-pin:not(.is-selected):not(.is-highlighted),
+.gf-map--focus .marker-cluster {
+  opacity: 0.45;
+}
+
+.marker-cluster {
+  transition: opacity 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-map--focus .gf-pin,
+  .gf-map--focus .marker-cluster {
+    transition: none;
+  }
 }
 
 // --- Pré-visualização (ferramenta "Adicionar PIN") --------------------------
@@ -202,48 +235,60 @@ body {
 }
 
 .leaflet-tooltip.gf-pin-tooltip {
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--mat-sys-surface-container-highest, #fff);
-  color: var(--mat-sys-on-surface, #1f2933);
-  font: 500 12px/1.45 Roboto, system-ui, sans-serif;
-  box-shadow: 0 4px 14px rgb(15 23 42 / 0.24);
+  padding: 4px 8px;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-control);
+  background: var(--gf-surface);
+  color: var(--gf-text);
+  font: 500 12px/1.4 var(--gf-font-ui);
+  box-shadow: var(--gf-shadow-float);
 }
 
 .leaflet-tooltip.gf-pin-tooltip:before {
-  border-top-color: var(--mat-sys-surface-container-highest, #fff);
+  border-top-color: var(--gf-surface);
 }
 
 // --- Fundo do mapa e controles do Leaflet -----------------------------------
 
 .leaflet-container {
-  background: var(--mat-sys-surface-variant, #dfe6ec);
+  background: var(--gf-surface-2);
+  font-family: var(--gf-font-ui);
+}
+
+// Listras no mapa com o zoom do navegador (ou a escala do Windows) diferente de 100%: os blocos de
+// 256px caem em posições fracionadas e ficam frestas entre eles. O Leaflet 1.9.4 tenta esconder
+// isso com `mix-blend-mode: plus-lighter`, mas a soma deixa linhas claras onde os blocos se tocam.
+// Aqui a mistura volta ao normal e cada bloco cresce 1px para cobrir a fresta (0,4%, invisível).
+.leaflet-container img.leaflet-tile {
+  width: 257px !important;
+  height: 257px !important;
+  mix-blend-mode: normal;
 }
 
 .leaflet-control-attribution,
 .leaflet-control-scale-line {
-  background: var(--mat-sys-surface-container-high, #fff);
-  color: var(--mat-sys-on-surface-variant, #52606d);
-  border-color: var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  background: var(--gf-surface);
+  color: var(--gf-text-2);
+  border-color: var(--gf-border);
 }
 
 .leaflet-control-attribution a {
-  color: var(--mat-sys-primary, #1e88e5);
+  color: var(--gf-accent);
 }
 
 // --- Balão de informações do elemento selecionado ---------------------------
 
 .leaflet-popup.gf-popup-wrapper .leaflet-popup-content-wrapper {
   padding: 0;
-  border-radius: 12px;
-  background: var(--mat-sys-surface-container-high, #fff);
-  color: var(--mat-sys-on-surface, #1f2933);
-  box-shadow: 0 10px 26px rgb(15 23 42 / 0.28);
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  color: var(--gf-text);
+  box-shadow: var(--gf-shadow-float);
 }
 
 .leaflet-popup.gf-popup-wrapper .leaflet-popup-tip {
-  background: var(--mat-sys-surface-container-high, #fff);
+  background: var(--gf-surface);
 }
 
 .leaflet-popup.gf-popup-wrapper .leaflet-popup-content {
@@ -253,21 +298,21 @@ body {
 
 .gf-popup {
   min-width: 168px;
-  padding: 10px 12px;
-  color: var(--mat-sys-on-surface, #1f2933);
-  font: 400 12px/1.45 Roboto, system-ui, sans-serif;
+  padding: 12px;
+  color: var(--gf-text);
+  font: 400 12px/1.45 var(--gf-font-ui);
 }
 
 .gf-popup__title {
-  margin: 0 0 6px;
-  font: 600 14px/1.25 Roboto, system-ui, sans-serif;
+  margin: 0 0 8px;
+  font: 600 14px/1.25 var(--gf-font-ui);
 }
 
 .gf-popup__row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
 
 .gf-popup__badge {
@@ -276,10 +321,10 @@ body {
   min-width: 26px;
   height: 20px;
   box-sizing: border-box;
-  padding: 0 6px;
-  border-radius: 6px;
-  color: #fff;
-  font: 700 10px/1 Roboto, system-ui, sans-serif;
+  padding: 0 8px;
+  border-radius: var(--gf-radius-control);
+  color: var(--gf-ink-light);
+  font: 700 10px/1 var(--gf-font-ui);
   letter-spacing: 0.03em;
 }
 
@@ -290,9 +335,9 @@ body {
 .gf-popup__meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
-  color: var(--mat-sys-on-surface-variant, #52606d);
+  color: var(--gf-text-2);
 }
 
 .gf-popup__dot {
@@ -304,19 +349,19 @@ body {
 
 .gf-popup__detail {
   margin: 4px 0 0;
-  color: var(--mat-sys-on-surface, #1f2933);
+  color: var(--gf-text);
   font-size: 12px;
 
   span {
-    color: var(--mat-sys-on-surface-variant, #52606d);
+    color: var(--gf-text-2);
   }
 }
 
 .gf-popup__hint {
   margin: 8px 0 0;
-  padding-top: 6px;
-  border-top: 1px solid var(--mat-sys-outline-variant, #d8dee6);
-  color: var(--mat-sys-on-surface-variant, #52606d);
+  padding-top: 8px;
+  border-top: 1px solid var(--gf-border);
+  color: var(--gf-text-2);
   font-size: 11px;
 }
 

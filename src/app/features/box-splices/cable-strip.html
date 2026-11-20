@@ -1,0 +1,46 @@
+<div class="strip" role="group" aria-label="Cabos nesta caixa">
+  @for (bar of bars(); track bar.id) {
+    <button type="button" class="bar" [attr.data-cable-bar]="bar.id" [attr.aria-expanded]="openId() === bar.id"
+      (click)="toggle(bar.id)">
+      <span class="bar__text">
+        <strong>{{ bar.cable.name }}</strong>
+        <small>{{ bar.role }}{{ bar.role ? ' · ' : '' }}{{ bar.cable.fiberCapacity ?? 0 }} fibras</small>
+      </span>
+      <span class="bar__stripes" aria-hidden="true">
+        @for (stripe of bar.stripes; track $index) {
+          <span class="bar__stripe" [style.background]="stripe"></span>
+        }
+      </span>
+      <mat-icon class="bar__chevron" aria-hidden="true">{{ openId() === bar.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+    </button>
+  } @empty {
+    <p class="strip__empty">Nenhum cabo chega a esta caixa. Abra a ficha de um cabo no mapa e inclua esta caixa na lista dele.</p>
+  }
+</div>
+
+@if (open(); as bar) {
+  <section class="strip__detail" [attr.aria-label]="'Tubos e fibras do ' + bar.cable.name">
+    @for (tube of bar.tubes; track tube.number) {
+      <div class="tube" [attr.data-tube]="tube.number">
+        <span class="tube__label">
+          <app-fiber-dot [color]="tube.color" [number]="tube.number" kind="tubo" size="sm" />
+          Tubo {{ tube.number }}
+        </span>
+        <ul class="tube__fibers">
+          @for (info of tube.fibers; track info.id) {
+            <li [attr.data-fiber]="info.id">
+              <app-fiber-dot [color]="info.color" [number]="info.numberInTube" />
+              <span class="tube__name">{{ colorName(info) }}</span>
+              <span class="tube__where">{{ location(bar, info) }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    } @empty {
+      <p class="strip__empty">
+        Este cabo ainda não tem tubos e fibras. Cadastre na ficha do cabo.
+        <button mat-button type="button" data-action="ficha-do-cabo" (click)="openCable.emit(bar.id)">Abrir ficha do cabo</button>
+      </p>
+    }
+  </section>
+}
