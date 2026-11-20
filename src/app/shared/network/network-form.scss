@@ -1,0 +1,72 @@
+// Estilo comum aos formulários de OLT, caixa e cabo.
+
+.network-form__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.network-form__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 7px;
+  color: #fff;
+  font: 700 10px/1 Roboto, Arial, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.network-form {
+  min-width: min(540px, 84vw);
+}
+
+.network-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  padding-top: 6px;
+}
+
+.network-form__full {
+  grid-column: 1 / -1;
+}
+
+.network-form__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.network-form__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.network-form__ends {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 8px;
+}
+
+.network-form__hint {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small, 400 12px/1.5 sans-serif);
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.network-form__error {
+  margin: 4px 0 0;
+  font: var(--mat-sys-body-small, 400 12px/1.5 sans-serif);
+  color: var(--mat-sys-error, #c62828);
+}
+
+@media (max-width: 560px) {
+  .network-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -120,6 +120,12 @@
   letter-spacing: 0.02em;
 }
 
+.model-card__badge mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
 .model-card__body {
   display: flex;
   flex-direction: column;

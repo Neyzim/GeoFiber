@@ -116,6 +116,14 @@ body {
     0 3px 10px rgb(0 0 0 / 0.4);
 }
 
+// Elemento que faz parte do cabo aberto na ficha.
+.gf-pin.is-highlighted .gf-pin__head {
+  box-shadow:
+    0 0 0 4px rgb(255 255 255 / 0.9),
+    0 0 0 7px var(--gf-pin-color),
+    0 3px 10px rgb(0 0 0 / 0.4);
+}
+
 // --- Pré-visualização (ferramenta "Adicionar PIN") --------------------------
 
 .gf-pin-ghost__dot {
@@ -292,6 +300,16 @@ body {
   width: 9px;
   height: 9px;
   border-radius: 50%;
+}
+
+.gf-popup__detail {
+  margin: 4px 0 0;
+  color: var(--mat-sys-on-surface, #1f2933);
+  font-size: 12px;
+
+  span {
+    color: var(--mat-sys-on-surface-variant, #52606d);
+  }
 }
 
 .gf-popup__hint {

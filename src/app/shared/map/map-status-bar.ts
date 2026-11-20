@@ -14,8 +14,8 @@ import { CoordinatePipe } from '../pipes/coordinate-pipe';
 export class MapStatusBarComponent {
   readonly pointer = input<GeoPoint | null>(null);
   readonly view = input<MapViewState | null>(null);
-  readonly totalPins = input(0);
-  readonly visiblePins = input(0);
+  readonly totalElements = input(0);
+  readonly visibleElements = input(0);
   readonly totalCables = input(0);
   readonly visibleCables = input(0);
   readonly activeTool = input<MapTool>('select');

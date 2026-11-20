@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface TypePickerOption {
-  /** Identificador do tipo (`PinType` ou `CableType`). */
+  /** Identificador do tipo (grupo do elemento ou função do cabo). */
   key: string;
   label: string;
   code: string;

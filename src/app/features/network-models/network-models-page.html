@@ -7,8 +7,9 @@
     <div class="models__titles">
       <h1>Cadastro de modelos</h1>
       <p>
-        Parametrize os tipos de cabo, CTO e CEO usados na criação dos elementos no mapa. Os
-        elementos guardam o vínculo com o modelo, então editar aqui reflete em todos eles.
+        Atalhos para preencher o cadastro de CTO, CEO e cabos no mapa. Escolher um modelo só
+        preenche o formulário: editar um modelo aqui não altera a rede já cadastrada. Os
+        modelos ficam salvos apenas neste navegador.
       </p>
     </div>
 
@@ -58,7 +59,9 @@
         <div class="models__grid">
           @for (model of section.models; track model.id) {
             <article class="model-card">
-              <span class="model-card__badge" [style.background]="model.color">{{ model.code }}</span>
+              <span class="model-card__badge" [style.background]="section.definition.color">
+                <mat-icon>{{ section.definition.icon }}</mat-icon>
+              </span>
               <div class="model-card__body">
                 <strong>{{ model.name }}</strong>
                 <small>{{ summary(model) }}</small>

@@ -1,0 +1,263 @@
+// Ficha lateral (cabo e, na Etapa 3, caixa). Ver também `sheet-base` nas fichas.
+
+:host {
+  display: block;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding: 12px 14px 16px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--mat-sys-surface-container-high, #fff);
+  color: var(--mat-sys-on-surface, #1f2933);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.26);
+}
+
+.sheet__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheet__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 7px;
+  color: #fff;
+  font: 700 11px/1 Roboto, Arial, sans-serif;
+}
+
+.sheet__titles {
+  flex: 1;
+  min-width: 0;
+
+  h2 {
+    margin: 0;
+    font: var(--mat-sys-title-medium);
+    overflow-wrap: anywhere;
+  }
+
+  p {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.sheet__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+}
+
+.sheet__inline {
+  margin-left: auto;
+}
+
+.sheet__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.sheet__lead {
+  margin: 4px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mat-sys-surface-container, #eef2f6);
+  font: var(--mat-sys-body-large);
+}
+
+.sheet__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--mat-sys-outline-variant, #d8dee6);
+}
+
+.sheet__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+    font: var(--mat-sys-title-small);
+  }
+}
+
+.sheet__empty,
+.sheet__hint {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.sheet__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--mat-sys-error-container, #fdecea);
+  color: var(--mat-sys-on-error-container, #8c1d18);
+}
+
+.sheet__route {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+  }
+}
+
+.sheet__route-role {
+  flex: none;
+  width: 72px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+}
+
+.sheet__route-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sheet__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mat-sys-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.sheet__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  mat-form-field {
+    flex: 1 1 180px;
+  }
+
+  .is-active {
+    background: var(--mat-sys-primary-container);
+  }
+}
+
+.sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sheet__structure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sheet__count {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-medium);
+}
+
+.sheet__tube {
+  border: 1px solid var(--mat-sys-outline-variant, #d8dee6);
+  border-radius: 10px;
+}
+
+.sheet__tube-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: var(--mat-sys-body-medium);
+  text-align: left;
+  cursor: pointer;
+
+  span:nth-child(2) {
+    flex: 1;
+  }
+}
+
+.sheet__swatch {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid rgb(0 0 0 / 0.35);
+  border-radius: 50%;
+}
+
+.sheet__swatch--small {
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+}
+
+.sheet__fibers {
+  margin: 0;
+  padding: 0 10px 8px;
+  list-style: none;
+}
+
+.sheet__fiber {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px dashed var(--mat-sys-outline-variant, #d8dee6);
+}
+
+.sheet__fiber-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+
+  small {
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.sheet__chip {
+  flex: none;
+  padding-top: 2px;
+  font: var(--mat-sys-label-medium);
+}
