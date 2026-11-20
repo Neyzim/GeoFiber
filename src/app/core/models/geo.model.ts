@@ -18,7 +18,7 @@ export interface GeoBounds {
 }
 
 /** Ferramenta de interação ativa no mapa. */
-export type MapTool = 'select' | 'addPin' | 'addCable' | 'move' | 'editCable';
+export type MapTool = 'select' | 'addElement' | 'addCable' | 'move' | 'editCable';
 
 /** Estado de visualização atual do mapa. */
 export interface MapViewState {
@@ -35,6 +35,8 @@ export interface GeoPath {
   weight: number;
   /** Padrão de tracejado SVG (ex.: `12 7`); ausente = linha contínua. */
   dashArray?: string;
+  /** Opacidade da linha (padrão 0.9). */
+  opacity?: number;
   /** Desenha um marcador em cada vértice (usado na pré-visualização). */
   showVertices?: boolean;
   /** HTML do balão de informações exibido quando o cabo é selecionado. */
@@ -45,11 +47,14 @@ export interface GeoPath {
 export interface MapClickEvent {
   position: GeoPoint;
   tool: MapTool;
+  /** Elemento em que o clique "grudou" (ímã do traçado de cabo), pela `MapElement.key`. */
+  snappedKey?: string;
 }
 
-/** Emitido quando um PIN é reposicionado por arrasto. */
-export interface PinMoveEvent {
-  pinId: string;
+/** Emitido quando um elemento é reposicionado por arrasto. */
+export interface ElementMoveEvent {
+  /** `MapElement.key`. */
+  key: string;
   position: GeoPoint;
 }
 

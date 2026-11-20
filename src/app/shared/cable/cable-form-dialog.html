@@ -1,31 +1,30 @@
-<h2 mat-dialog-title class="cable-form__title">
-  <span class="cable-form__title-badge" [style.background]="previewColor()">
-    {{ selectedType().code }}
-  </span>
-  {{ title }}
+<h2 mat-dialog-title class="network-form__title">
+  <span class="network-form__badge" [style.background]="roleColor()">{{ roleCode() }}</span>
+  {{ isEdit ? 'Editar cabo' : 'Novo cabo' }}
 </h2>
 
 <form [formGroup]="form" (ngSubmit)="submit()">
-  <mat-dialog-content class="cable-form">
-    <div class="cable-form__grid">
+  <mat-dialog-content class="network-form">
+    <div class="network-form__grid">
       <mat-form-field appearance="outline">
         <mat-label>Nome</mat-label>
-        <input matInput formControlName="name" maxlength="60" placeholder="BB-01" />
+        <input matInput formControlName="name" maxlength="120" placeholder="AL-01" />
         @if (form.controls.name.hasError('required')) {
-          <mat-error>Informe um nome para o cabo.</mat-error>
+          <mat-error>Informe um nome.</mat-error>
+        }
+        @if (form.controls.name.hasError('api')) {
+          <mat-error>{{ form.controls.name.getError('api') }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Tipo de cabo</mat-label>
-        <mat-select formControlName="type" (selectionChange)="onTypeChange($event.value)">
-          @for (type of types; track type.type) {
-            <mat-option [value]="type.type">
-              <span class="cable-form__option">
-                <span class="cable-form__option-badge" [style.background]="type.color">
-                  {{ type.code }}
-                </span>
-                {{ type.label }}
+        <mat-label>Função do cabo</mat-label>
+        <mat-select formControlName="role">
+          @for (role of roles; track role.role) {
+            <mat-option [value]="role.role">
+              <span class="network-form__option">
+                <span class="network-form__dot" [style.background]="role.color"></span>
+                {{ role.label }}
               </span>
             </mat-option>
           }
@@ -34,11 +33,11 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Situação</mat-label>
-        <mat-select formControlName="status">
+        <mat-select formControlName="usageStatus">
           @for (status of statuses; track status.status) {
             <mat-option [value]="status.status">
-              <span class="cable-form__option">
-                <span class="cable-form__option-dot" [style.background]="status.color"></span>
+              <span class="network-form__option">
+                <span class="network-form__dot" [style.background]="status.color"></span>
                 {{ status.label }}
               </span>
             </mat-option>
@@ -46,69 +45,69 @@
         </mat-select>
       </mat-form-field>
 
-      @if (modelOptions().length > 0) {
-        <mat-form-field appearance="outline">
-          <mat-label>Modelo</mat-label>
-          <mat-select formControlName="modelId">
-            <mat-option value="">Sem modelo</mat-option>
-            @for (model of modelOptions(); track model.id) {
-              <mat-option [value]="model.id">
-                <span class="cable-form__option">
-                  <span class="cable-form__option-badge" [style.background]="model.color">
-                    {{ model.code }}
-                  </span>
-                  {{ model.name }}
-                </span>
-              </mat-option>
+      <mat-form-field appearance="outline">
+        <mat-label>Fibras</mat-label>
+        <mat-select formControlName="fiberCapacity">
+          @for (fiber of fiberOptions; track fiber) {
+            <mat-option [value]="fiber">{{ fiber }} fibras</mat-option>
+          }
+        </mat-select>
+        @if (form.controls.fiberCapacity.hasError('api')) {
+          <mat-error>{{ form.controls.fiberCapacity.getError('api') }}</mat-error>
+        }
+      </mat-form-field>
+
+      @if (shortcuts().length > 0) {
+        <mat-form-field appearance="outline" class="network-form__full">
+          <mat-label>Preencher com modelo</mat-label>
+          <mat-select formControlName="modelId" (selectionChange)="applyShortcut($event.value)">
+            @for (model of shortcuts(); track model.id) {
+              <mat-option [value]="model.id">{{ model.name }} · {{ summary(model) }}</mat-option>
             }
           </mat-select>
-          <mat-hint>{{ modelSummary() || 'Parametriza cor, fibras e espessura.' }}</mat-hint>
+          <mat-hint>Só preenche os campos.</mat-hint>
         </mat-form-field>
       }
 
-      <div class="cable-form__color-field">
-        <span class="cable-form__color-label">Cor do traçado</span>
-        <div class="cable-form__color-row">
-          <input
-            type="color"
-            class="cable-form__color-input"
-            [value]="previewColor()"
-            aria-label="Cor do traçado"
-            (input)="onColorInput($event)"
-          />
-          <button mat-button type="button" matTooltip="Usar a cor padrão do tipo" (click)="resetColor()">
-            Padrão
-          </button>
-        </div>
-      </div>
-
-      <mat-form-field appearance="outline" class="cable-form__full">
-        <mat-label>Etiquetas</mat-label>
-        <input matInput formControlName="tags" placeholder="troncal, projeto 2026" />
-        <mat-hint>Separe as etiquetas por vírgula.</mat-hint>
+      <mat-form-field appearance="outline">
+        <mat-label>Fabricante</mat-label>
+        <input matInput formControlName="manufacturer" />
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="cable-form__full">
+      <mat-form-field appearance="outline">
+        <mat-label>Modelo do fabricante</mat-label>
+        <input matInput formControlName="model" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="network-form__full">
         <mat-label>Descrição</mat-label>
-        <textarea matInput formControlName="description" rows="3" maxlength="400"></textarea>
+        <textarea matInput formControlName="description" rows="2"></textarea>
       </mat-form-field>
     </div>
 
-    <p class="cable-form__hint">
-      <strong>{{ nodeCount }}</strong> vértice(s) no traçado ·
-      {{ selectedType().label }} · {{ selectedStatus().label }}
-    </p>
+    @if (start || end) {
+      <div class="network-form__ends">
+        @if (start) {
+          <mat-checkbox formControlName="useStart">Começa em {{ start.name }}</mat-checkbox>
+        }
+        @if (end) {
+          <mat-checkbox formControlName="useEnd">Termina em {{ end.name }}</mat-checkbox>
+        }
+        <p class="network-form__hint">
+          Início e fim só são gravados quando os dois estão marcados.
+        </p>
+      </div>
+    }
+
+    @for (message of extraErrors(); track message) {
+      <p class="network-form__error">{{ message }}</p>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    @if (isEdit) {
-      <button mat-button type="button" (click)="moveOnMap()">
-        <mat-icon>open_with</mat-icon>
-        Mover (vértices)
-      </button>
-    }
-    <span class="cable-form__spacer"></span>
-    <button mat-button type="button" (click)="cancel()">Cancelar</button>
-    <button mat-flat-button type="submit" [disabled]="form.invalid">{{ submitLabel }}</button>
+    <button mat-button type="button" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Cadastrar cabo' }}
+    </button>
   </mat-dialog-actions>
 </form>

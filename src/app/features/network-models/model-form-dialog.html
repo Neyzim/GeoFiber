@@ -1,16 +1,11 @@
-<h2 mat-dialog-title class="model-form__title">
-  <span class="model-form__title-badge" [style.background]="previewColor()">
-    {{ value().code || '—' }}
-  </span>
-  {{ title }}
-</h2>
+<h2 mat-dialog-title>{{ title }}</h2>
 
 <form [formGroup]="form" (ngSubmit)="submit()">
   <mat-dialog-content class="model-form">
     <div class="model-form__grid">
       <mat-form-field appearance="outline">
         <mat-label>Tipo de modelo</mat-label>
-        <mat-select formControlName="kind" (selectionChange)="onKindChange($event.value)">
+        <mat-select formControlName="kind">
           @for (kind of kinds; track kind.kind) {
             <mat-option [value]="kind.kind">
               <span class="model-form__option">
@@ -31,38 +26,24 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Código curto</mat-label>
-        <input matInput formControlName="code" maxlength="12" placeholder="CTO-08" />
-        <mat-hint>Exibido nos marcadores e nas listas.</mat-hint>
-        @if (form.controls.code.hasError('required')) {
-          <mat-error>Informe um código curto.</mat-error>
-        }
+        <mat-label>Fabricante</mat-label>
+        <input matInput formControlName="manufacturer" maxlength="60" />
       </mat-form-field>
 
-      <div class="model-form__color-field">
-        <span class="model-form__color-label">Cor</span>
-        <div class="model-form__color-row">
-          <input
-            type="color"
-            class="model-form__color-input"
-            [value]="previewColor()"
-            aria-label="Cor do modelo"
-            (input)="onColorInput($event)"
-          />
-        </div>
-      </div>
+      <mat-form-field appearance="outline">
+        <mat-label>Modelo do fabricante</mat-label>
+        <input matInput formControlName="model" maxlength="60" />
+      </mat-form-field>
 
       @if (selectedKind() === 'cabo') {
         <mat-form-field appearance="outline">
-          <mat-label>Categoria</mat-label>
-          <mat-select formControlName="category" (selectionChange)="onDependentChange()">
-            @for (type of cableTypes; track type.type) {
-              <mat-option [value]="type.type">
+          <mat-label>Função do cabo</mat-label>
+          <mat-select formControlName="role">
+            @for (role of roles; track role.role) {
+              <mat-option [value]="role.role">
                 <span class="model-form__option">
-                  <span class="model-form__option-badge" [style.background]="type.color">
-                    {{ type.code }}
-                  </span>
-                  {{ type.label }}
+                  <span class="model-form__swatch" [style.background]="role.color"></span>
+                  {{ role.label }}
                 </span>
               </mat-option>
             }
@@ -71,23 +52,9 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Fibras</mat-label>
-          <mat-select formControlName="fibers" (selectionChange)="onDependentChange()">
+          <mat-select formControlName="fiberCapacity">
             @for (fiber of fiberOptions; track fiber) {
               <mat-option [value]="fiber">{{ fiber }} fibras</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Espessura</mat-label>
-          <input matInput type="number" formControlName="weight" min="1" max="12" step="1" />
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Tracejado</mat-label>
-          <mat-select formControlName="dashArray">
-            @for (dash of dashPresets; track dash.value) {
-              <mat-option [value]="dash.value">{{ dash.label }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -95,27 +62,16 @@
 
       @if (selectedKind() === 'cto') {
         <mat-form-field appearance="outline">
-          <mat-label>Divisor (portas)</mat-label>
-          <mat-select formControlName="ports" (selectionChange)="onDependentChange()">
-            @for (ports of portOptions; track ports) {
-              <mat-option [value]="ports">{{ ports }}</mat-option>
-            }
-          </mat-select>
+          <mat-label>Portas de atendimento</mat-label>
+          <input matInput type="number" formControlName="powerCapacity" min="1" max="256" step="1" />
+          <mat-hint>Quantos clientes a caixa atende.</mat-hint>
         </mat-form-field>
       }
 
       @if (selectedKind() === 'ceo') {
         <mat-form-field appearance="outline">
-          <mat-label>Capacidade de emendas</mat-label>
-          <input
-            matInput
-            type="number"
-            formControlName="splices"
-            min="1"
-            max="288"
-            step="1"
-            (input)="onDependentChange()"
-          />
+          <mat-label>Bandejas de emenda</mat-label>
+          <input matInput type="number" formControlName="trayCapacity" min="1" max="64" step="1" />
         </mat-form-field>
       }
 

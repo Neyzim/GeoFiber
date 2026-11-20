@@ -9,6 +9,7 @@
         [attr.aria-pressed]="activeTool() === tool.tool"
         [matTooltip]="tool.label"
         matTooltipPosition="right"
+        [disabled]="tool.creates && !editable()"
         (click)="toolChange.emit(tool.tool)"
       >
         <mat-icon>{{ tool.icon }}</mat-icon>
@@ -43,7 +44,7 @@
       mat-icon-button
       type="button"
       class="map-toolbar__button"
-      matTooltip="Enquadrar todos os PINs"
+      matTooltip="Enquadrar todos os elementos"
       matTooltipPosition="right"
       [disabled]="visibleCount() === 0"
       (click)="fitToPins.emit()"
@@ -86,17 +87,6 @@
       (click)="toggleLegend.emit()"
     >
       <mat-icon>legend_toggle</mat-icon>
-    </button>
-    <button
-      mat-icon-button
-      type="button"
-      class="map-toolbar__button map-toolbar__button--danger"
-      matTooltip="Remover todos os PINs"
-      matTooltipPosition="right"
-      [disabled]="visibleCount() === 0"
-      (click)="clearAll.emit()"
-    >
-      <mat-icon>delete_sweep</mat-icon>
     </button>
   </div>
 </div>

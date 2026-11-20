@@ -1,0 +1,83 @@
+<h2 mat-dialog-title class="network-form__title">{{ data.title }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="network-form">
+    @if (!hasFibers) {
+      <p class="network-form__hint">
+        Nenhuma fibra disponível. Ligue um cabo a esta caixa na ficha do cabo (lista "Por onde o
+        cabo passa") e crie os tubos e fibras dele.
+      </p>
+    } @else {
+      @if (data.intro) {
+        <p class="network-form__hint">{{ data.intro }}</p>
+      }
+
+      @if (data.trays; as trays) {
+        <mat-form-field appearance="outline">
+          <mat-label>Bandeja</mat-label>
+          <mat-select formControlName="trayNumber">
+            @for (tray of trays; track tray.number) {
+              <mat-option [value]="tray.number">{{ tray.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      <ng-container formArrayName="slots">
+        @for (slot of form.controls.slots.controls; track $index; let i = $index) {
+          <div class="network-form__grid" [formGroupName]="i">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ data.slots[i].label }}</mat-label>
+              <mat-select formControlName="fiberId">
+                @for (option of optionsFor(i); track option.id) {
+                  <mat-option [value]="option.id">{{ option.label }}</mat-option>
+                } @empty {
+                  <mat-option disabled>Nenhuma fibra livre nesta ponta</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            @if (advanced()) {
+              <mat-form-field appearance="outline">
+                <mat-label>Ponta da fibra</mat-label>
+                <mat-select formControlName="fiberEnd">
+                  @for (end of ends; track end) {
+                    <mat-option [value]="end">Ponta {{ end }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          </div>
+        }
+      </ng-container>
+
+      @if (data.showAttenuation) {
+        <mat-form-field appearance="outline">
+          <mat-label>Perda (dB, opcional)</mat-label>
+          <input matInput type="number" step="0.01" min="0" formControlName="attenuationDb" />
+        </mat-form-field>
+      }
+
+      <mat-slide-toggle [checked]="advanced()" (change)="toggleAdvanced()">
+        Mostrar pontas (avançado)
+      </mat-slide-toggle>
+      @if (advanced()) {
+        <p class="network-form__hint">
+          Cada fibra tem duas pontas: A (início do cabo) e B (fim do cabo). O padrão já serve na
+          maioria dos casos.
+        </p>
+      }
+
+      @if (problem(); as message) {
+        <p class="network-form__error" role="alert">{{ message }}</p>
+      }
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancelar</button>
+    @if (hasFibers) {
+      <button mat-flat-button type="submit">{{ data.confirmLabel ?? 'Salvar' }}</button>
+    }
+  </mat-dialog-actions>
+</form>

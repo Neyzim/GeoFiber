@@ -1,59 +1,73 @@
-# Geofiber
+# GeoFiber — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.6.
+Frontend open source do **GeoFiber**, aplicação para documentar redes FTTH no mapa: OLTs, cabos,
+tubos e fibras, caixas (CTO/CEO/DIO), emendas, splitters, portas de atendimento e clientes.
 
-## Development server
+Feito para dois públicos:
 
-To start a local development server, run:
+- **o técnico**, que cadastra e documenta a rede;
+- **quem tem menos conhecimento técnico**, que navega na documentação e entende o que está acontecendo.
 
-```bash
-ng serve
-```
+Toda a rede é guardada pelo backend do GeoFiber (repositório `geofiber-backend`, em Spring Boot + PostGIS).
+Este projeto é só a interface.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Pré-requisitos
 
-## Code scaffolding
+- Node.js e npm (o projeto usa npm 11).
+- Backend do GeoFiber rodando em `http://localhost:8080`, com CORS liberado para
+  `http://localhost:4200`. Veja o `API.md` do backend para subir o banco e a API.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Como rodar
 
 ```bash
-ng generate --help
+npm install      # instala as dependências
+npm start        # sobe em http://localhost:4200
+npm test         # roda os testes (Vitest)
+npm run build    # gera a versão de produção em dist/
 ```
 
-## Building
+## Configuração
 
-To build the project run:
+A URL da API fica em `src/environments/environment.ts`:
+
+```ts
+export const environment = {
+  apiBaseUrl: 'http://localhost:8080/api/v1',
+};
+```
+
+Toda chamada à API envia `Accept-Language: pt-BR`, para as mensagens de validação virem em português.
+
+## Tipos da API
+
+Os tipos TypeScript das requisições e respostas são gerados a partir do OpenAPI do backend e
+ficam em `src/app/core/api/generated/schema.d.ts` (não edite à mão). Quando o backend mudar,
+com ele rodando:
 
 ```bash
-ng build
+npm run api:types
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Use os tipos pelos aliases de `src/app/core/api/api-types.ts` (ex.: `BoxResponse`, `CableRole`).
 
-## Running unit tests
+## Estrutura
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+| Pasta | Conteúdo |
+|---|---|
+| `src/app/core/api/` | Comunicação com o backend: URL, idioma, tipos, coordenadas, erros e um serviço por recurso (`resources/`). |
+| `src/app/core/network/` | Camada do mapa: catálogo visual, conversão para marcadores/linhas, repositório (fala com a API) e estado da tela. |
+| `src/app/features/network-map/cable-sheet/` | Ficha do cabo: por onde passa (lista editável), tubos e fibras. |
+| `src/app/features/network-map/box-sheet/` | Ficha da caixa: fusões, conectores, splitters e portas de atendimento. |
+| `src/app/features/network-map/olt-sheet/` | Ficha da OLT: portas PON por placa e ligação com as fibras. |
+| `src/app/features/network-map/customer-sheet/` | Ficha do cliente: situação, quem atende e histórico. |
+| `src/app/shared/help/` | Ajuda para leigos: glossário, "?" nos termos e "O que estou vendo?". |
+| `src/app/core/` | Modelos, constantes e serviços de estado (tema, preferências, modelos de rede). |
+| `src/app/features/` | Telas (mapa da rede, modelos). |
+| `src/app/shared/` | Componentes reutilizáveis (mapa Leaflet, legenda, formulários de OLT, caixa e cabo). |
+| `src/testing/` | Utilitários usados só pelos testes. |
 
-```bash
-ng test
-```
+## Documentação
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [`docs/SPECS.md`](docs/SPECS.md) — especificação do frontend: o que faz e quais regras segue.
+- [`docs/GUIA.md`](docs/GUIA.md) — guia de uso e glossário em linguagem simples.
+- [Roadmap](docs/superpowers/specs/2026-11-19-frontend-roadmap-design.md) — etapas de integração com o backend.

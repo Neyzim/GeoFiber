@@ -1,0 +1,99 @@
+<h2 mat-dialog-title class="network-form__title">
+  <span class="network-form__badge" [style.background]="group.color">{{ group.code }}</span>
+  {{ isEdit ? 'Editar cliente' : 'Novo cliente' }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="network-form">
+    <div class="network-form__grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="name" maxlength="120" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Informe o nome do cliente.</mat-error>
+        }
+        @if (form.controls.name.hasError('api')) {
+          <mat-error>{{ form.controls.name.getError('api') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Código do contrato</mat-label>
+        <input matInput formControlName="contractCode" maxlength="80" />
+        @if (form.controls.contractCode.hasError('required')) {
+          <mat-error>Informe o código do contrato.</mat-error>
+        }
+        @if (form.controls.contractCode.hasError('api')) {
+          <mat-error>{{ form.controls.contractCode.getError('api') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="network-form__full">
+        <mat-label>Endereço</mat-label>
+        <input matInput formControlName="address" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="network-form__full">
+        <mat-label>Situação</mat-label>
+        <mat-select formControlName="status">
+          @for (status of statuses; track status.status) {
+            <mat-option [value]="status.status">
+              <span class="network-form__option">
+                <span class="network-form__dot" [style.background]="status.color"></span>
+                {{ status.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+        <mat-hint>{{ statusHelp() }}</mat-hint>
+      </mat-form-field>
+
+      @if (!isCancelled()) {
+        <mat-form-field appearance="outline">
+          <mat-label>CTO que atende</mat-label>
+          <mat-select formControlName="boxId">
+            <mat-option value="">Nenhuma por enquanto</mat-option>
+            @for (box of boxes(); track box.id) {
+              <mat-option [value]="box.id">{{ box.label }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>As mais próximas do cliente aparecem primeiro.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Porta de atendimento</mat-label>
+          <mat-select formControlName="servicePortId">
+            <mat-option value="">Sem porta</mat-option>
+            @for (port of ports(); track port.id) {
+              <mat-option [value]="port.id" [disabled]="!port.available">
+                {{ port.label }}{{ port.reason ? ' — ' + port.reason : '' }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (loadingPorts()) {
+            <mat-hint>Carregando portas…</mat-hint>
+          } @else if (form.controls.boxId.value && ports().length === 0) {
+            <mat-hint>Esta CTO ainda não tem portas de atendimento.</mat-hint>
+          } @else {
+            <mat-hint>Só portas livres e com sinal podem ser escolhidas.</mat-hint>
+          }
+        </mat-form-field>
+      } @else {
+        <p class="network-form__hint network-form__full">
+          Cliente cancelado não usa porta: a porta atual é liberada ao salvar.
+        </p>
+      }
+    </div>
+
+    @for (message of extraErrors(); track message) {
+      <p class="network-form__error">{{ message }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Cadastrar cliente' }}
+    </button>
+  </mat-dialog-actions>
+</form>

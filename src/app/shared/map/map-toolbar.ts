@@ -10,9 +10,11 @@ interface ToolOption {
   tool: MapTool;
   icon: string;
   label: string;
+  /** Ferramenta que altera a rede: exige `editable`. */
+  creates: boolean;
 }
 
-/** Barra flutuante de ferramentas do mapa (seleção, criação de PIN e navegação). */
+/** Barra flutuante de ferramentas do mapa (seleção, criação e navegação). */
 @Component({
   selector: 'app-map-toolbar',
   imports: [MatButtonModule, MatDividerModule, MatIconModule, MatTooltipModule],
@@ -24,8 +26,10 @@ export class MapToolbarComponent {
   readonly activeTool = input<MapTool>('select');
   readonly showLayerPanel = input(false);
   readonly showLegend = input(false);
-  /** Quantidade de PINs visíveis — habilita/desabilita ações dependentes. */
+  /** Quantidade de elementos visíveis — habilita/desabilita ações dependentes. */
   readonly visibleCount = input(0);
+  /** Libera as ferramentas de criação (rede carregada e permissão de edição). */
+  readonly editable = input(true);
 
   readonly toolChange = output<MapTool>();
   readonly zoomIn = output<void>();
@@ -34,15 +38,13 @@ export class MapToolbarComponent {
   readonly fitToPins = output<void>();
   readonly toggleLayerPanel = output<void>();
   readonly toggleLegend = output<void>();
-  readonly clearAll = output<void>();
 
-  /**
-   * Ferramentas de criação/seleção. As ações de mover ficam nos diálogos de
-   * edição de cada elemento (PIN/cabo), por isso não aparecem aqui.
-   */
+  /** Ferramentas de seleção, criação e ajuste de posição (as de edição exigem `editable`). */
   protected readonly tools: readonly ToolOption[] = [
-    { tool: 'select', icon: 'near_me', label: TOOL_LABELS.select },
-    { tool: 'addPin', icon: 'add_location_alt', label: TOOL_LABELS.addPin },
-    { tool: 'addCable', icon: 'timeline', label: TOOL_LABELS.addCable },
+    { tool: 'select', icon: 'near_me', label: TOOL_LABELS.select, creates: false },
+    { tool: 'addElement', icon: 'add_location_alt', label: TOOL_LABELS.addElement, creates: true },
+    { tool: 'addCable', icon: 'timeline', label: TOOL_LABELS.addCable, creates: true },
+    { tool: 'move', icon: 'open_with', label: TOOL_LABELS.move, creates: true },
+    { tool: 'editCable', icon: 'polyline', label: TOOL_LABELS.editCable, creates: true },
   ];
 }

@@ -1,6 +1,6 @@
 import * as L from 'leaflet';
-import { NetworkModel, networkModelSummary, resolveElementColor } from '../../core/models/network-model.model';
-import { Pin, pinStatusDefinition, pinTypeDefinition } from '../../core/models/pin.model';
+import { ElementDetail, MapElement } from '../../core/network/map-element';
+import { groupDefinition, statusDefinition } from '../../core/network/network-catalog';
 
 export const PIN_ICON_SIZE: readonly [number, number] = [34, 38];
 export const PIN_ICON_ANCHOR: readonly [number, number] = [17, 37];
@@ -21,31 +21,31 @@ export function escapeHtml(value: string): string {
 }
 
 /**
- * Cria o ícone (HTML/CSS) de um PIN. O visual é desenhado por CSS puro para
- * não depender de fontes de ícones nem de imagens externas.
+ * Cria o ícone (HTML/CSS) de um elemento: código e cor do tipo, ponto com a cor da
+ * situação. Desenhado em CSS puro, sem fontes de ícones nem imagens externas.
  */
-export function createPinIcon(
-  pin: Pin,
+/** `highlighted`: o elemento faz parte do cabo aberto na ficha (anel em volta). */
+export function createElementIcon(
+  element: MapElement,
   selected = false,
-  model?: NetworkModel | null,
+  highlighted = false,
 ): L.DivIcon {
-  const type = pinTypeDefinition(pin.type);
-  const status = pinStatusDefinition(pin.status);
+  const group = groupDefinition(element.group);
+  const status = statusDefinition(element.status);
   const classes = [
     'gf-pin',
-    `gf-pin--${pin.type}`,
-    `gf-pin--status-${pin.status}`,
+    `gf-pin--${element.group.toLowerCase()}`,
+    `gf-pin--status-${element.status.toLowerCase()}`,
     selected ? 'is-selected' : '',
+    highlighted ? 'is-highlighted' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
-  const color = resolveElementColor(pin.color, model, type.color);
-
   const html = `
-    <span class="${classes}" style="--gf-pin-color:${escapeHtml(color)}">
+    <span class="${classes}" style="--gf-pin-color:${escapeHtml(group.color)}">
       <span class="gf-pin__tip"></span>
-      <span class="gf-pin__head"><span class="gf-pin__code">${escapeHtml(type.code)}</span></span>
+      <span class="gf-pin__head"><span class="gf-pin__code">${escapeHtml(group.code)}</span></span>
       <span class="gf-pin__status" style="background:${escapeHtml(status.color)}"></span>
     </span>`;
 
@@ -58,7 +58,7 @@ export function createPinIcon(
   });
 }
 
-/** Pré-visualização que acompanha o cursor na ferramenta "Adicionar PIN". */
+/** Pré-visualização que acompanha o cursor na ferramenta "Adicionar elemento". */
 export function createGhostIcon(color = '#1e88e5'): L.DivIcon {
   const safe = escapeHtml(color);
   return L.divIcon({
@@ -79,40 +79,71 @@ export function createUserLocationIcon(): L.DivIcon {
   });
 }
 
-/** Conteúdo do tooltip de um PIN. */
-export function pinTooltipHtml(pin: Pin, model?: NetworkModel | null): string {
-  const type = pinTypeDefinition(pin.type);
-  const status = pinStatusDefinition(pin.status);
-  const label = model ? `${type.label} · ${model.name}` : type.label;
-  return `<strong>${escapeHtml(pin.name)}</strong><br>${escapeHtml(label)} · ${escapeHtml(status.label)}`;
+/** Conteúdo do tooltip de um elemento. */
+export function elementTooltipHtml(element: MapElement): string {
+  const group = groupDefinition(element.group);
+  const status = statusDefinition(element.status);
+  return `<strong>${escapeHtml(element.name)}</strong><br>${escapeHtml(group.label)} · ${escapeHtml(status.label)}`;
+}
+
+export interface PopupContent {
+  title: string;
+  badge: { code: string; color: string };
+  typeText: string;
+  status: { label: string; color: string };
+  details: readonly ElementDetail[];
+  /** Linha extra (ex.: início e fim do cabo). */
+  extra?: string | null;
+  hint?: string | null;
 }
 
 /**
- * Conteúdo do balão de informações exibido ao selecionar um PIN no mapa.
- *
- * O HTML é gerado como texto (o Leaflet injeta via `innerHTML`), por isso os
- * valores dinâmicos passam por `escapeHtml`; a aparência fica em `styles.scss`.
+ * Balão de informações em linguagem simples. O HTML é gerado como texto (o Leaflet
+ * injeta via `innerHTML`), por isso todos os valores passam por `escapeHtml`; a
+ * aparência fica em `styles.scss`.
  */
-export function pinPopupHtml(pin: Pin, model?: NetworkModel | null): string {
-  const type = pinTypeDefinition(pin.type);
-  const status = pinStatusDefinition(pin.status);
-  const color = resolveElementColor(pin.color, model, type.color);
-  const typeText = model ? `${type.label} · ${model.name}` : type.label;
-  const summary = model ? networkModelSummary(model) : '';
-
+export function popupHtml(content: PopupContent): string {
+  const rows = content.details
+    .filter((detail) => detail.label !== 'Tipo' && detail.label !== 'Situação')
+    .map(
+      (detail) =>
+        `<p class="gf-popup__detail"><span>${escapeHtml(detail.label)}</span> ${escapeHtml(detail.value)}</p>`,
+    )
+    .join('');
   return `
     <div class="gf-popup">
-      <p class="gf-popup__title">${escapeHtml(pin.name)}</p>
+      <p class="gf-popup__title">${escapeHtml(content.title)}</p>
       <p class="gf-popup__row">
-        <span class="gf-popup__badge" style="background:${escapeHtml(color)}">
-          ${escapeHtml(model?.code ?? type.code)}
+        <span class="gf-popup__badge" style="background:${escapeHtml(content.badge.color)}">
+          ${escapeHtml(content.badge.code)}
         </span>
-        <span class="gf-popup__type">${escapeHtml(typeText)}</span>
+        <span class="gf-popup__type">${escapeHtml(content.typeText)}</span>
       </p>
       <p class="gf-popup__meta">
-        <span class="gf-popup__dot" style="background:${escapeHtml(status.color)}"></span>
-        ${escapeHtml(status.label)}${summary ? ` · ${escapeHtml(summary)}` : ''}
+        <span class="gf-popup__dot" style="background:${escapeHtml(content.status.color)}"></span>
+        ${escapeHtml(content.status.label)}
       </p>
-      <p class="gf-popup__hint">Clique novamente para editar</p>
+      ${rows}
+      ${content.extra ? `<p class="gf-popup__detail">${escapeHtml(content.extra)}</p>` : ''}
+      ${content.hint ? `<p class="gf-popup__hint">${escapeHtml(content.hint)}</p>` : ''}
     </div>`;
+}
+
+/** Balão de um elemento selecionado no mapa. */
+export function elementPopupHtml(
+  element: MapElement,
+  extra?: string | null,
+  hint?: string | null,
+): string {
+  const group = groupDefinition(element.group);
+  const status = statusDefinition(element.status);
+  return popupHtml({
+    title: element.name,
+    badge: { code: group.code, color: group.color },
+    typeText: group.longLabel,
+    status,
+    details: element.details,
+    extra,
+    hint,
+  });
 }
