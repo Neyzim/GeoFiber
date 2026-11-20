@@ -30,6 +30,43 @@ html.dark-theme {
   color-scheme: dark;
 }
 
+// --- Esquema Unifilar (Visual Redesign) ----------------------------------------
+// Paleta para o novo visual de fichas: entrada → elemento → saída
+:root {
+  // Background & text
+  --unifilar-bg: #f4f6f8;
+  --unifilar-text: #1e2731;
+  --unifilar-secondary: #5d6b78;
+  --unifilar-normal: #1f9d6b;
+  --unifilar-alert: #d98a1c;
+  --unifilar-critical: #d23c3c;
+
+  // ABNT NBR 14721 fiber colors (12 cores)
+  --fiber-1-verde: #2e9e44;
+  --fiber-2-amarelo: #fdd835;
+  --fiber-3-branco: #ffffff;
+  --fiber-4-azul: #1e88e5;
+  --fiber-5-vermelho: #e53935;
+  --fiber-6-violeta: #8e24aa;
+  --fiber-7-marrom: #795548;
+  --fiber-8-rosa: #f48fb1;
+  --fiber-9-preto: #212121;
+  --fiber-10-cinza: #9e9e9e;
+  --fiber-11-laranja: #fb8c00;
+  --fiber-12-ciano: #00bcd4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --unifilar-bg: #1e2731;
+    --unifilar-text: #f4f6f8;
+    --unifilar-secondary: #9fb4c8;
+    --unifilar-normal: #2ecc71;
+    --unifilar-alert: #f39c12;
+    --unifilar-critical: #e74c3c;
+  }
+}
+
 body {
   margin: 0;
   font: var(--mat-sys-body-medium, 400 14px/1.5 Roboto, sans-serif);
