@@ -1,0 +1,82 @@
+<aside class="sheet" aria-label="Ficha do cliente">
+  <header class="sheet__header">
+    <span class="sheet__badge" [style.background]="group.color">{{ group.code }}</span>
+    <div class="sheet__titles">
+      <h2>{{ element().name }}</h2>
+      <p>Cliente{{ customer()?.contractCode ? ' · contrato ' + customer()?.contractCode : '' }}</p>
+    </div>
+    <button mat-icon-button type="button" matTooltip="Fechar ficha" (click)="closed.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  @if (customer(); as current) {
+    <p class="sheet__status">
+      <span class="sheet__dot" [style.background]="status().color"></span>
+      {{ status().label }}
+      @if (canEdit()) {
+        <button mat-button type="button" class="sheet__inline" (click)="editData.emit()">
+          <mat-icon>edit</mat-icon>
+          Editar dados
+        </button>
+      }
+    </p>
+
+    <p class="sheet__lead">{{ service() }}</p>
+    <p class="sheet__hint">{{ statusHelp() }} <app-term-hint key="situacao" /></p>
+
+    @if (current.address) {
+      <p class="sheet__hint">Endereço: {{ current.address }}</p>
+    }
+    @if (current.boxId && current.status !== 'CANCELLED') {
+      <button mat-stroked-button type="button" (click)="openBox.emit(current.boxId)">
+        <mat-icon>inventory_2</mat-icon>
+        Ver a CTO
+      </button>
+    }
+
+    @if (canEdit()) {
+      <section class="sheet__section">
+        <div class="sheet__section-head"><h3>Mudar situação</h3></div>
+        <div class="sheet__actions customer__actions">
+          @for (option of statusOptions; track option.status) {
+            @if (option.status !== current.status) {
+              <button mat-stroked-button type="button" (click)="changeStatus(option.status)">
+                <span class="sheet__dot" [style.background]="option.color"></span>
+                {{ option.status === 'ACTIVE' ? 'Ativar' : option.status === 'BLOCKED' ? 'Bloquear' : 'Cancelar contrato' }}
+              </button>
+            }
+          }
+        </div>
+      </section>
+    }
+
+    <section class="sheet__section">
+      <div class="sheet__section-head"><h3>Histórico</h3></div>
+      @if (historyLoading()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+      <ol class="sheet__route">
+        @for (entry of historyEntries(); track $index) {
+          <li>
+            <span class="sheet__route-role">{{ entry.when }}</span>
+            <span class="sheet__route-name">{{ entry.text }}</span>
+          </li>
+        } @empty {
+          @if (!historyLoading()) {
+            <p class="sheet__empty">Sem mudanças registradas.</p>
+          }
+        }
+      </ol>
+    </section>
+
+    @if (canEdit()) {
+      <section class="sheet__section">
+        <button mat-button type="button" class="customer__delete" (click)="deleteCustomer()">
+          <mat-icon>delete_outline</mat-icon>
+          Excluir cadastro (feito por engano)
+        </button>
+      </section>
+    }
+  }
+</aside>

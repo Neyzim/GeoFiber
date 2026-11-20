@@ -35,6 +35,29 @@
   flex: 0 0 auto;
 }
 
+.project__banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 1200;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high, #fff);
+  color: var(--mat-sys-on-surface, #1f2933);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.22);
+  font: var(--mat-sys-body-medium, 400 14px/1.4 Roboto, sans-serif);
+}
+
+.project__banner--error {
+  background: var(--mat-sys-error-container, #fdecea);
+  color: var(--mat-sys-on-error-container, #8c1d18);
+}
+
 .project__overlay {
   position: absolute;
   top: 12px;
@@ -55,5 +78,18 @@
   &--right {
     right: 12px;
     align-items: flex-end;
+  }
+}
+
+// Botões de ajuda para quem não é técnico (Etapa 6).
+.project__help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: auto;
+
+  button {
+    background: var(--mat-sys-surface-container-high, #fff);
+    box-shadow: 0 2px 8px rgb(15 23 42 / 0.18);
   }
 }

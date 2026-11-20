@@ -1,0 +1,70 @@
+<h2 mat-dialog-title class="network-form__title">
+  <span class="network-form__badge" [style.background]="group.color">{{ group.code }}</span>
+  {{ isEdit ? 'Editar OLT' : 'Nova OLT' }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="network-form">
+    <p class="network-form__hint">
+      A OLT é o equipamento da central que gera o sinal óptico para toda a rede.
+    </p>
+    <div class="network-form__grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="name" maxlength="120" placeholder="OLT-CENTRO" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Informe um nome.</mat-error>
+        }
+        @if (form.controls.name.hasError('api')) {
+          <mat-error>{{ form.controls.name.getError('api') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Situação</mat-label>
+        <mat-select formControlName="usageStatus">
+          @for (status of statuses; track status.status) {
+            <mat-option [value]="status.status">
+              <span class="network-form__option">
+                <span class="network-form__dot" [style.background]="status.color"></span>
+                {{ status.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="network-form__full">
+        <mat-label>Modelo do equipamento</mat-label>
+        <input matInput formControlName="model" />
+      </mat-form-field>
+
+      @if (isEdit) {
+        <mat-form-field appearance="outline">
+          <mat-label>Latitude</mat-label>
+          <input matInput type="number" formControlName="latitude" step="0.000001" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Longitude</mat-label>
+          <input matInput type="number" formControlName="longitude" step="0.000001" />
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline" class="network-form__full">
+        <mat-label>Descrição</mat-label>
+        <textarea matInput formControlName="description" rows="2"></textarea>
+      </mat-form-field>
+    </div>
+
+    @for (message of extraErrors(); track message) {
+      <p class="network-form__error">{{ message }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Cadastrar OLT' }}
+    </button>
+  </mat-dialog-actions>
+</form>

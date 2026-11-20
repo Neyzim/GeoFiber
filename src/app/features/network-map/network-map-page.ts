@@ -1,64 +1,100 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
+import { ComponentType } from '@angular/cdk/portal';
+import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { Observable, map } from 'rxjs';
+import { BoxType, CableRole, InfrastructureStatus } from '../../core/api/api-types';
 import { BASE_LAYERS, DEFAULT_MAP_VIEW } from '../../core/constants/map.constants';
 import {
-  CABLE_TYPES,
-  Cable,
-  CableType,
-  cableTypeDefinition,
-  isCableType,
-} from '../../core/models/cable.model';
-import { GeoPath, GeoPoint, MapClickEvent, MapTool, MapViewState, PathVertexMoveEvent, PinMoveEvent } from '../../core/models/geo.model';
+  ElementMoveEvent,
+  GeoPath,
+  GeoPoint,
+  MapClickEvent,
+  MapTool,
+  MapViewState,
+  PathVertexMoveEvent,
+} from '../../core/models/geo.model';
+import { buildLegendSections } from '../../core/network/legend-sections';
+import { MapCable, MapElement } from '../../core/network/map-element';
 import {
-  NetworkModel,
-  networkModelSummary,
-  resolveElementColor,
-} from '../../core/models/network-model.model';
-import {
-  PIN_TYPES,
-  Pin,
-  PinStatus,
-  PinType,
-  isPinType,
-  pinStatusDefinition,
-  pinSubgroupKey,
-  pinTypeDefinition,
-} from '../../core/models/pin.model';
-import { CableStoreService } from '../../core/services/cable-store';
+  CABLE_ROLES,
+  ELEMENT_GROUPS,
+  ElementGroup,
+  cableLineStyle,
+  roleDefinition,
+  statusDefinition,
+} from '../../core/network/network-catalog';
+import { NetworkMapRepository } from '../../core/network/network-map-repository';
+import { LegendGroupKey, NetworkMapState } from '../../core/network/network-map-state';
 import { MapPreferencesService } from '../../core/services/map-preferences';
 import { MapViewportService } from '../../core/services/map-viewport';
-import { NetworkModelStoreService } from '../../core/services/network-model-store';
 import { NotificationService } from '../../core/services/notification';
-import { PinStoreService } from '../../core/services/pin-store';
 import {
+  CableEndSuggestion,
+  CableFormData,
   CableFormDialogComponent,
-  CableFormDialogData,
-  CableFormResult,
 } from '../../shared/cable/cable-form-dialog';
 import { GeoMapComponent } from '../../shared/map/geo-map';
-import { escapeHtml } from '../../shared/map/pin-marker';
-import {
-  LegendGroup,
-  LegendLeaf,
-  LegendSection,
-  LegendSubgroup,
-  MapLegendComponent,
-} from '../../shared/map/map-legend';
+import { LegendGroup, LegendLeaf, MapLegendComponent } from '../../shared/map/map-legend';
 import { MapLayerPanelComponent } from '../../shared/map/map-layer-panel';
 import { MapStatusBarComponent } from '../../shared/map/map-status-bar';
 import { MapToolbarComponent } from '../../shared/map/map-toolbar';
 import { MapTypePickerComponent, TypePickerOption } from '../../shared/map/map-type-picker';
-import { PinFormDialogComponent, PinFormDialogData, PinFormResult } from '../../shared/pin/pin-form-dialog';
+import { popupHtml } from '../../shared/map/pin-marker';
+import { BoxFormData, BoxFormDialogComponent } from '../../shared/network/box-form-dialog';
+import { OltFormData, OltFormDialogComponent } from '../../shared/network/olt-form-dialog';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/ui/confirm-dialog';
+import { RouteItem } from '../../core/network/cable-route';
+import { describeCableEnds } from './cable-ends';
+import { BoxSheetComponent } from './box-sheet/box-sheet';
+import { BoxSheetStore } from './box-sheet/box-sheet-store';
+import { CableSheetComponent } from './cable-sheet/cable-sheet';
+import { CableSheetStore } from './cable-sheet/cable-sheet-store';
+import { CustomerSheetComponent } from './customer-sheet/customer-sheet';
+import { describeView } from '../../core/network/view-summary';
+import { GlossaryDialogComponent } from '../../shared/help/glossary-dialog';
+import { ViewHelpData, ViewHelpDialogComponent } from '../../shared/help/view-help-dialog';
+import {
+  CustomerFormData,
+  CustomerFormDialogComponent,
+} from '../../shared/network/customer-form-dialog';
+import { CustomerStatus } from '../../core/api/api-types';
+import { OltSheetComponent } from './olt-sheet/olt-sheet';
+import { OltSheetStore } from './olt-sheet/olt-sheet-store';
 import { NetworkSidebarComponent } from './network-sidebar/network-sidebar';
 
-/** Tela de desenho da rede: mapa + ferramentas + listas de PINs e cabos. */
+/** Grupos que a ferramenta "Adicionar elemento" cria (OLT, caixas e clientes). */
+type CreatableGroup = ElementGroup;
+
+const CREATABLE_GROUPS = ELEMENT_GROUPS;
+
+/**
+ * Tela do mapa da rede. Os dados vêm da API pelo `NetworkMapRepository`; a seleção,
+ * a busca e os filtros vivem no `NetworkMapState`. Esta página só liga as peças:
+ * ferramentas, diálogos, legenda e o mapa.
+ */
 @Component({
   selector: 'app-network-map-page',
   imports: [
+    BoxSheetComponent,
+    CableSheetComponent,
+    CustomerSheetComponent,
     GeoMapComponent,
+    MatButtonModule,
+    MatIconModule,
     MapLayerPanelComponent,
+    OltSheetComponent,
     MapLegendComponent,
     MapStatusBarComponent,
     MapToolbarComponent,
@@ -68,48 +104,120 @@ import { NetworkSidebarComponent } from './network-sidebar/network-sidebar';
   templateUrl: './network-map-page.html',
   styleUrl: './network-map-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [BoxSheetStore, CableSheetStore, OltSheetStore],
   host: {
     '(document:keydown.escape)': 'onEscape()',
   },
 })
-export class NetworkMapPage {
-  private readonly store = inject(PinStoreService);
-  private readonly cableStore = inject(CableStoreService);
+export class NetworkMapPage implements OnInit {
+  private readonly repository = inject(NetworkMapRepository);
+  protected readonly sheet = inject(CableSheetStore);
+  private readonly boxSheet = inject(BoxSheetStore);
+  private readonly oltSheet = inject(OltSheetStore);
+  private readonly state = inject(NetworkMapState);
   private readonly preferences = inject(MapPreferencesService);
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly viewport = inject(MapViewportService);
-  private readonly models = inject(NetworkModelStoreService);
   private readonly geoMap = viewChild.required(GeoMapComponent);
 
   protected readonly baseLayers = BASE_LAYERS;
   protected readonly preferencesState = this.preferences;
 
-  protected readonly pins = this.store.visiblePins;
-  protected readonly selectedId = this.store.selectedId;
-  protected readonly search = this.store.search;
-  protected readonly hasActiveFilters = computed(
-    () => this.store.hasActiveFilters() || this.cableStore.hasActiveFilters(),
+  protected readonly loadState = this.repository.loadState;
+  /** Ferramentas de edição liberadas: rede carregada e permissão de edição. */
+  protected readonly editable = computed(
+    () => this.loadState() === 'ready' && this.state.canEdit(),
   );
-  protected readonly totalPins = this.store.total;
 
-  protected readonly cables = this.cableStore.visibleCables;
-  protected readonly selectedCableId = this.cableStore.selectedId;
-  protected readonly totalCables = this.cableStore.total;
+  protected readonly elements = this.state.visibleElements;
+  protected readonly search = this.state.search;
+  protected readonly hasActiveFilters = this.state.hasActiveFilters;
+  protected readonly activeStatuses = computed<readonly InfrastructureStatus[]>(() => [
+    ...this.state.statusFilter(),
+  ]);
+  protected readonly totalElements = computed(() => this.repository.elements().length);
+  protected readonly totalCables = computed(() => this.repository.mapCables().length);
+  protected readonly visibleCount = computed(() => this.elements().length);
+  protected readonly visibleCableCount = computed(() => this.state.visibleCables().length);
+
+  protected readonly selectedElementKey = computed(() => {
+    const selection = this.state.selection();
+    return selection?.type === 'element' ? selection.key : null;
+  });
+  protected readonly selectedCableId = computed(() => {
+    const selection = this.state.selection();
+    return selection?.type === 'cable' ? selection.id : null;
+  });
 
   protected readonly activeTool = signal<MapTool>('select');
-  /** Tipo usado pela ferramenta "Adicionar PIN". */
-  protected readonly activePinType = signal<PinType>(PIN_TYPES[0].type);
-  /** Tipo usado pela ferramenta "Traçar cabo". */
-  protected readonly activeCableType = signal<CableType>(CABLE_TYPES[0].type);
-  /** Modelo de cabo que parametriza o traçado em construção. */
-  protected readonly activeCableModelId = signal<string | null>(null);
-  /** Vértices livremente lançados no traçado em construção. */
+  /** Tipo criado pela ferramenta "Adicionar elemento". */
+  protected readonly activeGroup = signal<CreatableGroup>('CTO');
+  /** Função do cabo traçado pela ferramenta "Traçar cabo". */
+  protected readonly activeRole = signal<CableRole>('DISTRIBUTION');
+  /** Vértices do traçado em construção. */
   protected readonly cableDraftPoints = signal<readonly GeoPoint[]>([]);
+  /** Elemento (OLT/caixa) em que cada vértice do traçado encaixou, ou `null`. */
+  private readonly cableDraftSnaps = signal<readonly (CableEndSuggestion | null)[]>([]);
+  /** Cabo selecionado (abre a ficha). */
+  protected readonly selectedCable = this.state.selectedCable;
 
-  /** Chave ativa da paleta de cabo: id do modelo ou tipo base. */
-  protected readonly activeCableKey = computed<string>(
-    () => this.activeCableModelId() ?? this.activeCableType(),
+  /** Caixa selecionada (abre a ficha da caixa). */
+  protected readonly selectedBox = computed(() => {
+    const element = this.state.selectedElement();
+    return element?.kind === 'box' ? element : null;
+  });
+
+  /** Cliente selecionado (abre a ficha do cliente). */
+  protected readonly selectedCustomer = computed(() => {
+    const element = this.state.selectedElement();
+    return element?.kind === 'customer' ? element : null;
+  });
+
+  /** OLT selecionada (abre a ficha da OLT). */
+  protected readonly selectedOlt = computed(() => {
+    const element = this.state.selectedElement();
+    return element?.kind === 'olt' ? element : null;
+  });
+
+  /** Início e fim do cabo selecionado para o balão, vindos da ficha. */
+  private readonly cableEnds = computed<string | null>(() => {
+    const id = this.selectedCableId();
+    if (!id || this.sheet.cableId() !== id) return null;
+    switch (this.sheet.state()) {
+      case 'ready':
+        return describeCableEnds(this.sheet.attachments());
+      case 'error':
+        return 'Não foi possível carregar o início e o fim';
+      default:
+        return 'Carregando início e fim...';
+    }
+  });
+
+  /** Elementos destacados no mapa: os da lista do cabo aberto na ficha. */
+  protected readonly highlightedKeys = computed<ReadonlySet<string>>(() =>
+    this.sheet.cableId() ? this.sheet.elementKeys() : new Set(),
+  );
+
+  /** OLTs e caixas que podem entrar na lista de um cabo, por nome. */
+  protected readonly routeCandidates = computed<readonly RouteItem[]>(() =>
+    [
+      ...this.repository.olts().map((olt) => ({
+        ref: { kind: 'olt' as const, id: olt.id ?? '' },
+        name: olt.name ?? 'OLT sem nome',
+      })),
+      ...this.repository.boxes().map((box) => ({
+        ref: { kind: 'box' as const, id: box.id ?? '' },
+        name: box.name ?? 'Caixa sem nome',
+      })),
+    ]
+      .filter((item) => item.ref.id)
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+  );
+
+  /** Nome de cada OLT/caixa pelo id. */
+  protected readonly elementNames = computed<ReadonlyMap<string, string>>(
+    () => new Map(this.routeCandidates().map((item) => [item.ref.id, item.name])),
   );
 
   protected readonly pickerVisible = signal(true);
@@ -123,27 +231,19 @@ export class NetworkMapPage {
   protected readonly initialZoom = computed<number>(
     () => this.preferences.lastView()?.zoom ?? DEFAULT_MAP_VIEW.zoom,
   );
-  protected readonly visibleCount = computed(() => this.pins().length);
-  protected readonly activeStatuses = computed<readonly PinStatus[]>(() => [
-    ...this.store.statusFilter(),
-  ]);
 
   protected readonly isCreating = computed(
-    () => this.activeTool() === 'addPin' || this.activeTool() === 'addCable',
+    () => this.activeTool() === 'addElement' || this.activeTool() === 'addCable',
   );
   protected readonly showPicker = computed(() => this.isCreating() && this.pickerVisible());
 
-  /** Cor do elemento em criação — usada no PIN fantasma e na linha-guia. */
+  /** Cor do elemento em criação — usada no marcador fantasma e na linha-guia. */
   protected readonly previewColor = computed<string | null>(() => {
-    if (this.activeTool() === 'addPin') {
-      return pinTypeDefinition(this.activePinType()).color;
+    if (this.activeTool() === 'addElement') {
+      return CREATABLE_GROUPS.find((group) => group.group === this.activeGroup())?.color ?? null;
     }
     if (this.activeTool() === 'addCable') {
-      return resolveElementColor(
-        undefined,
-        this.models.findById(this.activeCableModelId()),
-        cableTypeDefinition(this.activeCableType()).color,
-      );
+      return roleDefinition(this.activeRole()).color;
     }
     return null;
   });
@@ -157,212 +257,130 @@ export class NetworkMapPage {
     return points.length > 0 ? points[points.length - 1] : null;
   });
 
-  /** Cabos renderizados no mapa, incluindo a pré-visualização do traçado. */
+  /** Linhas dos cabos (estilo por função e situação) e a pré-visualização do traçado. */
   protected readonly paths = computed<readonly GeoPath[]>(() => {
-    const result: GeoPath[] = [];
+    const selectedId = this.selectedCableId();
+    const endsText = this.cableEnds();
+    const hint = this.editable() ? 'Clique novamente para editar' : null;
 
-    for (const cable of this.cableStore.visibleCables()) {
-      const definition = cableTypeDefinition(cable.type);
-      if (cable.points.length < 2) {
-        continue;
-      }
-      const model = this.models.findById(cable.modelId);
-      result.push({
+    const result: GeoPath[] = this.state.visibleCables().map((cable) => {
+      const style = cableLineStyle(cable.role, cable.status);
+      const extra = cable.id === selectedId ? endsText : null;
+      return {
         id: cable.id,
-        points: cable.points,
-        color: resolveElementColor(cable.color, model, definition.color),
-        weight: model?.weight ?? definition.weight,
-        dashArray: model?.dashArray ?? definition.dashArray,
-        popupHtml: cablePopupHtml(cable, model),
-      });
-    }
+        points: [...cable.points],
+        color: style.color,
+        weight: style.weight,
+        dashArray: style.dashArray,
+        opacity: style.opacity,
+        popupHtml: cablePopupHtml(cable, extra, hint),
+      };
+    });
 
-    const draftPoints = this.cableDraftPoints();
-    if (this.activeTool() === 'addCable' && draftPoints.length > 0) {
-      const definition = cableTypeDefinition(this.activeCableType());
-      const model = this.models.findById(this.activeCableModelId());
+    const draft = this.cableDraftPoints();
+    if (this.activeTool() === 'addCable' && draft.length > 0) {
+      const definition = roleDefinition(this.activeRole());
       result.push({
         id: '__draft__',
-        points: [...draftPoints],
-        color: resolveElementColor(undefined, model, definition.color),
-        weight: (model?.weight ?? definition.weight) + 1,
+        points: [...draft],
+        color: definition.color,
+        weight: definition.weight + 1,
         dashArray: '6 6',
       });
     }
-
     return result;
   });
 
-  /**
-   * Paleta de PINs agrupada por tipo: todos os CTOs em uma única opção e a
-   * variante (ex.: 1x8) é definida depois, no diálogo de criação/edição.
-   */
-  protected readonly pinTypeOptions = computed<readonly TypePickerOption[]>(() => {
-    const counts = this.store.typeCounts();
-    return PIN_TYPES.map((definition) => ({
-      key: definition.type,
-      label: definition.label,
-      code: definition.code,
-      color: definition.color,
-      count: counts.get(definition.type) ?? 0,
+  protected readonly elementOptions = computed<readonly TypePickerOption[]>(() => {
+    const elements = this.repository.elements();
+    return CREATABLE_GROUPS.map((group) => ({
+      key: group.group,
+      label: group.label,
+      code: group.code,
+      color: group.color,
+      count: elements.filter((element) => element.group === group.group).length,
     }));
   });
 
-  /** Paleta de cabos: modelos cadastrados (ou os tipos base como reserva). */
-  protected readonly cableTypeOptions = computed<readonly TypePickerOption[]>(() => {
-    const modelCounts = new Map<string, number>();
-    for (const cable of this.cableStore.cables()) {
-      if (cable.modelId) {
-        modelCounts.set(cable.modelId, (modelCounts.get(cable.modelId) ?? 0) + 1);
-      }
-    }
-
-    const models = this.models.cableModels();
-    if (models.length > 0) {
-      return models.map((model) => ({
-        key: model.id,
-        label: model.name,
-        code: model.code,
-        color: model.color,
-        count: modelCounts.get(model.id) ?? 0,
-      }));
-    }
-
-    const counts = this.cableStore.typeCounts();
-    return CABLE_TYPES.map((definition) => ({
-      key: definition.type,
-      label: definition.label,
-      code: definition.code,
-      color: definition.color,
-      count: counts.get(definition.type) ?? 0,
+  protected readonly roleOptions = computed<readonly TypePickerOption[]>(() => {
+    const cables = this.repository.mapCables();
+    return CABLE_ROLES.map((role) => ({
+      key: role.role,
+      label: role.label,
+      code: role.code,
+      color: role.color,
+      count: cables.filter((cable) => cable.role === role.role).length,
     }));
   });
 
-  /**
-   * Árvore da legenda: elementos e cabos agrupados por tipo e, quando o tipo
-   * possui variantes (ex.: CTO 1x16 / 1x8), por subgrupo. Usa os itens que
-   * passam por busca/situação para que a árvore sirva de listagem ao mesmo
-   * tempo em que os "olhos" funcionam como filtro de visibilidade.
-   */
-  protected readonly legendSections = computed<readonly LegendSection[]>(() =>
-    [this.legendPinSection(), this.legendCableSection()],
+  /** Legenda: lista o que passa pela busca/situação; o olho oculta grupos no mapa. */
+  protected readonly legendSections = computed(() =>
+    buildLegendSections(
+      this.state.filteredElements(),
+      this.state.filteredCables(),
+      this.state.hiddenGroups(),
+      this.state.canEdit(),
+    ),
   );
 
-  private readonly legendPinSection = computed<LegendSection>(() => {
-    const pins = this.store.filteredPins();
-    const hiddenTypes = this.store.hiddenTypes();
-    const hiddenGroups = this.store.hiddenGroups();
+  constructor() {
+    // A ficha acompanha a seleção: abre com o cabo selecionado e fecha sem ele.
+    effect(() => {
+      const cable = this.selectedCable();
+      untracked(() => (cable ? this.sheet.open(cable.id) : this.sheet.close()));
+    });
+    effect(() => {
+      const box = this.selectedBox();
+      untracked(() => (box ? this.boxSheet.open(box.id) : this.boxSheet.close()));
+    });
+    effect(() => {
+      const olt = this.selectedOlt();
+      untracked(() => (olt ? this.oltSheet.open(olt.id) : this.oltSheet.close()));
+    });
+  }
 
-    const groups: LegendGroup[] = [];
-    for (const definition of PIN_TYPES) {
-      const typePins = pins.filter((pin) => pin.type === definition.type);
-      if (typePins.length === 0) {
-        continue;
-      }
-      const typeHidden = hiddenTypes.has(definition.type);
+  ngOnInit(): void {
+    this.repository.load();
+  }
 
-      const buckets = new Map<string, { key: string; label: string; items: LegendLeaf[] }>();
-      for (const pin of typePins) {
-        const key = pinSubgroupKey(pin);
-        const bucket = buckets.get(key) ?? {
-          key,
-          label: this.pinSubgroupLabel(pin),
-          items: [],
-        };
-        bucket.items.push(toPinLeaf(pin));
-        buckets.set(key, bucket);
-      }
-
-      const subgroups: LegendSubgroup[] = [...buckets.values()].map((bucket) => ({
-        key: bucket.key,
-        label: bucket.label,
-        count: bucket.items.length,
-        hidden: typeHidden || hiddenGroups.has(bucket.key),
-        items: bucket.items,
-      }));
-
-      groups.push({
-        key: definition.type,
-        type: definition.type,
-        kind: 'pin',
-        label: definition.label,
-        code: definition.code,
-        color: definition.color,
-        count: typePins.length,
-        hidden: typeHidden,
-        subgroups,
-        items: subgroups.length > 0 ? [] : typePins.map(toPinLeaf),
-      });
-    }
-
-    return { key: 'pins', label: 'Elementos', total: pins.length, groups };
-  });
-
-  private readonly legendCableSection = computed<LegendSection>(() => {
-    const cables = this.cableStore.filteredCables();
-    const hiddenTypes = this.cableStore.hiddenTypes();
-
-    const groups: LegendGroup[] = [];
-    for (const definition of CABLE_TYPES) {
-      const typeCables = cables.filter((cable) => cable.type === definition.type);
-      if (typeCables.length === 0) {
-        continue;
-      }
-      groups.push({
-        key: definition.type,
-        type: definition.type,
-        kind: 'cable',
-        label: definition.label,
-        code: definition.code,
-        color: definition.color,
-        count: typeCables.length,
-        hidden: hiddenTypes.has(definition.type),
-        dashed: Boolean(definition.dashArray),
-        subgroups: [],
-        items: typeCables.map(toCableLeaf),
-      });
-    }
-
-    return { key: 'cables', label: 'Cabos', total: cables.length, groups };
-  });
-
-  /** Rótulo do subgrupo de um PIN: nome do modelo vinculado ou "Sem modelo". */
-  private pinSubgroupLabel(pin: Pin): string {
-    const model = this.models.findById(pin.modelId);
-    return model ? `${model.name} (${model.code})` : 'Sem modelo';
+  protected retryLoad(): void {
+    this.repository.load();
   }
 
   // --- Ferramentas ---------------------------------------------------------
 
   protected setTool(tool: MapTool): void {
-    this.cableDraftPoints.set([]);
+    if (tool !== 'select' && !this.editable()) {
+      return;
+    }
+    this.clearDraft();
     this.activeTool.set(tool);
     this.pickerVisible.set(true);
 
-    if (tool === 'addPin') {
-      this.notifications.info(
-        `Tipo "${pinTypeDefinition(this.activePinType()).label}": clique no mapa para criar. ESC encerra.`,
-      );
+    if (tool === 'addElement') {
+      this.notifications.info('Escolha o tipo e clique no mapa para criar. ESC encerra.');
     } else if (tool === 'addCable') {
       this.notifications.info(
-        'Clique no mapa para traçar o cabo (ímã aproxima dos PINs). Duplo clique finaliza; ESC cancela.',
+        'Clique no mapa para traçar o cabo; clique numa OLT ou caixa para começar ou terminar nela. Duplo clique finaliza; ESC cancela.',
       );
     } else if (tool === 'move') {
-      this.notifications.info('Arraste um PIN para corrigir a posição.');
+      this.notifications.info('Arraste uma OLT ou caixa para corrigir a posição. ESC encerra.');
     } else if (tool === 'editCable') {
-      this.notifications.info('Arraste os vértices do cabo selecionado. ESC encerra.');
+      this.notifications.info('Clique num cabo e arraste os vértices. ESC encerra.');
     }
   }
 
-  /** Sai da ferramenta de criação (ou do arrasto) — atalho pedido: `ESC`. */
+  /** ESC sai da ferramenta atual (os diálogos tratam o próprio ESC). */
   onEscape(): void {
-    // Um diálogo aberto já trata o ESC por conta própria (fechá-lo).
     if (this.dialog.openDialogs.length > 0) {
       return;
     }
-    const tool = this.activeTool();
-    if (tool !== 'select') {
-      this.cableDraftPoints.set([]);
+    if (this.sheet.picking()) {
+      this.sheet.setPicking(false);
+      return;
+    }
+    if (this.activeTool() !== 'select') {
+      this.clearDraft();
       this.activeTool.set('select');
       this.notifications.info('Ferramenta encerrada.');
     }
@@ -372,120 +390,115 @@ export class NetworkMapPage {
     this.pickerVisible.set(false);
   }
 
-  protected onPinTypePicked(key: string): void {
-    if (!isPinType(key)) {
-      return;
+  protected onElementTypePicked(key: string): void {
+    const group = CREATABLE_GROUPS.find((item) => item.group === key);
+    if (group) {
+      this.activeGroup.set(group.group);
+      this.notifications.info(`${group.label} selecionado. Clique no mapa para criar.`);
     }
-    this.activePinType.set(key);
-    this.notifications.info(`${pinTypeDefinition(key).label} selecionado. Clique no mapa para criar.`);
   }
 
-  protected onCableTypePicked(key: string): void {
-    const model = this.models.findById(key);
-    if (model) {
-      if (model.kind !== 'cabo') {
-        return;
-      }
-      if (model.category) {
-        this.activeCableType.set(model.category);
-      }
-      this.activeCableModelId.set(model.id);
-      this.notifications.info(`${model.name} selecionado.`);
-      return;
+  protected onRolePicked(key: string): void {
+    const role = CABLE_ROLES.find((item) => item.role === key);
+    if (role) {
+      this.activeRole.set(role.role);
+      this.notifications.info(`Cabo de ${role.label} selecionado.`);
     }
-    if (!isCableType(key)) {
-      return;
-    }
-    this.activeCableType.set(key);
-    this.activeCableModelId.set(null);
-    this.notifications.info(`Cabo ${cableTypeDefinition(key).label} selecionado.`);
   }
 
   // --- Eventos do mapa -----------------------------------------------------
 
   protected onMapClick(event: MapClickEvent): void {
-    if (event.tool === 'addPin') {
-      this.openPinForm({
-        mode: 'create',
-        position: event.position,
-        type: this.activePinType(),
-      });
+    // Escolhendo elementos para a lista do cabo: clique no vazio não fecha a ficha.
+    if (this.sheet.picking()) {
+      return;
+    }
+    if (event.tool === 'addElement') {
+      this.openElementCreate(event.position);
       return;
     }
     if (event.tool === 'addCable') {
-      this.appendPoint(event.position);
+      const element = event.snappedKey ? this.findElement(event.snappedKey) : undefined;
+      this.appendPoint(event.position, element);
       return;
     }
-    // Nas ferramentas de mover/editar, o clique no vazio não altera a seleção.
     if (event.tool === 'move' || event.tool === 'editCable') {
       return;
     }
-    this.store.select(null);
-    this.cableStore.select(null);
+    this.state.select(null);
   }
 
-  /** Clique no PIN: seleciona/mostra o balão; o segundo clique abre a edição. */
-  protected onPinClick(pin: Pin): void {
+  /** Clique no elemento: seleciona/mostra o balão; o segundo clique abre a edição. */
+  protected onElementClick(element: MapElement): void {
+    if (this.sheet.picking()) {
+      this.pickForCable(element);
+      return;
+    }
     const tool = this.activeTool();
     if (tool === 'addCable') {
-      this.appendPoint(pin.position);
+      this.appendPoint(element.position, element);
       return;
     }
     if (tool === 'move' || tool === 'editCable') {
       return;
     }
-    if (this.selectedId() === pin.id) {
-      this.openPinForm({ mode: 'edit', pin });
+    if (this.selectedElementKey() === element.key) {
+      this.openElementEdit(element);
       return;
     }
-    this.zoomToPin(pin);
+    this.focusElement(element);
   }
 
-  /** Duplo clique em um PIN conclui o traçado em construção. */
-  protected onPinDoubleClick(): void {
+  protected onElementDoubleClick(): void {
     this.finishCable();
   }
 
-  /** Duplo clique no mapa também conclui o traçado. */
   protected onMapDoubleClick(): void {
     this.finishCable();
   }
 
-  /** Clique no cabo: seleciona/mostra o balão; o segundo clique abre a edição. */
+  /** Clique no cabo: seleciona e busca início/fim; o segundo clique abre a edição. */
   protected onPathClick(path: GeoPath): void {
-    if (this.activeTool() !== 'select') {
+    const tool = this.activeTool();
+    if (tool !== 'select' && tool !== 'editCable') {
       return;
     }
-    const cable = this.cableStore.findById(path.id);
+    const cable = this.repository.mapCables().find((item) => item.id === path.id);
     if (!cable) {
       return;
     }
-    if (this.selectedCableId() === cable.id) {
-      this.openCableForm({ mode: 'edit', cable });
+    if (tool === 'select' && this.selectedCableId() === cable.id) {
+      this.openCableEdit(cable.id);
       return;
     }
-    this.zoomToCable(cable);
+    if (tool === 'editCable') {
+      this.state.select({ type: 'cable', id: cable.id });
+      return;
+    }
+    this.focusCable(cable);
   }
 
-  /** Um vértice do cabo foi arrastado no mapa (ferramenta "Mover cabo"). */
   protected onPathVertexMoved(event: PathVertexMoveEvent): void {
-    const cable = this.cableStore.findById(event.pathId);
+    const cable = this.repository.mapCables().find((item) => item.id === event.pathId);
     if (!cable) {
       return;
     }
     const points = cable.points.map((point, index) =>
       index === event.index ? event.position : point,
     );
-    this.cableStore.update(event.pathId, { points });
+    this.repository.updateCableRoute(cable.id, points);
   }
 
-  protected onPinMoved(event: PinMoveEvent): void {
-    const pin = this.store.findById(event.pinId);
-    if (!pin) {
+  protected onElementMoved(event: ElementMoveEvent): void {
+    // Só a ferramenta "Mover elemento", com permissão de edição, grava a posição.
+    if (this.activeTool() !== 'move' || !this.editable()) {
       return;
     }
-    this.store.moveTo(event.pinId, event.position);
-    this.notifications.success(`Posição de "${pin.name}" atualizada.`);
+    const element = this.findElement(event.key);
+    if (!element || element.kind === 'customer') {
+      return;
+    }
+    this.repository.moveElement({ kind: element.kind, id: element.id }, event.position);
   }
 
   protected onViewChanged(view: MapViewState): void {
@@ -503,118 +516,113 @@ export class NetworkMapPage {
     );
   }
 
-  // --- Criação dinâmica de PIN ---------------------------------------------
+  // --- Seleção e navegação -------------------------------------------------
 
-  protected editPin(pin: Pin): void {
-    this.openPinForm({ mode: 'edit', pin });
+  private findElement(key: string): MapElement | undefined {
+    return this.repository.elements().find((item) => item.key === key);
   }
 
-  protected removePin(pin: Pin): void {
-    this.confirm({
-      title: 'Remover PIN',
-      message: `Tem certeza que deseja remover "${pin.name}" do projeto?`,
-      confirmLabel: 'Remover',
-      danger: true,
-    }).subscribe((confirmed) => {
-      if (!confirmed) {
-        return;
-      }
-      this.store.remove(pin.id);
-      this.notifications.success(`PIN "${pin.name}" removido.`);
-    });
+  private focusElement(element: MapElement): void {
+    this.viewport.focus(element.position);
+    this.state.select({ type: 'element', key: element.key });
   }
 
-  protected clearAll(): void {
-    this.confirm({
-      title: 'Remover tudo',
-      message: `Isso apagará ${this.totalPins()} PIN(s) e ${this.totalCables()} cabo(s). A ação não pode ser desfeita.`,
-      confirmLabel: 'Remover todos',
-      danger: true,
-    }).subscribe((confirmed) => {
-      if (!confirmed) {
-        return;
-      }
-      this.store.clearAll();
-      this.cableStore.clearAll();
-      this.cableDraftPoints.set([]);
-      this.notifications.success('PINs e cabos foram removidos.');
-    });
-  }
-
-  /** Seleciona e centraliza o PIN escolhido na legenda/lista. */
-  protected zoomToPin(pin: Pin): void {
-    this.viewport.focus(pin.position);
-    this.store.select(pin.id);
-    this.cableStore.select(null);
-  }
-
-  // --- Traçado de cabo -----------------------------------------------------
-
-  /** Acrescenta um vértice livre ao traçado em construção. */
-  private appendPoint(position: GeoPoint): void {
-    const points = this.cableDraftPoints();
-    const last = points[points.length - 1];
-    if (last && last.lat === position.lat && last.lng === position.lng) {
-      return;
-    }
-    this.cableDraftPoints.set([...points, position]);
-    this.notifications.info(
-      `${points.length + 1} vértice(s) no traçado. Duplo clique para finalizar; ESC cancela.`,
-    );
-  }
-
-  /** Conclui o desenho abrindo o formulário de dados do cabo. */
-  private finishCable(): void {
-    if (this.activeTool() !== 'addCable') {
-      return;
-    }
-    const points = this.cableDraftPoints();
-    if (points.length < 2) {
-      this.notifications.warning('Clique ao menos em dois pontos para traçar o cabo.');
-      return;
-    }
-    this.openCableForm({
-      mode: 'create',
-      points,
-      type: this.activeCableType(),
-      modelId: this.activeCableModelId() ?? undefined,
-    });
-  }
-
-  protected editCable(cable: Cable): void {
-    this.openCableForm({ mode: 'edit', cable });
-  }
-
-  /** Seleciona e enquadra o cabo escolhido na legenda/lista. */
-  protected zoomToCable(cable: Cable): void {
+  private focusCable(cable: MapCable): void {
     if (!this.viewport.focusAll(cable.points)) {
       this.notifications.warning('Não foi possível enquadrar o cabo.');
       return;
     }
-    this.cableStore.select(cable.id);
-    this.store.select(null);
+    this.state.select({ type: 'cable', id: cable.id });
   }
 
-  protected removeCable(cable: Cable): void {
-    this.confirm({
-      title: 'Remover cabo',
-      message: `Tem certeza que deseja remover "${cable.name}" do projeto?`,
-      confirmLabel: 'Remover',
-      danger: true,
-    }).subscribe((confirmed) => {
-      if (!confirmed) {
-        return;
-      }
-      this.cableStore.remove(cable.id);
-      this.notifications.success(`Cabo "${cable.name}" removido.`);
+  /** "Escolher no mapa" na ficha do cabo: o elemento clicado entra no fim da lista. */
+  private pickForCable(element: MapElement): void {
+    if (element.kind === 'customer') {
+      this.notifications.info('Clientes não entram na lista do cabo. Escolha uma OLT ou caixa.');
+      return;
+    }
+    if (this.sheet.elementKeys().has(element.key)) {
+      this.notifications.info(`${element.name} já está na lista.`);
+      return;
+    }
+    this.sheet.addToDraft({ ref: { kind: element.kind, id: element.id }, name: element.name });
+    this.notifications.info(`${element.name} entrou na lista. Clique em outro ou salve.`);
+  }
+
+  /** Clique num item da lista do cabo: centraliza sem trocar a seleção. */
+  protected onRouteItemFocus(item: RouteItem): void {
+    const element = this.findElement(`${item.ref.kind}:${item.ref.id}`);
+    if (element) {
+      this.viewport.focus(element.position);
+    }
+  }
+
+  protected closeSheet(): void {
+    this.state.select(null);
+  }
+
+  /** Clique num cabo na ficha da caixa ou da OLT: enquadra e abre a ficha do cabo. */
+  protected openCableFromSheet(cableId: string): void {
+    const cable = this.repository.mapCables().find((item) => item.id === cableId);
+    if (cable) {
+      this.focusCable(cable);
+    }
+  }
+
+  // --- Ajuda ----------------------------------------------------------------
+
+  /** "O que estou vendo?": frase do que está visível + significado das cores. */
+  protected openViewHelp(): void {
+    const summary = describeView({
+      visible: this.elements(),
+      totalElements: this.totalElements(),
+      visibleCables: this.visibleCableCount(),
+      totalCables: this.totalCables(),
+    });
+    this.dialog.open<ViewHelpDialogComponent, ViewHelpData>(ViewHelpDialogComponent, {
+      data: { summary },
+      width: '560px',
+      maxWidth: '94vw',
     });
   }
 
-  // --- Navegação -----------------------------------------------------------
+  protected openGlossary(): void {
+    this.dialog.open(GlossaryDialogComponent, { width: '600px', maxWidth: '94vw' });
+  }
 
-  protected fitToPins(): void {
-    if (!this.viewport.focusAll(this.pins().map((pin) => pin.position))) {
-      this.notifications.warning('Nenhum PIN visível para enquadrar.');
+  /** Reativar um cliente cancelado: abre o formulário já como "Ativo" para escolher a porta. */
+  protected reactivateCustomer(): void {
+    const customer = this.selectedCustomer();
+    if (customer) {
+      this.openElementEdit(customer, 'ACTIVE');
+    }
+  }
+
+  /** "Ver a CTO" na ficha do cliente. */
+  protected openBoxFromSheet(boxId: string): void {
+    const box = this.findElement(`box:${boxId}`);
+    if (box) {
+      this.focusElement(box);
+    }
+  }
+
+  protected editSelectedElement(): void {
+    const element = this.state.selectedElement();
+    if (element) {
+      this.openElementEdit(element);
+    }
+  }
+
+  protected editSelectedCable(): void {
+    const id = this.selectedCableId();
+    if (id) {
+      this.openCableEdit(id);
+    }
+  }
+
+  protected fitToElements(): void {
+    if (!this.viewport.focusAll(this.elements().map((element) => element.position))) {
+      this.notifications.warning('Nenhum elemento visível para enquadrar.');
     }
   }
 
@@ -628,6 +636,56 @@ export class NetworkMapPage {
 
   protected locate(): void {
     this.geoMap().locate();
+  }
+
+  // --- Traçado de cabo -----------------------------------------------------
+
+  /** Acrescenta um vértice; guarda o elemento quando o clique encaixou numa OLT/caixa. */
+  private appendPoint(position: GeoPoint, element?: MapElement): void {
+    const points = this.cableDraftPoints();
+    const last = points[points.length - 1];
+    const snap: CableEndSuggestion | null =
+      element && element.kind !== 'customer'
+        ? { ref: { kind: element.kind, id: element.id }, name: element.name }
+        : null;
+
+    if (last && last.lat === position.lat && last.lng === position.lng) {
+      // Mesmo ponto (ex.: os cliques do duplo clique): só completa o encaixe.
+      if (snap) {
+        this.cableDraftSnaps.update((snaps) => [...snaps.slice(0, -1), snap]);
+      }
+      return;
+    }
+    this.cableDraftPoints.set([...points, position]);
+    this.cableDraftSnaps.update((snaps) => [...snaps, snap]);
+    this.notifications.info(
+      `${points.length + 1} vértice(s) no traçado. Duplo clique para finalizar; ESC cancela.`,
+    );
+  }
+
+  private clearDraft(): void {
+    this.cableDraftPoints.set([]);
+    this.cableDraftSnaps.set([]);
+  }
+
+  /** Conclui o desenho: início = encaixe do 1º vértice; fim = encaixe do último. */
+  private finishCable(): void {
+    if (this.activeTool() !== 'addCable') {
+      return;
+    }
+    const points = this.cableDraftPoints();
+    if (points.length < 2) {
+      this.notifications.warning('Clique ao menos em dois pontos para traçar o cabo.');
+      return;
+    }
+    const snaps = this.cableDraftSnaps();
+    this.openCableForm({
+      mode: 'create',
+      points,
+      role: this.activeRole(),
+      start: snaps[0] ?? undefined,
+      end: snaps[snaps.length - 1] ?? undefined,
+    });
   }
 
   // --- Camadas e filtros ---------------------------------------------------
@@ -648,169 +706,183 @@ export class NetworkMapPage {
     this.preferences.setBaseLayerOpacity(opacity);
   }
 
-  /** Busca da legenda: aplica o mesmo termo a elementos e cabos. */
   protected onLegendSearch(term: string): void {
-    this.store.setSearch(term);
-    this.cableStore.setSearch(term);
+    this.state.setSearch(term);
   }
 
-  /** Filtro de situação da legenda: vale para elementos e cabos. */
-  protected onLegendStatusChange(statuses: readonly PinStatus[]): void {
-    this.store.setStatusFilter(statuses);
-    this.cableStore.setStatusFilter(statuses);
+  protected onLegendStatusChange(statuses: readonly InfrastructureStatus[]): void {
+    this.state.setStatusFilter(statuses);
   }
 
-  /** "Olho" de um grupo: oculta/mostra o tipo inteiro no mapa e na árvore. */
   protected onLegendToggleGroup(group: LegendGroup): void {
-    if (group.kind === 'pin' && isPinType(group.type)) {
-      this.store.toggleTypeVisibility(group.type);
-      return;
-    }
-    if (group.kind === 'cable' && isCableType(group.type)) {
-      this.cableStore.toggleTypeVisibility(group.type);
-    }
+    this.state.toggleGroup(group.key as LegendGroupKey);
   }
 
-  /** "Olho" de um subgrupo (ex.: CTO 1x8). */
-  protected onLegendToggleSubgroup(subgroup: LegendSubgroup): void {
-    this.store.toggleGroupVisibility(subgroup.key);
-  }
-
-  /** Clique em um item da árvore: seleciona e centraliza no mapa. */
   protected onLegendSelectItem(leaf: LegendLeaf): void {
-    if (leaf.kind === 'pin') {
-      const pin = this.store.findById(leaf.id);
-      if (pin) {
-        this.zoomToPin(pin);
+    if (leaf.kind === 'element') {
+      const element = this.findElement(leaf.id);
+      if (element) {
+        this.focusElement(element);
       }
       return;
     }
-    const cable = this.cableStore.findById(leaf.id);
+    const cable = this.repository.mapCables().find((item) => item.id === leaf.id);
     if (cable) {
-      this.zoomToCable(cable);
+      this.focusCable(cable);
     }
   }
 
-  /** Abre o diálogo de edição do item escolhido na árvore. */
   protected onLegendEditItem(leaf: LegendLeaf): void {
-    if (leaf.kind === 'pin') {
-      const pin = this.store.findById(leaf.id);
-      if (pin) {
-        this.editPin(pin);
+    if (leaf.kind === 'element') {
+      const element = this.findElement(leaf.id);
+      if (element) {
+        this.openElementEdit(element);
       }
       return;
     }
-    const cable = this.cableStore.findById(leaf.id);
-    if (cable) {
-      this.editCable(cable);
-    }
+    this.openCableEdit(leaf.id);
   }
 
-  /** Remove o item escolhido na árvore (com confirmação). */
   protected onLegendRemoveItem(leaf: LegendLeaf): void {
-    if (leaf.kind === 'pin') {
-      const pin = this.store.findById(leaf.id);
-      if (pin) {
-        this.removePin(pin);
+    if (!this.state.canEdit()) {
+      return;
+    }
+    if (leaf.kind === 'cable') {
+      const cable = this.repository.findCable(leaf.id);
+      if (cable?.id) {
+        this.confirmDelete('cabo', cable.name ?? '', this.repository.deleteCable(cable.id));
       }
       return;
     }
-    const cable = this.cableStore.findById(leaf.id);
-    if (cable) {
-      this.removeCable(cable);
+    const element = this.findElement(leaf.id);
+    if (element?.kind === 'olt') {
+      this.confirmDelete('OLT', element.name, this.repository.deleteOlt(element.id));
+    } else if (element?.kind === 'box') {
+      this.confirmDelete('caixa', element.name, this.repository.deleteBox(element.id));
     }
   }
 
   protected clearFilters(): void {
-    this.store.resetFilters();
-    this.cableStore.resetFilters();
+    this.state.clearFilters();
   }
 
   // --- Diálogos ------------------------------------------------------------
 
-  private openPinForm(data: PinFormDialogData): void {
+  private openElementCreate(position: GeoPoint): void {
+    const group = this.activeGroup();
+    if (group === 'olt') {
+      this.openOltForm({ mode: 'create', position });
+    } else if (group === 'customer') {
+      this.openCustomerForm({ mode: 'create', position });
+    } else {
+      this.openBoxForm({ mode: 'create', position, type: group as BoxType });
+    }
+  }
+
+  private openElementEdit(element: MapElement, status?: CustomerStatus): void {
+    if (!this.editable()) {
+      return;
+    }
+    if (element.kind === 'customer') {
+      const customer = this.repository.findCustomer(element.id);
+      if (customer) {
+        this.openCustomerForm({ mode: 'edit', customer, status });
+      }
+      return;
+    }
+    if (element.kind === 'olt') {
+      const olt = this.repository.findOlt(element.id);
+      if (olt) {
+        this.openOltForm({ mode: 'edit', olt });
+      }
+      return;
+    }
+    const box = this.repository.findBox(element.id);
+    if (box) {
+      this.openBoxForm({ mode: 'edit', box });
+    }
+  }
+
+  private openCableEdit(id: string): void {
+    if (!this.editable()) {
+      return;
+    }
+    const cable = this.repository.findCable(id);
+    if (cable) {
+      this.openCableForm({ mode: 'edit', cable });
+    }
+  }
+
+  private openOltForm(data: OltFormData): void {
+    this.openDialog(OltFormDialogComponent, data, '520px', (saved: { name?: string }) =>
+      this.notifications.success(
+        `OLT "${saved.name ?? ''}" ${data.mode === 'edit' ? 'atualizada' : 'cadastrada'}.`,
+      ),
+    );
+  }
+
+  private openBoxForm(data: BoxFormData): void {
+    this.openDialog(BoxFormDialogComponent, data, '600px', (saved: { name?: string }) =>
+      this.notifications.success(
+        `Caixa "${saved.name ?? ''}" ${data.mode === 'edit' ? 'atualizada' : 'cadastrada'}.`,
+      ),
+    );
+  }
+
+  private openCustomerForm(data: CustomerFormData): void {
+    this.openDialog(CustomerFormDialogComponent, data, '600px', (saved: { name?: string }) =>
+      this.notifications.success(
+        `Cliente "${saved.name ?? ''}" ${data.mode === 'edit' ? 'atualizado' : 'cadastrado'}.`,
+      ),
+    );
+  }
+
+  private openCableForm(data: CableFormData): void {
+    this.openDialog(CableFormDialogComponent, data, '600px', (saved: { name?: string }) => {
+      if (data.mode === 'create') {
+        this.clearDraft();
+      }
+      this.notifications.success(
+        `Cabo "${saved.name ?? ''}" ${data.mode === 'edit' ? 'atualizado' : 'cadastrado'}.`,
+      );
+    });
+  }
+
+  /** Abre um formulário (um por vez). Os diálogos salvam sozinhos e fecham com o resultado. */
+  private openDialog<C, D, R>(
+    component: ComponentType<C>,
+    data: D,
+    width: string,
+    onSaved: (saved: R) => void,
+  ): void {
     if (this.dialog.openDialogs.length > 0) {
       return;
     }
     this.dialog
-      .open<PinFormDialogComponent, PinFormDialogData, PinFormResult>(PinFormDialogComponent, {
-        data,
-        width: '600px',
-        maxWidth: '94vw',
-        autoFocus: 'first-tabbable',
-      })
+      .open<C, D, R>(component, { data, width, maxWidth: '94vw', autoFocus: 'first-tabbable' })
       .afterClosed()
-      .subscribe((result) => {
-        if (!result) {
-          return;
+      .subscribe((saved) => {
+        if (saved) {
+          onSaved(saved);
         }
-        if (result === 'move') {
-          if (data.pin) {
-            this.movePinOnMap(data.pin);
-          }
-          return;
-        }
-        if (data.mode === 'edit' && data.pin) {
-          this.store.update(data.pin.id, result);
-          this.notifications.success(`PIN "${result.name}" atualizado.`);
-          return;
-        }
-        this.store.add(result);
-        this.notifications.success(`PIN "${result.name}" criado.`);
       });
   }
 
-  private openCableForm(data: CableFormDialogData): void {
-    if (this.dialog.openDialogs.length > 0) {
-      return;
-    }
-    this.dialog
-      .open<CableFormDialogComponent, CableFormDialogData, CableFormResult>(CableFormDialogComponent, {
-        data,
-        width: '560px',
-        maxWidth: '94vw',
-        autoFocus: 'first-tabbable',
-      })
-      .afterClosed()
-      .subscribe((result) => {
-        if (!result) {
-          return;
-        }
-        if (result === 'move') {
-          if (data.cable) {
-            this.editCableVertices(data.cable);
-          }
-          return;
-        }
-        if (data.mode === 'edit' && data.cable) {
-          this.cableStore.update(data.cable.id, result);
-          this.notifications.success(`Cabo "${result.name}" atualizado.`);
-          return;
-        }
-        const cable = this.cableStore.add(result);
-        this.cableDraftPoints.set([]);
-        this.notifications.success(
-          `Cabo "${cable.name}" criado com ${result.points.length} vértices.`,
-        );
+  private confirmDelete(label: string, name: string, request: Observable<void>): void {
+    this.confirm({
+      title: `Excluir ${label}`,
+      message: `Tem certeza que deseja excluir "${name}"? A ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir',
+      danger: true,
+    }).subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+      request.subscribe({
+        next: () => this.notifications.success(`"${name}" excluído.`),
+        error: (error: unknown) => this.notifications.apiError(error),
       });
-  }
-
-  /** Fecha o diálogo do PIN e entra no arrasto do marcador. */
-  private movePinOnMap(pin: Pin): void {
-    this.cableDraftPoints.set([]);
-    this.store.select(pin.id);
-    this.cableStore.select(null);
-    this.activeTool.set('move');
-    this.notifications.info(`Arraste "${pin.name}" para a nova posição. ESC encerra.`);
-  }
-
-  /** Fecha o diálogo do cabo e habilita o arrasto dos vértices. */
-  private editCableVertices(cable: Cable): void {
-    this.cableDraftPoints.set([]);
-    this.cableStore.select(cable.id);
-    this.store.select(null);
-    this.activeTool.set('editCable');
-    this.notifications.info(`Arraste os vértices de "${cable.name}". ESC encerra.`);
+    });
   }
 
   private confirm(data: ConfirmDialogData): Observable<boolean> {
@@ -825,57 +897,16 @@ export class NetworkMapPage {
   }
 }
 
-/** Converte um PIN em uma folha da árvore da legenda. */
-function toPinLeaf(pin: Pin): LegendLeaf {
-  const status = pinStatusDefinition(pin.status);
-  return {
-    id: pin.id,
-    kind: 'pin',
-    label: pin.name,
-    statusColor: status.color,
-    statusLabel: status.label,
-  };
+/** Balão do cabo selecionado: função, fibras, situação, detalhes e início/fim. */
+function cablePopupHtml(cable: MapCable, extra: string | null, hint: string | null): string {
+  const role = roleDefinition(cable.role);
+  return popupHtml({
+    title: cable.name,
+    badge: { code: role.code, color: role.color },
+    typeText: `Cabo de ${role.label} · ${cable.fiberCapacity} fibras`,
+    status: statusDefinition(cable.status),
+    details: cable.details,
+    extra,
+    hint,
+  });
 }
-
-/** Converte um cabo em uma folha da árvore da legenda. */
-function toCableLeaf(cable: Cable): LegendLeaf {
-  const status = pinStatusDefinition(cable.status);
-  return {
-    id: cable.id,
-    kind: 'cable',
-    label: cable.name,
-    statusColor: status.color,
-    statusLabel: status.label,
-  };
-}
-
-/**
- * Conteúdo do balão exibido ao selecionar um cabo no mapa.
- *
- * O Leaflet injeta este HTML via `innerHTML`, por isso os valores dinâmicos
- * passam por `escapeHtml`; a aparência fica em `styles.scss`.
- */
-function cablePopupHtml(cable: Cable, model?: NetworkModel | null): string {
-  const definition = cableTypeDefinition(cable.type);
-  const status = pinStatusDefinition(cable.status);
-  const color = resolveElementColor(cable.color, model, definition.color);
-  const typeText = model ? `${definition.label} · ${model.name}` : definition.label;
-  const summary = model ? networkModelSummary(model) : '';
-
-  return `
-    <div class="gf-popup">
-      <p class="gf-popup__title">${escapeHtml(cable.name)}</p>
-      <p class="gf-popup__row">
-        <span class="gf-popup__badge" style="background:${escapeHtml(color)}">
-          ${escapeHtml(model?.code ?? definition.code)}
-        </span>
-        <span class="gf-popup__type">${escapeHtml(typeText)}</span>
-      </p>
-      <p class="gf-popup__meta">
-        <span class="gf-popup__dot" style="background:${escapeHtml(status.color)}"></span>
-        ${escapeHtml(status.label)}${summary ? ` · ${escapeHtml(summary)}` : ''} · ${cable.points.length} vértices
-      </p>
-      <p class="gf-popup__hint">Clique novamente para editar</p>
-    </div>`;
-}
-

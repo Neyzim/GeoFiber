@@ -19,11 +19,10 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/ui/confi
 import { ModelFormDialogComponent, ModelFormDialogData } from './model-form-dialog';
 
 /**
- * Página de cadastro de modelos de cabo/CTO/CEO.
+ * Página de cadastro de modelos (atalhos de preenchimento) de cabo/CTO/CEO.
  *
- * É a fonte dos parâmetros usados na criação dos elementos no mapa: cada
- * modelo guarda cor, fibras, portas ou emendas que parametrizam os elementos
- * vinculados por `modelId`.
+ * Os modelos só preenchem os formulários do mapa; os elementos salvos na API não
+ * guardam vínculo com eles.
  */
 @Component({
   selector: 'app-network-models-page',
@@ -43,7 +42,7 @@ export class NetworkModelsPage {
   protected readonly sections = computed(() =>
     NETWORK_MODEL_KINDS.map((definition) => ({
       definition,
-      models: this.store.modelsOfKind(definition.kind),
+      models: this.store.byKind(definition.kind)(),
     })),
   );
 
@@ -66,7 +65,7 @@ export class NetworkModelsPage {
   protected remove(model: NetworkModel): void {
     this.confirm({
       title: 'Remover modelo',
-      message: `Remover "${model.name}"? Os elementos vinculados deixarão de usar este modelo.`,
+      message: `Remover "${model.name}"? A rede já cadastrada não muda.`,
       confirmLabel: 'Remover',
       danger: true,
     }).subscribe((confirmed) => {

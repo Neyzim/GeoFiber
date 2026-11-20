@@ -1,0 +1,123 @@
+<h2 mat-dialog-title class="network-form__title">
+  <span class="network-form__badge" [style.background]="group().color">{{ group().code }}</span>
+  {{ isEdit ? 'Editar caixa' : 'Nova caixa' }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content class="network-form">
+    <p class="network-form__hint">{{ group().longLabel }}</p>
+    <div class="network-form__grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Nome</mat-label>
+        <input matInput formControlName="name" maxlength="120" placeholder="CTO-01" />
+        @if (form.controls.name.hasError('required')) {
+          <mat-error>Informe um nome.</mat-error>
+        }
+        @if (form.controls.name.hasError('api')) {
+          <mat-error>{{ form.controls.name.getError('api') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de caixa</mat-label>
+        <mat-select formControlName="type">
+          @for (type of types; track type.group) {
+            <mat-option [value]="type.group">
+              <span class="network-form__option">
+                <span class="network-form__dot" [style.background]="type.color"></span>
+                {{ type.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Situação</mat-label>
+        <mat-select formControlName="usageStatus">
+          @for (status of statuses; track status.status) {
+            <mat-option [value]="status.status">
+              <span class="network-form__option">
+                <span class="network-form__dot" [style.background]="status.color"></span>
+                {{ status.label }}
+              </span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (shortcuts().length > 0) {
+        <mat-form-field appearance="outline">
+          <mat-label>Preencher com modelo</mat-label>
+          <mat-select formControlName="modelId" (selectionChange)="applyShortcut($event.value)">
+            @for (model of shortcuts(); track model.id) {
+              <mat-option [value]="model.id">{{ model.name }} · {{ summary(model) }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Só preenche os campos abaixo.</mat-hint>
+        </mat-form-field>
+      }
+
+      @if (isCto()) {
+        <mat-form-field appearance="outline">
+          <mat-label>Portas de atendimento</mat-label>
+          <input matInput type="number" formControlName="powerCapacity" min="1" step="1" />
+          <mat-hint>Quantos clientes a caixa atende.</mat-hint>
+          @if (form.controls.powerCapacity.hasError('api')) {
+            <mat-error>{{ form.controls.powerCapacity.getError('api') }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline">
+        <mat-label>Bandejas de emenda</mat-label>
+        <input matInput type="number" formControlName="trayCapacity" min="1" step="1" />
+        @if (form.controls.trayCapacity.hasError('api')) {
+          <mat-error>{{ form.controls.trayCapacity.getError('api') }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fabricante</mat-label>
+        <input matInput formControlName="manufacturer" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Modelo do fabricante</mat-label>
+        <input matInput formControlName="model" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="network-form__full">
+        <mat-label>Endereço</mat-label>
+        <input matInput formControlName="address" />
+      </mat-form-field>
+
+      @if (isEdit) {
+        <mat-form-field appearance="outline">
+          <mat-label>Latitude</mat-label>
+          <input matInput type="number" formControlName="latitude" step="0.000001" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Longitude</mat-label>
+          <input matInput type="number" formControlName="longitude" step="0.000001" />
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline" class="network-form__full">
+        <mat-label>Descrição</mat-label>
+        <textarea matInput formControlName="description" rows="2"></textarea>
+      </mat-form-field>
+    </div>
+
+    @for (message of extraErrors(); track message) {
+      <p class="network-form__error">{{ message }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+    <button mat-flat-button type="submit" [disabled]="form.invalid || saving()">
+      {{ saving() ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Cadastrar caixa' }}
+    </button>
+  </mat-dialog-actions>
+</form>

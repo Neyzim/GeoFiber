@@ -8,8 +8,10 @@
       class="project__map"
       [initialCenter]="initialCenter()"
       [initialZoom]="initialZoom()"
-      [pins]="pins()"
-      [selectedPinId]="selectedId()"
+      [elements]="elements()"
+      [selectedElementKey]="selectedElementKey()"
+      [highlightedKeys]="highlightedKeys()"
+      [editable]="editable()"
       [paths]="paths()"
       [selectedPathId]="selectedCableId()"
       [draftOrigin]="draftOrigin()"
@@ -19,15 +21,25 @@
       [baseLayerOpacity]="preferencesState.baseLayerOpacity()"
       (mapClick)="onMapClick($event)"
       (mapDoubleClick)="onMapDoubleClick()"
-      (pinClick)="onPinClick($event)"
-      (pinDoubleClick)="onPinDoubleClick()"
+      (elementClick)="onElementClick($event)"
+      (elementDoubleClick)="onElementDoubleClick()"
       (pathClick)="onPathClick($event)"
       (pathVertexMoved)="onPathVertexMoved($event)"
-      (pinMoved)="onPinMoved($event)"
+      (elementMoved)="onElementMoved($event)"
       (pointerMove)="onPointerMove($event)"
       (viewChanged)="onViewChanged($event)"
       (located)="onLocated($event)"
     />
+
+    @if (loadState() === 'loading') {
+      <div class="project__banner" role="status">Carregando a rede...</div>
+    } @else if (loadState() === 'error') {
+      <div class="project__banner project__banner--error" role="alert">
+        <mat-icon>cloud_off</mat-icon>
+        <span>Não foi possível carregar a rede.</span>
+        <button mat-stroked-button type="button" (click)="retryLoad()">Tentar novamente</button>
+      </div>
+    }
 
     <div class="project__overlay project__overlay--left">
       <app-map-toolbar
@@ -35,41 +47,88 @@
         [showLayerPanel]="showLayerPanel()"
         [showLegend]="preferencesState.showLegend()"
         [visibleCount]="visibleCount()"
+        [editable]="editable()"
         (toolChange)="setTool($event)"
         (zoomIn)="zoomIn()"
         (zoomOut)="zoomOut()"
         (locate)="locate()"
-        (fitToPins)="fitToPins()"
+        (fitToPins)="fitToElements()"
         (toggleLayerPanel)="toggleLayerPanel()"
         (toggleLegend)="toggleLegend()"
-        (clearAll)="clearAll()"
       />
 
-      @if (showPicker() && activeTool() === 'addPin') {
+      <div class="project__help" role="group" aria-label="Ajuda">
+        <button mat-stroked-button type="button" (click)="openViewHelp()">
+          <mat-icon>help</mat-icon>
+          O que estou vendo?
+        </button>
+        <button mat-stroked-button type="button" (click)="openGlossary()">
+          <mat-icon>menu_book</mat-icon>
+          Glossário
+        </button>
+      </div>
+
+      @if (showPicker() && activeTool() === 'addElement') {
         <app-map-type-picker
-          title="Tipo de PIN"
+          title="Tipo de elemento"
           hint="Escolha o elemento e clique no mapa."
-          [options]="pinTypeOptions()"
-          [activeKey]="activePinType()"
-          (pick)="onPinTypePicked($event)"
+          [options]="elementOptions()"
+          [activeKey]="activeGroup()"
+          (pick)="onElementTypePicked($event)"
           (close)="closePicker()"
         />
       }
 
       @if (showPicker() && activeTool() === 'addCable') {
         <app-map-type-picker
-          title="Tipo de cabo"
+          title="Função do cabo"
           hint="Clique no mapa para traçar e finalize com duplo clique."
           sample="cable"
-          [options]="cableTypeOptions()"
-          [activeKey]="activeCableKey()"
-          (pick)="onCableTypePicked($event)"
+          [options]="roleOptions()"
+          [activeKey]="activeRole()"
+          (pick)="onRolePicked($event)"
           (close)="closePicker()"
         />
       }
     </div>
 
     <div class="project__overlay project__overlay--right">
+      @if (selectedCable(); as cable) {
+        <app-cable-sheet
+          [cable]="cable"
+          [candidates]="routeCandidates()"
+          [elementNames]="elementNames()"
+          [canEdit]="editable()"
+          (closed)="closeSheet()"
+          (editData)="editSelectedCable()"
+          (focusItem)="onRouteItemFocus($event)"
+        />
+      } @else if (selectedBox(); as box) {
+        <app-box-sheet
+          [box]="box"
+          [canEdit]="editable()"
+          (closed)="closeSheet()"
+          (editData)="editSelectedElement()"
+          (openCable)="openCableFromSheet($event)"
+        />
+      } @else if (selectedCustomer(); as customer) {
+        <app-customer-sheet
+          [element]="customer"
+          [canEdit]="editable()"
+          (closed)="closeSheet()"
+          (editData)="editSelectedElement()"
+          (reactivate)="reactivateCustomer()"
+          (openBox)="openBoxFromSheet($event)"
+        />
+      } @else if (selectedOlt(); as olt) {
+        <app-olt-sheet
+          [olt]="olt"
+          [canEdit]="editable()"
+          (closed)="closeSheet()"
+          (editData)="editSelectedElement()"
+          (openCable)="openCableFromSheet($event)"
+        />
+      }
       @if (showLayerPanel()) {
         <app-map-layer-panel
           [layers]="baseLayers"
@@ -87,7 +146,6 @@
           [activeStatuses]="activeStatuses()"
           [hasActiveFilters]="hasActiveFilters()"
           (toggleGroup)="onLegendToggleGroup($event)"
-          (toggleSubgroup)="onLegendToggleSubgroup($event)"
           (selectItem)="onLegendSelectItem($event)"
           (editItem)="onLegendEditItem($event)"
           (removeItem)="onLegendRemoveItem($event)"
@@ -103,10 +161,10 @@
       class="project__status-bar"
       [pointer]="pointer()"
       [view]="view()"
-      [totalPins]="totalPins()"
-      [visiblePins]="visibleCount()"
+      [totalElements]="totalElements()"
+      [visibleElements]="visibleCount()"
       [totalCables]="totalCables()"
-      [visibleCables]="cables().length"
+      [visibleCables]="visibleCableCount()"
       [activeTool]="activeTool()"
     />
   </main>

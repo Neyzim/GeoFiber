@@ -1,0 +1,197 @@
+<aside class="sheet" aria-label="Ficha do cabo">
+  <header class="sheet__header">
+    <span class="sheet__badge" [style.background]="role().color">{{ role().code }}</span>
+    <div class="sheet__titles">
+      <h2>{{ cable().name }}</h2>
+      <p>
+        Cabo de {{ role().label }} · {{ cable().fiberCapacity }} fibras
+        @if (lengthText(); as length) {
+          · {{ length }}
+        }
+      </p>
+    </div>
+    <button mat-icon-button type="button" matTooltip="Fechar ficha" (click)="closed.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <p class="sheet__status">
+    <span class="sheet__dot" [style.background]="status().color"></span>
+    {{ status().label }}
+    @if (canEdit()) {
+      <button mat-button type="button" class="sheet__inline" (click)="editData.emit()">
+        <mat-icon>edit</mat-icon>
+        Editar dados
+      </button>
+    }
+  </p>
+
+  @if (store.state() === 'loading') {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (store.state() === 'error') {
+    <div class="sheet__error" role="alert">
+      <span>Não foi possível carregar a ficha do cabo.</span>
+      <button mat-stroked-button type="button" (click)="store.reload()">Tentar novamente</button>
+    </div>
+  } @else {
+    <p class="sheet__lead">{{ store.route() }}</p>
+
+    <!-- Elementos do cabo -->
+    <section class="sheet__section">
+      <div class="sheet__section-head">
+        <h3>Por onde o cabo passa <app-term-hint key="cabo" /></h3>
+        @if (canEdit() && !store.editing() && store.state() === 'ready') {
+          <button mat-button type="button" (click)="store.startEditing()">
+            <mat-icon>edit_road</mat-icon>
+            Editar lista
+          </button>
+        }
+      </div>
+
+      @if (!store.editing()) {
+        @if (store.routeItems().length === 0) {
+          <p class="sheet__empty">Nenhuma caixa ou OLT na lista ainda.</p>
+        } @else {
+          <ol class="sheet__route">
+            @for (item of store.routeItems(); track keyOf(item); let i = $index, total = $count) {
+              <li>
+                <span class="sheet__route-role">{{ routeLabel(i, total) }}</span>
+                <button type="button" class="sheet__link" (click)="focusItem.emit(item)">
+                  {{ item.name }}
+                </button>
+              </li>
+            }
+          </ol>
+        }
+      } @else {
+        <p class="sheet__hint">
+          O primeiro é o início e o último é o fim; os do meio são caixas por onde o cabo passa.
+        </p>
+        <ol class="sheet__route sheet__route--editing">
+          @for (item of store.draft(); track keyOf(item); let i = $index, total = $count) {
+            <li>
+              <span class="sheet__route-role">{{ routeLabel(i, total) }}</span>
+              <span class="sheet__route-name">{{ item.name }}</span>
+              <button mat-icon-button type="button" matTooltip="Subir" [disabled]="i === 0"
+                (click)="store.moveItem(i, -1)">
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+              <button mat-icon-button type="button" matTooltip="Descer" [disabled]="i === total - 1"
+                (click)="store.moveItem(i, 1)">
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+              <button mat-icon-button type="button" matTooltip="Tirar da lista"
+                (click)="store.removeItem(i)">
+                <mat-icon>remove_circle_outline</mat-icon>
+              </button>
+            </li>
+          }
+        </ol>
+
+        <div class="sheet__add">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Adicionar elemento</mat-label>
+            <mat-select (selectionChange)="addCandidate($event.value); $event.source.value = null">
+              @for (option of addOptions(); track keyOf(option)) {
+                <mat-option [value]="keyOf(option)">{{ option.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-stroked-button type="button" [class.is-active]="store.picking()"
+            (click)="store.setPicking(!store.picking())">
+            <mat-icon>ads_click</mat-icon>
+            {{ store.picking() ? 'Clique no mapa…' : 'Escolher no mapa' }}
+          </button>
+        </div>
+
+        <div class="sheet__actions">
+          <button mat-button type="button" (click)="store.cancelEditing()">Cancelar</button>
+          <button mat-flat-button type="button" [disabled]="store.saving()" (click)="store.saveRoute()">
+            {{ store.saving() ? 'Salvando...' : 'Salvar lista' }}
+          </button>
+        </div>
+      }
+    </section>
+
+    <!-- Tubos e fibras -->
+    <section class="sheet__section">
+      <div class="sheet__section-head">
+        <h3>Tubos e fibras <app-term-hint key="tubo" /></h3>
+        @if (store.tubes().length > 0) {
+          <span class="sheet__count">{{ store.fiberCount() }} fibras</span>
+        }
+      </div>
+
+      @if (store.state() === 'ready' && store.tubes().length === 0) {
+        <p class="sheet__empty">Este cabo ainda não tem tubos e fibras cadastrados.</p>
+        @if (canEdit()) {
+          <div class="sheet__structure">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Fibras por tubo</mat-label>
+              <mat-select [value]="perTube()" (selectionChange)="setPerTube($event.value)">
+                @for (option of perTubeOptions; track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <p class="sheet__hint">{{ preview() }}, cores na ordem da norma (verde, amarelo, branco…).</p>
+            <button mat-flat-button type="button" [disabled]="store.saving()" (click)="createStructure()">
+              {{ store.saving() ? 'Criando...' : 'Criar tubos e fibras' }}
+            </button>
+          </div>
+        }
+      }
+
+      @for (tube of store.tubes(); track tube.id) {
+        <div class="sheet__tube">
+          <button type="button" class="sheet__tube-head" [attr.aria-expanded]="expanded().has(tube.id)"
+            (click)="toggleTube(tube.id)">
+            <span class="sheet__swatch" [style.background]="colorOf(tube.color).hex"></span>
+            <span>Tubo {{ tube.tubeNumber }} · {{ colorOf(tube.color).label }}</span>
+            <span class="sheet__count">{{ tube.fibers.length }} fibras</span>
+            <mat-icon>{{ expanded().has(tube.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+
+          @if (expanded().has(tube.id)) {
+            <ul class="sheet__fibers">
+              @for (fiber of tube.fibers; track fiber.id) {
+                <li class="sheet__fiber">
+                  <span class="sheet__swatch sheet__swatch--small" [style.background]="colorOf(fiber.color).hex"
+                    [matTooltip]="colorOf(fiber.color).label"></span>
+                  <div class="sheet__fiber-body">
+                    <strong>Fibra {{ fiber.numberInTube }}</strong>
+                    <small>nº {{ fiber.absoluteNumber }} no cabo · {{ colorOf(fiber.color).label }}</small>
+                    @for (end of fiber.ends ?? []; track end.end) {
+                      <small>{{ endText(end) }}</small>
+                    }
+                  </div>
+                  <span class="sheet__chip" [style.color]="fiberStatus(fiber.status).color"
+                    [matTooltip]="fiberStatus(fiber.status).hint">
+                    {{ fiberStatus(fiber.status).label }}
+                  </span>
+                  @if (canEdit() && fiber.status !== 'OCCUPIED') {
+                    <button mat-icon-button type="button" [matMenuTriggerFor]="statusMenu"
+                      matTooltip="Mudar situação">
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #statusMenu="matMenu">
+                      @for (option of statusOptions; track option.status) {
+                        @if (option.status !== fiber.status) {
+                          <button mat-menu-item type="button" (click)="setStatus(fiber, option.status)">
+                            Marcar como {{ option.label.toLowerCase() }}
+                          </button>
+                        }
+                      }
+                    </mat-menu>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    </section>
+  }
+</aside>

@@ -58,16 +58,16 @@ export const MAP_MIN_ZOOM = 3;
 export const MAP_MAX_ZOOM = 20;
 
 export const THEME_STORAGE_KEY = 'geofiber.theme.v1';
-export const PINS_STORAGE_KEY = 'geofiber.pins.v1';
-export const CABLES_STORAGE_KEY = 'geofiber.cables.v1';
+/** Chaves antigas de PINs e cabos, apagadas na inicialização (a rede vive no backend). */
+export const LEGACY_STORAGE_KEYS = ['geofiber.pins.v1', 'geofiber.cables.v1'] as const;
 export const MAP_PREFERENCES_STORAGE_KEY = 'geofiber.map-preferences.v1';
 export const NETWORK_MODELS_STORAGE_KEY = 'geofiber.network-models.v1';
 
 export const TOOL_LABELS: Record<MapTool, string> = {
   select: 'Selecionar',
-  addPin: 'Adicionar PIN',
+  addElement: 'Adicionar elemento',
   addCable: 'Traçar cabo',
-  move: 'Mover PIN',
+  move: 'Mover elemento',
   editCable: 'Mover cabo',
 };
 

@@ -8,6 +8,7 @@ import {
   inject,
   input,
   output,
+  untracked,
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
@@ -18,20 +19,29 @@ import {
   MAP_MIN_ZOOM,
   baseLayerDefinition,
 } from '../../core/constants/map.constants';
-import { GeoPath, GeoPoint, MapClickEvent, MapTool, MapViewState, PathVertexMoveEvent, PinMoveEvent } from '../../core/models/geo.model';
-import { Pin } from '../../core/models/pin.model';
+import 'leaflet.markercluster';
+import {
+  ElementMoveEvent,
+  GeoPath,
+  GeoPoint,
+  MapClickEvent,
+  MapTool,
+  MapViewState,
+  PathVertexMoveEvent,
+} from '../../core/models/geo.model';
+import { MapElement } from '../../core/network/map-element';
 import { MapViewportService } from '../../core/services/map-viewport';
-import { NetworkModelStoreService } from '../../core/services/network-model-store';
 import { NotificationService } from '../../core/services/notification';
 import {
+  createElementIcon,
   createGhostIcon,
-  createPinIcon,
   createUserLocationIcon,
-  pinPopupHtml,
-  pinTooltipHtml,
+  elementPopupHtml,
+  elementTooltipHtml,
 } from './pin-marker';
+import { bindElementMarker, canDragMarker, elementChanged, pathClickIntent } from './marker-sync';
 
-/** Distância (px) dentro da qual um clique no mapa "gruda" em um PIN. */
+/** Distância (px) dentro da qual um clique no mapa "gruda" em um elemento. */
 const SNAP_DISTANCE_PX = 15;
 
 /**
@@ -53,7 +63,6 @@ export class GeoMapComponent implements OnDestroy {
   private readonly mapHost = viewChild.required<ElementRef<HTMLDivElement>>('mapHost');
   private readonly notifications = inject(NotificationService);
   private readonly viewport = inject(MapViewportService);
-  private readonly models = inject(NetworkModelStoreService);
 
   /** Visão inicial — aplicada apenas na criação do mapa. */
   readonly initialCenter = input<GeoPoint>(DEFAULT_MAP_VIEW.center);
@@ -61,10 +70,14 @@ export class GeoMapComponent implements OnDestroy {
   readonly minZoom = input<number>(MAP_MIN_ZOOM);
   readonly maxZoom = input<number>(MAP_MAX_ZOOM);
 
-  /** PINs a exibir. */
-  readonly pins = input<readonly Pin[]>([]);
-  /** PIN destacado. */
-  readonly selectedPinId = input<string | null>(null);
+  /** Elementos (OLTs, caixas, clientes) a exibir. */
+  readonly elements = input<readonly MapElement[]>([]);
+  /** Elemento destacado (`MapElement.key`). */
+  readonly selectedElementKey = input<string | null>(null);
+  /** Elementos com anel de destaque (ex.: os do cabo aberto na ficha), por `MapElement.key`. */
+  readonly highlightedKeys = input<ReadonlySet<string>>(new Set());
+  /** Libera o arrasto de elementos e vértices (permissão de edição). */
+  readonly editable = input(true);
   /** Ferramenta ativa, define o cursor e o arrasto dos marcadores. */
   readonly activeTool = input<MapTool>('select');
   /** Chave da camada base (ver `BASE_LAYERS`). */
@@ -76,19 +89,19 @@ export class GeoMapComponent implements OnDestroy {
   readonly paths = input<readonly GeoPath[]>([]);
   /** Cabo destacado. */
   readonly selectedPathId = input<string | null>(null);
-  /** Âncora do traçado em construção: liga o último PIN ao cursor. */
+  /** Âncora do traçado em construção: liga o último vértice ao cursor. */
   readonly draftOrigin = input<GeoPoint | null>(null);
-  /** Cor do elemento em criação (usada no PIN fantasma e na linha-guia). */
+  /** Cor do elemento em criação (usada no marcador fantasma e na linha-guia). */
   readonly previewColor = input<string | null>(null);
 
   /** Instância do mapa, para consumidores avançados. */
   readonly mapReady = output<L.Map>();
   /** Clique no mapa. */
   readonly mapClick = output<MapClickEvent>();
-  /** Clique em um PIN. */
-  readonly pinClick = output<Pin>();
-  /** PIN arrastado para uma nova posição. */
-  readonly pinMoved = output<PinMoveEvent>();
+  /** Clique em um elemento. */
+  readonly elementClick = output<MapElement>();
+  /** Elemento arrastado para uma nova posição. */
+  readonly elementMoved = output<ElementMoveEvent>();
   /** Posição do cursor (`null` quando sai do mapa). */
   readonly pointerMove = output<GeoPoint | null>();
   /** Mudança de centro/zoom. */
@@ -97,8 +110,8 @@ export class GeoMapComponent implements OnDestroy {
   readonly located = output<GeoPoint>();
   /** Clique em um cabo. */
   readonly pathClick = output<GeoPath>();
-  /** Duplo clique em um PIN (conclui o traçado de cabo). */
-  readonly pinDoubleClick = output<Pin>();
+  /** Duplo clique em um elemento (conclui o traçado de cabo). */
+  readonly elementDoubleClick = output<MapElement>();
   /** Duplo clique no mapa (conclui o traçado de cabo). */
   readonly mapDoubleClick = output<GeoPoint>();
   /** Vértice de um cabo arrastado (ferramenta "Editar cabo"). */
@@ -114,7 +127,19 @@ export class GeoMapComponent implements OnDestroy {
   private popup: L.Popup | null = null;
   private cursorPoint: GeoPoint | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  /** Marcadores por `MapElement.key`. */
   private readonly markers = new Map<string, L.Marker>();
+  /** Último elemento desenhado em cada marcador (evita redesenhar o que não mudou). */
+  private readonly markerElements = new Map<string, MapElement>();
+  /** Seleção já aplicada aos ícones. */
+  private appliedSelection: string | null = null;
+  /** Destaque já aplicado aos ícones. */
+  private appliedHighlight: ReadonlySet<string> = new Set();
+  /** Grupos agrupadores: infraestrutura (OLT/caixas) e clientes. */
+  private infraCluster: L.MarkerClusterGroup | null = null;
+  private customerCluster: L.MarkerClusterGroup | null = null;
+  /** Renderizador canvas compartilhado pelas linhas dos cabos. */
+  private readonly cableRenderer = L.canvas({ tolerance: 6 });
   private readonly pathLines = new Map<string, L.Polyline>();
   private readonly vertexMarkers: L.Marker[] = [];
 
@@ -122,21 +147,29 @@ export class GeoMapComponent implements OnDestroy {
     afterNextRender(() => this.createMap());
 
     effect(() => {
-      const pins = this.pins();
+      const elements = this.elements();
       if (this.map) {
-        this.syncMarkers(pins);
+        untracked(() => this.syncMarkers(elements));
       }
     });
 
     effect(() => {
-      const selectedId = this.selectedPinId();
+      const selectedKey = this.selectedElementKey();
       if (this.map) {
-        this.syncSelection(selectedId);
+        untracked(() => this.syncSelection(selectedKey));
+      }
+    });
+
+    effect(() => {
+      const highlighted = this.highlightedKeys();
+      if (this.map) {
+        untracked(() => this.syncHighlight(highlighted));
       }
     });
 
     effect(() => {
       const tool = this.activeTool();
+      this.editable();
       if (this.map) {
         this.applyTool(tool);
       }
@@ -162,12 +195,13 @@ export class GeoMapComponent implements OnDestroy {
 
     // Balão do elemento selecionado: reage à seleção e aos dados do elemento.
     effect(() => {
-      const pinId = this.selectedPinId();
+      const elementKey = this.selectedElementKey();
       const pathId = this.selectedPathId();
-      const pins = this.pins();
+      const elements = this.elements();
       const paths = this.paths();
+      this.editable();
       if (this.map) {
-        this.refreshPopup(pinId, pathId, pins, paths);
+        this.refreshPopup(elementKey, pathId, elements, paths);
       }
     });
 
@@ -196,6 +230,9 @@ export class GeoMapComponent implements OnDestroy {
     this.popup = null;
     this.viewport.register(null);
     this.markers.clear();
+    this.markerElements.clear();
+    this.infraCluster = null;
+    this.customerCluster = null;
     this.pathLines.clear();
     this.vertexMarkers.length = 0;
     this.rubberBand = null;
@@ -208,7 +245,7 @@ export class GeoMapComponent implements OnDestroy {
     return this.map;
   }
 
-  /** Centro atual do mapa, usado por exemplo para posicionar um novo PIN. */
+  /** Centro atual do mapa, usado por exemplo para posicionar um novo elemento. */
   getCenter(): GeoPoint | null {
     const center = this.map?.getCenter();
     return center ? { lat: center.lat, lng: center.lng } : null;
@@ -268,17 +305,18 @@ export class GeoMapComponent implements OnDestroy {
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
     this.applyBaseLayer(this.baseLayerKey(), this.baseLayerOpacity());
-    this.syncMarkers(this.pins());
+    const clusterOptions: L.MarkerClusterGroupOptions = {
+      disableClusteringAtZoom: 17,
+      showCoverageOnHover: false,
+      chunkedLoading: true,
+    };
+    this.infraCluster = L.markerClusterGroup(clusterOptions).addTo(map);
+    this.customerCluster = L.markerClusterGroup(clusterOptions).addTo(map);
+    this.syncMarkers(this.elements());
     this.applyTool(this.activeTool());
     this.syncPaths(this.paths(), this.selectedPathId());
 
-    map.on('click', (event: L.LeafletMouseEvent) => {
-      const tool = this.activeTool();
-      const raw: GeoPoint = { lat: event.latlng.lat, lng: event.latlng.lng };
-      // No traçado de cabo o clique "gruda" em um PIN próximo (ímã).
-      const position = tool === 'addCable' ? this.snapToPin(raw) : raw;
-      this.mapClick.emit({ position, tool });
-    });
+    map.on('click', (event: L.LeafletMouseEvent) => this.emitMapClick(event.latlng));
 
     map.on('dblclick', (event: L.LeafletMouseEvent) => {
       this.mapDoubleClick.emit({ lat: event.latlng.lat, lng: event.latlng.lng });
@@ -287,12 +325,12 @@ export class GeoMapComponent implements OnDestroy {
     map.on('mousemove', (event: L.LeafletMouseEvent) => {
       const position: GeoPoint = { lat: event.latlng.lat, lng: event.latlng.lng };
       const tool = this.activeTool();
-      if (tool === 'addPin') {
+      if (tool === 'addElement') {
         this.updateGhost(position);
       } else if (tool === 'addCable') {
-        const snapped = this.snapToPin(position);
-        this.cursorPoint = snapped;
-        this.updateSnapIndicator(snapped === position ? null : snapped);
+        const snapped = this.snapToElement(position)?.position ?? null;
+        this.cursorPoint = snapped ?? position;
+        this.updateSnapIndicator(snapped);
         this.applyRubberBand(tool, this.draftOrigin(), this.previewColor());
       }
       this.pointerMove.emit(position);
@@ -312,6 +350,17 @@ export class GeoMapComponent implements OnDestroy {
     this.viewport.register(map);
     this.mapReady.emit(map);
     this.emitView();
+  }
+
+  /** Clique no mapa (ou numa linha, nas ferramentas de criação), com o ímã do traçado. */
+  private emitMapClick(latlng: L.LatLng): void {
+    const tool = this.activeTool();
+    const raw: GeoPoint = { lat: latlng.lat, lng: latlng.lng };
+    // No traçado de cabo o clique "gruda" em um elemento próximo (ímã).
+    const snapped = tool === 'addCable' ? this.snapToElement(raw) : null;
+    this.mapClick.emit(
+      snapped ? { position: snapped.position, tool, snappedKey: snapped.key } : { position: raw, tool },
+    );
   }
 
   /** Mantém o mapa íntegro quando o container muda de tamanho (sidenav, janela). */
@@ -353,106 +402,165 @@ export class GeoMapComponent implements OnDestroy {
 
   // --- Marcadores ----------------------------------------------------------
 
-  private syncMarkers(pins: readonly Pin[]): void {
-    const map = this.map;
-    if (!map) {
+  private clusterFor(key: string): L.MarkerClusterGroup | null {
+    return key.startsWith('customer:') ? this.customerCluster : this.infraCluster;
+  }
+
+  /** Atualiza os marcadores de forma incremental (por `MapElement.key`). */
+  private syncMarkers(elements: readonly MapElement[]): void {
+    if (!this.map) {
       return;
     }
 
-    const incoming = new Set(pins.map((pin) => pin.id));
-    for (const [id, marker] of this.markers) {
-      if (!incoming.has(id)) {
-        marker.remove();
-        this.markers.delete(id);
+    const incoming = new Set(elements.map((element) => element.key));
+    for (const [key, marker] of this.markers) {
+      if (!incoming.has(key)) {
+        this.clusterFor(key)?.removeLayer(marker);
+        this.markers.delete(key);
+        this.markerElements.delete(key);
       }
     }
 
-    for (const pin of pins) {
-      const model = this.models.findById(pin.modelId);
-      const existing = this.markers.get(pin.id);
+    const added = new Map<L.MarkerClusterGroup, L.Marker[]>();
+    for (const element of elements) {
+      const existing = this.markers.get(element.key);
+      const previous = this.markerElements.get(element.key);
+      this.markerElements.set(element.key, element);
       if (existing) {
-        existing.setLatLng([pin.position.lat, pin.position.lng]);
-        existing.setIcon(createPinIcon(pin, this.selectedPinId() === pin.id, model));
-        existing.setTooltipContent(pinTooltipHtml(pin, model));
+        // Só mexe no marcador quando algo visível mudou: no agrupador, cada
+        // `setLatLng` remove e recoloca o marcador.
+        if (elementChanged(previous, element)) {
+          const position = existing.getLatLng();
+          if (position.lat !== element.position.lat || position.lng !== element.position.lng) {
+            existing.setLatLng([element.position.lat, element.position.lng]);
+          }
+          existing.setIcon(this.iconFor(element));
+          existing.setTooltipContent(elementTooltipHtml(element));
+          this.applyMarkerDraggable(element.key, existing);
+        }
         continue;
       }
 
-      const marker = this.createMarker(pin);
-      marker.addTo(map);
-      this.markers.set(pin.id, marker);
-      this.applyMarkerDraggable(marker);
+      const marker = this.createMarker(element);
+      this.markers.set(element.key, marker);
+      this.applyMarkerDraggable(element.key, marker);
+      const cluster = this.clusterFor(element.key);
+      if (cluster) {
+        added.set(cluster, [...(added.get(cluster) ?? []), marker]);
+      }
+    }
+    for (const [cluster, markers] of added) {
+      cluster.addLayers(markers);
     }
   }
 
-  private createMarker(pin: Pin): L.Marker {
-    const model = this.models.findById(pin.modelId);
-    const marker = L.marker([pin.position.lat, pin.position.lng], {
-      icon: createPinIcon(pin, this.selectedPinId() === pin.id, model),
-      draggable: true,
+  private createMarker(element: MapElement): L.Marker {
+    const marker = L.marker([element.position.lat, element.position.lng], {
+      icon: this.iconFor(element),
+      // O Leaflet recria o arrasto a cada inclusão no mapa a partir desta opção,
+      // por isso ela acompanha a ferramenta (ver `applyMarkerDraggable`).
+      draggable: false,
       autoPan: true,
       riseOnHover: true,
       keyboard: false,
-      title: pin.name,
-      zIndexOffset: this.selectedPinId() === pin.id ? 1000 : 0,
+      title: element.name,
+      zIndexOffset: this.selectedElementKey() === element.key ? 1000 : 0,
     });
 
-    marker.bindTooltip(pinTooltipHtml(pin, model), {
+    marker.bindTooltip(elementTooltipHtml(element), {
       direction: 'top',
       offset: L.point(0, -8),
       opacity: 0.95,
       className: 'gf-pin-tooltip',
     });
 
-    marker.on('click', () => this.pinClick.emit(pin));
-
-    marker.on('dblclick', () => this.pinDoubleClick.emit(pin));
-
-    marker.on('dragend', () => {
-      const position = marker.getLatLng();
-      marker.setIcon(createPinIcon(pin, this.selectedPinId() === pin.id, model));
-      this.pinMoved.emit({
-        pinId: pin.id,
-        position: { lat: position.lat, lng: position.lng },
-      });
+    bindElementMarker(marker, () => this.markerElements.get(element.key) ?? element, {
+      click: (current) => this.elementClick.emit(current),
+      dblclick: (current) => this.elementDoubleClick.emit(current),
+      dragend: (current, dragged) => {
+        const position = dragged.getLatLng();
+        dragged.setIcon(this.iconFor(current));
+        this.elementMoved.emit({
+          key: current.key,
+          position: { lat: position.lat, lng: position.lng },
+        });
+      },
     });
-
     return marker;
   }
 
-  /** Os marcadores só podem ser arrastados na ferramenta "Mover PIN". */
-  private applyMarkerDraggable(marker: L.Marker): void {
-    if (this.activeTool() === 'move') {
+  /** Arrasto só na ferramenta "Mover", com permissão de edição e nunca em clientes. */
+  private applyMarkerDraggable(key: string, marker: L.Marker): void {
+    const allowed = canDragMarker(this.activeTool(), this.editable(), key);
+    // A opção vale quando o agrupador recoloca o marcador; o handler, para o atual.
+    marker.options.draggable = allowed;
+    if (allowed) {
       marker.dragging?.enable();
     } else {
       marker.dragging?.disable();
     }
   }
 
-  private syncSelection(selectedId: string | null): void {
-    for (const [id, marker] of this.markers) {
-      const element = marker.getElement()?.querySelector('.gf-pin');
-      element?.classList.toggle('is-selected', id === selectedId);
-      marker.setZIndexOffset(id === selectedId ? 1000 : 0);
+  /** Ícone do elemento com a seleção e o destaque atuais. */
+  private iconFor(element: MapElement): L.DivIcon {
+    return createElementIcon(
+      element,
+      this.selectedElementKey() === element.key,
+      this.highlightedKeys().has(element.key),
+    );
+  }
+
+  /** Troca o ícone só dos elementos que entraram ou saíram do destaque. */
+  private syncHighlight(next: ReadonlySet<string>): void {
+    const previous = this.appliedHighlight;
+    this.appliedHighlight = next;
+    for (const key of new Set([...previous, ...next])) {
+      if (previous.has(key) === next.has(key)) continue;
+      const marker = this.markers.get(key);
+      const element = this.markerElements.get(key);
+      if (marker && element) marker.setIcon(this.iconFor(element));
+    }
+  }
+
+  /**
+   * Troca o ícone só do antigo e do novo selecionado. O destaque fica no próprio ícone
+   * (e não numa classe no DOM), para sobreviver quando o agrupador recria o marcador.
+   */
+  private syncSelection(selectedKey: string | null): void {
+    const previousKey = this.appliedSelection;
+    this.appliedSelection = selectedKey;
+    for (const key of new Set([previousKey, selectedKey])) {
+      const marker = key ? this.markers.get(key) : undefined;
+      const element = key ? this.markerElements.get(key) : undefined;
+      if (!marker || !element) {
+        continue;
+      }
+      marker.setIcon(this.iconFor(element));
+      marker.setZIndexOffset(key === selectedKey ? 1000 : 0);
     }
   }
 
   // --- Balão de informações do elemento selecionado ------------------------
 
   /**
-   * Mostra o balão do elemento atualmente selecionado (PIN tem prioridade sobre
+   * Mostra o balão do elemento atualmente selecionado (elemento tem prioridade sobre
    * o cabo) e o fecha quando não há seleção. A seleção em si é decidida pela
    * página: o primeiro clique seleciona; o segundo abre a edição.
    */
   private refreshPopup(
-    pinId: string | null,
+    elementKey: string | null,
     pathId: string | null,
-    pins: readonly Pin[],
+    elements: readonly MapElement[],
     paths: readonly GeoPath[],
   ): void {
-    const pin = pinId ? pins.find((item) => item.id === pinId) : undefined;
-    if (pin) {
-      const model = this.models.findById(pin.modelId);
-      this.showPopup([pin.position.lat, pin.position.lng], pinPopupHtml(pin, model), -34);
+    const element = elementKey ? elements.find((item) => item.key === elementKey) : undefined;
+    if (element) {
+      const canEditIt = this.editable() && element.kind !== 'customer';
+      this.showPopup(
+        [element.position.lat, element.position.lng],
+        elementPopupHtml(element, null, canEditIt ? 'Clique novamente para editar' : null),
+        -34,
+      );
       return;
     }
 
@@ -507,7 +615,7 @@ export class GeoMapComponent implements OnDestroy {
     }
 
     const container = map.getContainer();
-    container.classList.toggle('gf-map--add-pin', tool === 'addPin');
+    container.classList.toggle('gf-map--add-pin', tool === 'addElement');
     container.classList.toggle('gf-map--add-cable', tool === 'addCable');
     container.classList.toggle('gf-map--move-pin', tool === 'move');
     container.classList.toggle('gf-map--edit-cable', tool === 'editCable');
@@ -519,11 +627,11 @@ export class GeoMapComponent implements OnDestroy {
       map.doubleClickZoom.enable();
     }
 
-    for (const marker of this.markers.values()) {
-      this.applyMarkerDraggable(marker);
+    for (const [key, marker] of this.markers) {
+      this.applyMarkerDraggable(key, marker);
     }
 
-    if (tool !== 'addPin') {
+    if (tool !== 'addElement') {
       this.removeGhost();
     }
     if (tool !== 'addCable') {
@@ -531,26 +639,26 @@ export class GeoMapComponent implements OnDestroy {
     }
   }
 
-  /** Retorna o PIN mais próximo dentro do raio do ímã; senão, o próprio ponto. */
-  private snapToPin(position: GeoPoint): GeoPoint {
+  /** Elemento mais próximo dentro do raio do ímã, ou `null`. */
+  private snapToElement(position: GeoPoint): MapElement | null {
     const map = this.map;
     if (!map) {
-      return position;
+      return null;
     }
     const point = map.latLngToContainerPoint([position.lat, position.lng]);
-    let best: GeoPoint | null = null;
+    let best: MapElement | null = null;
     let bestDistance = SNAP_DISTANCE_PX;
 
-    for (const pin of this.pins()) {
-      const pinPoint = map.latLngToContainerPoint([pin.position.lat, pin.position.lng]);
-      const distance = point.distanceTo(pinPoint);
+    for (const element of this.elements()) {
+      const target = map.latLngToContainerPoint([element.position.lat, element.position.lng]);
+      const distance = point.distanceTo(target);
       if (distance <= bestDistance) {
         bestDistance = distance;
-        best = pin.position;
+        best = element;
       }
     }
 
-    return best ?? position;
+    return best;
   }
 
   /** Realça visualmente o ponto magnético sob o cursor. */
@@ -577,7 +685,7 @@ export class GeoMapComponent implements OnDestroy {
     this.snapMarker.setLatLng([position.lat, position.lng]);
   }
 
-  // --- Pré-visualização do novo PIN ---------------------------------------
+  // --- Pré-visualização do novo elemento ----------------------------------
 
   private updateGhost(position: GeoPoint): void {
     const map = this.map;
@@ -624,7 +732,7 @@ export class GeoMapComponent implements OnDestroy {
         color: path.color,
         weight: selected ? path.weight + 3 : path.weight,
         dashArray: path.dashArray,
-        opacity: selected ? 1 : 0.9,
+        opacity: selected ? 1 : (path.opacity ?? 0.9),
         lineCap: 'round',
         lineJoin: 'round',
       };
@@ -636,8 +744,26 @@ export class GeoMapComponent implements OnDestroy {
         continue;
       }
 
-      const line = L.polyline(latlngs, { ...style, bubblingMouseEvents: false });
-      line.on('click', () => this.pathClick.emit(path));
+      const line = L.polyline(latlngs, {
+        ...style,
+        bubblingMouseEvents: false,
+        renderer: this.cableRenderer,
+      });
+      // A linha não repassa o clique ao mapa; nas ferramentas de criação ele vale como
+      // clique no mapa (criar sobre o cabo, marcar vértice, concluir o traçado).
+      line.on('click', (event: L.LeafletMouseEvent) => {
+        const intent = pathClickIntent(this.activeTool());
+        if (intent === 'map') {
+          this.emitMapClick(event.latlng);
+        } else if (intent === 'cable') {
+          this.pathClick.emit(path);
+        }
+      });
+      line.on('dblclick', (event: L.LeafletMouseEvent) => {
+        if (pathClickIntent(this.activeTool()) === 'map') {
+          this.mapDoubleClick.emit({ lat: event.latlng.lat, lng: event.latlng.lng });
+        }
+      });
       line.addTo(map);
       this.pathLines.set(path.id, line);
     }
@@ -655,7 +781,7 @@ export class GeoMapComponent implements OnDestroy {
   ): void {
     const map = this.map;
     const activePath =
-      map && tool === 'editCable' && selectedPathId
+      map && this.editable() && tool === 'editCable' && selectedPathId
         ? paths.find((path) => path.id === selectedPathId)
         : undefined;
 

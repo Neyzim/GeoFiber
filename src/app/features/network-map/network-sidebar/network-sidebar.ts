@@ -31,7 +31,7 @@ export class NetworkSidebarComponent {
   protected readonly collapsed = signal(false);
   protected readonly isDark = this.theme.isDark;
   protected readonly isCreating = computed(
-    () => this.activeTool() === 'addPin' || this.activeTool() === 'addCable',
+    () => this.activeTool() === 'addElement' || this.activeTool() === 'addCable',
   );
 
   protected toggleCollapsed(): void {
