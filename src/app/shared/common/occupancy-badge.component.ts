@@ -1,22 +1,25 @@
-import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
+/** Ocupação sempre visível: "3/12 posições". Some quando não há capacidade. */
 @Component({
   selector: 'app-occupancy-badge',
   standalone: true,
-  imports: [CommonModule],
-  template: `<span class="occupancy">{{ occupied() }}/{{ capacity() }} posições</span>`,
-  styles: [`
+  template: `@if (capacity() > 0) {<span class="occupancy gf-data"><strong>{{ occupied() }}</strong>/{{ capacity() }} {{ unit() }}</span>}`,
+  styles: `
     .occupancy {
-      font-size: 11px;
-      font-weight: 500;
-      color: #5d6b78;
-      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: var(--gf-text-2);
+      white-space: nowrap;
     }
-  `],
-  changeDetection: ChangeDetectionStrategy.OnPush
+    strong {
+      color: var(--gf-text);
+      font-weight: 600;
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OccupancyBadgeComponent {
-  occupied = input<number>(0);
-  capacity = input<number>(0);
+  readonly occupied = input<number>(0);
+  readonly capacity = input<number>(0);
+  readonly unit = input('posições');
 }

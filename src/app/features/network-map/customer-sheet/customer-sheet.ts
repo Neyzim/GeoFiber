@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+} from '@angular/core';
 import { TermHintComponent } from '../../../shared/help/term-hint';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,7 +24,9 @@ import {
   describeCustomerService,
   describeHistoryEntry,
 } from '../../../core/network/customer-rules';
+import { lineStateOf } from '../../../core/network/line-state-style';
 import { MapElement } from '../../../core/network/map-element';
+import { customerSides } from '../../../core/network/unifilar';
 import {
   CUSTOMER_STATUSES,
   groupDefinition,
@@ -24,15 +34,25 @@ import {
 } from '../../../core/network/network-catalog';
 import { NetworkMapRepository } from '../../../core/network/network-map-repository';
 import { NotificationService } from '../../../core/services/notification';
+import { SheetTab, SheetTabsComponent } from '../../../shared/common/sheet-tabs';
+import { UnifilarSummaryComponent } from '../../../shared/diagram/unifilar-summary';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/ui/confirm-dialog';
 
 /** Ficha do cliente selecionado: situação explicada, quem o atende, histórico e ações. */
 @Component({
   selector: 'app-customer-sheet',
   imports: [
-    TermHintComponent,MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule],
+    TermHintComponent,
+    SheetTabsComponent,
+    UnifilarSummaryComponent,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+  ],
   templateUrl: './customer-sheet.html',
-  styleUrls: ['../cable-sheet/cable-sheet.scss', '../box-sheet/box-sheet.scss'],
+  // cable-sheet.scss traz a lista .sheet__route usada no histórico.
+  styleUrls: ['../sheet-frame.scss', '../cable-sheet/cable-sheet.scss', '../box-sheet/box-sheet.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomerSheetComponent {
@@ -53,6 +73,16 @@ export class CustomerSheetComponent {
 
   protected readonly group = groupDefinition('customer');
   protected readonly statusOptions = CUSTOMER_STATUSES;
+  protected readonly tabs: readonly SheetTab[] = [
+    { id: 'resumo', label: 'Resumo' },
+    { id: 'historico', label: 'Histórico' },
+  ];
+
+  /** Aba aberta; volta para o Resumo sempre que outro cliente é selecionado. */
+  protected readonly tab = linkedSignal<string, string>({
+    source: () => this.element().id,
+    computation: () => 'resumo',
+  });
 
   protected readonly customer = computed<CustomerResponse | undefined>(() =>
     this.repository.customers().find((item) => item.id === this.element().id),
@@ -66,7 +96,6 @@ export class CustomerSheetComponent {
     return boxId ? this.repository.findBox(boxId)?.name : undefined;
   });
 
-  /** Portas da CTO do cliente (para mostrar o número da porta). */
   /**
    * Chave da situação atual: muda quando a situação ou a porta mudam (inclusive por um salvamento
    * no formulário), e então histórico e portas recarregam sozinhos.
@@ -83,13 +112,22 @@ export class CustomerSheetComponent {
     stream: ({ params }) => (params ? this.servicePortApi.list(params) : of([])),
   });
 
+  /** Número da porta de atendimento do cliente na CTO (quando as portas já chegaram). */
+  protected readonly portNumber = computed<number | undefined>(() => {
+    const customer = this.customer();
+    const ports = this.ports.hasValue() ? this.ports.value() : [];
+    return ports.find((item) => item.id === customer?.servicePortId)?.portNumber;
+  });
+
   protected readonly service = computed(() => {
     const customer = this.customer();
-    if (!customer) return '';
-    const ports = this.ports.hasValue() ? this.ports.value() : [];
-    const port = ports.find((item) => item.id === customer.servicePortId);
-    return describeCustomerService(customer, this.boxName(), port?.portNumber);
+    return customer ? describeCustomerService(customer, this.boxName(), this.portNumber()) : '';
   });
+
+  protected readonly sides = computed(() =>
+    customerSides(this.boxName(), this.portNumber(), this.customer()?.status === 'CANCELLED'),
+  );
+  protected readonly lineState = computed(() => lineStateOf(this.customer()?.status ?? 'ACTIVE'));
 
   private readonly history = rxResource({
     params: () => this.revision() || undefined,

@@ -429,7 +429,7 @@ export interface paths {
         /** Lista as fusões da caixa */
         get: operations["findByBox_2"];
         put?: never;
-        /** Registra uma fusão na próxima posição livre da bandeja */
+        /** Registra uma fusão na bandeja; posição pode ser fornecida ou será a próxima livre */
         post: operations["create_10"];
         delete?: never;
         options?: never;
@@ -986,10 +986,16 @@ export interface components {
         SpliceRequest: {
             /**
              * Format: int32
-             * @description Bandeja já cadastrada na caixa; a fusão ocupa a próxima posição livre
+             * @description Bandeja já cadastrada na caixa
              * @example 1
              */
             trayNumber: number;
+            /**
+             * Format: int32
+             * @description Posição na bandeja (1 até capacidade); opcional, encontra a próxima livre se não fornecido
+             * @example 1
+             */
+            positionNumber?: number;
             /** Format: double */
             attenuationDb?: number;
             /** Format: uuid */

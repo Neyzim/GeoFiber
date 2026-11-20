@@ -68,13 +68,13 @@ const GROUP_TERMS: Readonly<Record<string, string>> = {
     </mat-dialog-actions>
   `,
   styles: `
-    .view-help { display: flex; flex-direction: column; gap: 6px; }
-    .view-help__lead { margin: 0 0 6px; padding: 10px 12px; border-radius: 10px;
+    .view-help { display: flex; flex-direction: column; gap: 8px; }
+    .view-help__lead { margin: 0 0 8px; padding: 12px; border-radius: var(--gf-radius-panel);
       background: var(--mat-sys-surface-container, #eef2f6); font: var(--mat-sys-body-large); }
-    h3 { margin: 8px 0 2px; font: var(--mat-sys-title-small); }
+    h3 { margin: 8px 0 4px; font: var(--mat-sys-title-small); }
     ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
     li { display: flex; align-items: center; gap: 8px; font: var(--mat-sys-body-medium); }
-    .view-help__tips { padding-left: 18px; list-style: disc; }
+    .view-help__tips { padding-left: 20px; list-style: disc; }
     .view-help__tips li { display: list-item; }
     .view-help__dot { flex: none; width: 14px; height: 14px; border-radius: 50%; }
     .view-help__line { flex: none; width: 28px; height: 5px; border-radius: 3px; }

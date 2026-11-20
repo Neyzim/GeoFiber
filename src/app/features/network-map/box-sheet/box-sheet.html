@@ -1,294 +1,276 @@
 <aside class="sheet" aria-label="Ficha da caixa">
-  <header class="sheet__header">
-    <span class="sheet__badge" [style.background]="group().color">{{ group().code }}</span>
-    <div class="sheet__titles">
-      <h2>{{ box().name }}</h2>
-      <p>{{ group().label }}</p>
-    </div>
-    <button mat-icon-button type="button" matTooltip="Fechar ficha" (click)="closed.emit()">
-      <mat-icon>close</mat-icon>
-    </button>
-  </header>
-
-  <p class="sheet__status">
-    <span class="sheet__dot" [style.background]="status().color"></span>
-    {{ status().label }}
-    @if (canEdit()) {
-      <button mat-button type="button" class="sheet__inline" (click)="editData.emit()">
-        <mat-icon>edit</mat-icon>
-        Editar dados
+  <div class="sheet__top">
+    <header class="sheet__header">
+      <span class="sheet__badge" [style.background]="group().color">{{ group().code }}</span>
+      <div class="sheet__titles">
+        <h2>{{ box().name }}</h2>
+        <p class="sheet__status">
+          <span class="sheet__dot" [style.background]="status().color"></span>
+          {{ group().label }} · {{ status().label }}
+        </p>
+      </div>
+      @if (canEdit()) {
+        <button mat-icon-button type="button" matTooltip="Editar dados" aria-label="Editar dados" (click)="editData.emit()">
+          <mat-icon>edit</mat-icon>
+        </button>
+      }
+      <button mat-icon-button type="button" matTooltip="Fechar ficha" aria-label="Fechar ficha" (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
       </button>
-    }
-  </p>
+    </header>
+    <app-unifilar-summary [sides]="sides()" [code]="group().code" [color]="group().color" [state]="lineState()" />
+    <app-sheet-tabs [tabs]="tabs()" [(active)]="tab" />
+  </div>
 
   @if (store.state() === 'loading') {
     <mat-progress-bar mode="indeterminate" />
   }
 
-  @if (store.state() === 'error') {
-    <div class="sheet__error" role="alert">
-      <span>Não foi possível carregar a ficha da caixa.</span>
-      <button mat-stroked-button type="button" (click)="store.reload()">Tentar novamente</button>
-    </div>
-  } @else if (store.overview()) {
-    <p class="sheet__lead">{{ store.summary() }}</p>
+  <div class="sheet__body" role="tabpanel">
+    @if (store.state() === 'error') {
+      <div class="sheet__error" role="alert">
+        <span>Não foi possível carregar a ficha da caixa.</span>
+        <button mat-stroked-button type="button" (click)="store.reload()">Tentar novamente</button>
+      </div>
+    } @else if (store.overview()) {
+      @switch (tab()) {
+        @case ('resumo') {
+          <p class="sheet__lead">{{ store.summary() }}</p>
 
-    <!-- Cabos -->
-    <section class="sheet__section">
-      <div class="sheet__section-head"><h3>Cabos nesta caixa</h3></div>
-      @for (cable of store.cables(); track cable.cableId) {
-        <button type="button" class="box__row box__row--link" (click)="openCable.emit(cable.cableId ?? '')">
-          <span class="box__row-main">
-            <strong>{{ cable.name }}</strong>
-            <small>{{ roleLabel(cable) }} · {{ cable.fiberCapacity }} fibras</small>
-          </span>
-          <span class="sheet__count">{{ attachmentLabel(cable) }}</span>
-        </button>
-      } @empty {
-        <p class="sheet__empty">
-          Nenhum cabo chega aqui ainda. Abra a ficha de um cabo e inclua esta caixa na lista dele.
-        </p>
-      }
-    </section>
+          <!-- Cabos -->
+          <section class="sheet__section">
+            <div class="sheet__section-head"><h3>Cabos nesta caixa</h3></div>
+            @for (cable of store.cables(); track cable.cableId) {
+              <button type="button" class="box__row box__row--link" (click)="openCable.emit(cable.cableId ?? '')">
+                <span class="box__row-main">
+                  <strong>{{ cable.name }}</strong>
+                  <small>{{ roleLabel(cable) }} · {{ cable.fiberCapacity }} fibras</small>
+                </span>
+                <span class="sheet__count">{{ attachmentLabel(cable) }}</span>
+              </button>
+            } @empty {
+              <p class="sheet__empty">
+                Nenhum cabo chega aqui ainda. Abra a ficha de um cabo e inclua esta caixa na lista dele.
+              </p>
+            }
+          </section>
 
-    <!-- Bandejas e fusões -->
-    @if (!isCto() || store.trays().length > 0) {
-      <section class="sheet__section">
-        <div class="sheet__section-head">
-          <h3>Bandejas e fusões <app-term-hint key="fusao" /></h3>
-          @if (canEdit()) {
-            <button mat-button type="button" [disabled]="store.saving()" (click)="newSplice()">
-              <mat-icon>merge</mat-icon>
-              Nova fusão
-            </button>
-          }
-        </div>
-        <p class="sheet__hint">A fusão emenda duas fibras de forma permanente; fica guardada numa bandeja.</p>
+          <section class="sheet__section">
+            <div class="sheet__section-head"><h3>Fusões</h3></div>
+            <ng-container *ngTemplateOutlet="splicesLink" />
+          </section>
+        }
 
-        @for (tray of store.trays(); track tray.id) {
-          <div class="box__group">
-            <div class="box__group-head">
-              <strong>Bandeja {{ tray.trayNumber }}</strong>
-              <app-occupancy-badge [occupied]="tray.usedPositions ?? 0" [capacity]="tray.capacity ?? 0" />
-              @if (canEdit() && !(tray.usedPositions ?? 0)) {
-                <button mat-icon-button type="button" matTooltip="Excluir bandeja"
-                  (click)="deleteTray(tray.id, tray.trayNumber)">
-                  <mat-icon>delete_outline</mat-icon>
+        @case ('fusoes') {
+          <!-- Bandejas e fusões -->
+          <section class="sheet__section">
+            <div class="sheet__section-head">
+              <h3>Bandejas e fusões <app-term-hint key="fusao" /></h3>
+            </div>
+            <p class="sheet__hint">A fusão emenda duas fibras de forma permanente; fica guardada numa bandeja.</p>
+            <ng-container *ngTemplateOutlet="splicesLink" />
+          </section>
+
+          <!-- Conectores -->
+          <section class="sheet__section">
+            <div class="sheet__section-head">
+              <h3>Conectores <app-term-hint key="conector" /></h3>
+              @if (canEdit()) {
+                <button mat-button type="button" [disabled]="store.saving()" (click)="newConnector()">
+                  <mat-icon>cable</mat-icon>
+                  Nova conexão
                 </button>
               }
             </div>
-            @for (splice of splicesOf(tray.trayNumber); track splice.id) {
-              <div class="box__row">
-                <span class="box__row-main">
-                  <small>Posição {{ splice.positionNumber }}</small>
-                  <span>{{ fiber(splice.inputFiberId) }}</span>
-                  <span class="box__arrow">⟶ {{ fiber(splice.outputFiberId) }}</span>
-                  @if (splice.attenuationDb !== undefined && splice.attenuationDb !== null) {
-                    <small>Perda: {{ splice.attenuationDb }} dB</small>
-                  }
-                </span>
+            @for (connection of store.connectors(); track connection.id) {
+              <div class="box__splice">
+                <app-diagram-line [entrada]="end(connection.fiberAId)" [middle]="connectorMiddle()"
+                  [saida]="end(connection.fiberBId)" />
                 @if (canEdit()) {
-                  <button mat-icon-button type="button" matTooltip="Excluir fusão" (click)="deleteSplice(splice)">
+                  <button mat-icon-button type="button" matTooltip="Excluir conexão" aria-label="Excluir conexão"
+                    (click)="deleteConnector(connection)">
                     <mat-icon>delete_outline</mat-icon>
                   </button>
                 }
               </div>
             } @empty {
-              <p class="sheet__empty">Bandeja vazia.</p>
+              <p class="sheet__empty">Nenhuma ligação por conector.</p>
             }
-          </div>
-        } @empty {
-          <p class="sheet__empty">Nenhuma bandeja cadastrada.</p>
+          </section>
         }
 
-        @if (canEdit()) {
-          <div class="sheet__add">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Posições da bandeja</mat-label>
-              <mat-select [value]="newTrayCapacity()" (selectionChange)="newTrayCapacity.set($event.value)">
-                @for (option of trayCapacities; track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            <button mat-stroked-button type="button" [disabled]="store.saving()" (click)="addTray()">
-              <mat-icon>add</mat-icon>
-              Nova bandeja
-            </button>
-          </div>
+        @case ('splitters') {
+          <ng-container *ngTemplateOutlet="splittersBlock" />
         }
-      </section>
-    }
 
-    <!-- Conectores -->
-    @if (!isCto() || store.connectors().length > 0) {
-      <section class="sheet__section">
-        <div class="sheet__section-head">
-          <h3>Conectores <app-term-hint key="conector" /></h3>
-          @if (canEdit()) {
-            <button mat-button type="button" [disabled]="store.saving()" (click)="newConnector()">
-              <mat-icon>cable</mat-icon>
-              Nova conexão
-            </button>
-          }
-        </div>
-        @for (connection of store.connectors(); track connection.id) {
-          <div class="box__row">
-            <span class="box__row-main">{{ connectorText(connection) }}</span>
-            @if (canEdit()) {
-              <button mat-icon-button type="button" matTooltip="Excluir conexão" (click)="deleteConnector(connection)">
-                <mat-icon>delete_outline</mat-icon>
-              </button>
-            }
-          </div>
-        } @empty {
-          <p class="sheet__empty">Nenhuma ligação por conector.</p>
-        }
-      </section>
-    }
+        @case ('portas') {
+          <ng-container *ngTemplateOutlet="splittersBlock" />
 
-    <!-- Splitters -->
-    <section class="sheet__section">
-      <div class="sheet__section-head"><h3>Splitters <app-term-hint key="splitter" /></h3></div>
-      <p class="sheet__hint">O splitter divide o sinal de uma fibra de entrada em várias saídas.</p>
-
-      @for (splitter of store.splitters(); track splitter.id) {
-        <div class="box__group">
-          <div class="box__group-head">
-            <strong>{{ splitterName(splitter) }}</strong>
-            @if (canEdit()) {
-              <button mat-icon-button type="button" matTooltip="Excluir splitter" (click)="deleteSplitter(splitter)">
-                <mat-icon>delete_outline</mat-icon>
-              </button>
-            }
-          </div>
-
-          @if (inputOf(splitter); as input) {
-            <div class="box__row">
-              <span class="box__row-main">
-                <small>Entrada</small>
-                <span>{{ input.fiberId ? 'Recebe de ' + fiber(input.fiberId) : 'Nada ligado' }}</span>
-              </span>
+          <!-- Portas de atendimento -->
+          <section class="sheet__section">
+            <div class="sheet__section-head">
+              <h3>Portas de atendimento <app-term-hint key="porta-atendimento" /></h3>
+              <app-occupancy-badge [occupied]="portUse().occupied" [capacity]="portUse().capacity" unit="ocupadas" />
               @if (canEdit()) {
-                <button mat-icon-button type="button" matTooltip="Ligar fibra" (click)="linkSplitterPort(splitter, input)">
-                  <mat-icon>link</mat-icon>
+                <button mat-button type="button" [disabled]="store.saving()" [matMenuTriggerFor]="newPortMenu">
+                  <mat-icon>add</mat-icon>
+                  Nova porta
                 </button>
-                @if (input.fiberId) {
-                  <button mat-icon-button type="button" matTooltip="Desligar" (click)="unlinkSplitterPort(splitter, input)">
-                    <mat-icon>link_off</mat-icon>
-                  </button>
-                }
+                <mat-menu #newPortMenu="matMenu">
+                  @for (output of freeOutputs(); track output.splitterPortId) {
+                    <button mat-menu-item type="button" (click)="newServicePort(output)">Da {{ output.label }}</button>
+                  }
+                  <button mat-menu-item type="button" (click)="newServicePort('fiber')">Ligada direto a uma fibra…</button>
+                  <button mat-menu-item type="button" (click)="newServicePort('none')">Sem origem por enquanto</button>
+                </mat-menu>
               }
             </div>
-          }
+            <p class="sheet__hint">É onde o cabo do cliente (drop) é conectado.</p>
 
-          @for (port of outputsOf(splitter); track port.id) {
-            <div class="box__row box__row--compact">
-              <span class="box__row-main">
-                <span>Saída {{ outputNumber(port) }} → {{ outputTarget(port) }}</span>
-              </span>
-              @if (canEdit() && !port.servicePortId) {
-                <button mat-icon-button type="button" matTooltip="Ligar fibra" (click)="linkSplitterPort(splitter, port)">
-                  <mat-icon>link</mat-icon>
-                </button>
-                @if (port.fiberId) {
-                  <button mat-icon-button type="button" matTooltip="Desligar" (click)="unlinkSplitterPort(splitter, port)">
-                    <mat-icon>link_off</mat-icon>
+            @for (port of store.servicePorts(); track port.id) {
+              <div class="box__row">
+                <span class="box__row-main">
+                  <strong>Porta {{ port.portNumber }}{{ port.label ? ' · ' + port.label : '' }}</strong>
+                  <small>{{ portSource(port) }}</small>
+                  @if (customerName(port); as customer) {
+                    <small>Cliente: {{ customer }}</small>
+                  }
+                </span>
+                <span class="sheet__chip" [style.--gf-chip-color]="portStatus(port).color" [matTooltip]="portStatus(port).hint">
+                  {{ portStatus(port).label }}
+                </span>
+                @if (canEdit()) {
+                  <button mat-icon-button type="button" matTooltip="Mais ações" aria-label="Mais ações" [matMenuTriggerFor]="portMenu">
+                    <mat-icon>more_vert</mat-icon>
                   </button>
+                  <mat-menu #portMenu="matMenu">
+                    @for (output of freeOutputs(); track output.splitterPortId) {
+                      <button mat-menu-item type="button" (click)="setPortSource(port, output)">
+                        Receber da {{ output.label }}
+                      </button>
+                    }
+                    <button mat-menu-item type="button" (click)="setPortSource(port, 'fiber')">Ligar direto a uma fibra…</button>
+                    @if (port.splitterPortId || port.fiberId) {
+                      <button mat-menu-item type="button" (click)="setPortSource(port, 'none')">Desligar origem</button>
+                    }
+                    <button mat-menu-item type="button" [disabled]="!!port.customerId" (click)="deleteServicePort(port)">
+                      Excluir porta
+                    </button>
+                  </mat-menu>
                 }
-              }
-            </div>
-          }
-        </div>
-      } @empty {
-        <p class="sheet__empty">Nenhum splitter nesta caixa.</p>
+              </div>
+            } @empty {
+              <p class="sheet__empty">Nenhuma porta de atendimento.</p>
+            }
+          </section>
+        }
       }
+    }
+  </div>
+</aside>
 
-      @if (canEdit()) {
-        <div class="sheet__add">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Divisão</mat-label>
-            <mat-select [value]="newRatio()" (selectionChange)="newRatio.set($event.value)">
-              @for (option of ratios; track option.ratio) {
-                <mat-option [value]="option.ratio">{{ option.label }} ({{ option.outputs }} saídas)</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <button mat-stroked-button type="button" [disabled]="store.saving()" (click)="addSplitter()">
-            <mat-icon>add</mat-icon>
-            Novo splitter
-          </button>
-        </div>
-        <div class="box__toggles">
-          <mat-slide-toggle [checked]="newBalanced()" (change)="newBalanced.set($event.checked)">
-            Balanceado (mesmo sinal em todas as saídas)
-          </mat-slide-toggle>
-          @if (isCto()) {
-            <mat-slide-toggle [checked]="newWithPorts()" (change)="newWithPorts.set($event.checked)">
-              Criar uma porta de atendimento por saída
-            </mat-slide-toggle>
-          }
-        </div>
-      }
-    </section>
+<ng-template #splittersBlock>
+  <!-- Splitters -->
+  <section class="sheet__section">
+    <div class="sheet__section-head"><h3>Splitters <app-term-hint key="splitter" /></h3></div>
+    <p class="sheet__hint">O splitter divide o sinal de uma fibra de entrada em várias saídas.</p>
 
-    <!-- Portas de atendimento -->
-    @if (isCto()) {
-      <section class="sheet__section">
-        <div class="sheet__section-head">
-          <h3>Portas de atendimento <app-term-hint key="porta-atendimento" /></h3>
+    @for (splitter of store.splitters(); track splitter.id) {
+      <div class="box__group">
+        <div class="box__group-head">
+          <strong>{{ splitterName(splitter) }}</strong>
+          <app-occupancy-badge [occupied]="splitterUse(splitter).occupied" [capacity]="splitterUse(splitter).capacity"
+            unit="saídas em uso" />
           @if (canEdit()) {
-            <button mat-button type="button" [disabled]="store.saving()" [matMenuTriggerFor]="newPortMenu">
-              <mat-icon>add</mat-icon>
-              Nova porta
+            <button mat-icon-button type="button" matTooltip="Excluir splitter" aria-label="Excluir splitter"
+              (click)="deleteSplitter(splitter)">
+              <mat-icon>delete_outline</mat-icon>
             </button>
-            <mat-menu #newPortMenu="matMenu">
-              @for (output of freeOutputs(); track output.splitterPortId) {
-                <button mat-menu-item type="button" (click)="newServicePort(output)">Da {{ output.label }}</button>
-              }
-              <button mat-menu-item type="button" (click)="newServicePort('fiber')">Ligada direto a uma fibra…</button>
-              <button mat-menu-item type="button" (click)="newServicePort('none')">Sem origem por enquanto</button>
-            </mat-menu>
           }
         </div>
-        <p class="sheet__hint">É onde o cabo do cliente (drop) é conectado.</p>
 
-        @for (port of store.servicePorts(); track port.id) {
+        @if (inputOf(splitter); as input) {
           <div class="box__row">
             <span class="box__row-main">
-              <strong>Porta {{ port.portNumber }}{{ port.label ? ' · ' + port.label : '' }}</strong>
-              <small>{{ portSource(port) }}</small>
-              @if (customerName(port); as customer) {
-                <small>Cliente: {{ customer }}</small>
-              }
-            </span>
-            <span class="sheet__chip" [style.color]="portStatus(port).color" [matTooltip]="portStatus(port).hint">
-              {{ portStatus(port).label }}
+              <small>Entrada</small>
+              <span>{{ input.fiberId ? 'Recebe de ' + fiber(input.fiberId) : 'Nada ligado' }}</span>
             </span>
             @if (canEdit()) {
-              <button mat-icon-button type="button" matTooltip="Mais ações" [matMenuTriggerFor]="portMenu">
-                <mat-icon>more_vert</mat-icon>
+              <button mat-icon-button type="button" matTooltip="Ligar fibra" aria-label="Ligar fibra"
+                (click)="linkSplitterPort(splitter, input)">
+                <mat-icon>link</mat-icon>
               </button>
-              <mat-menu #portMenu="matMenu">
-                @for (output of freeOutputs(); track output.splitterPortId) {
-                  <button mat-menu-item type="button" (click)="setPortSource(port, output)">
-                    Receber da {{ output.label }}
-                  </button>
-                }
-                <button mat-menu-item type="button" (click)="setPortSource(port, 'fiber')">Ligar direto a uma fibra…</button>
-                @if (port.splitterPortId || port.fiberId) {
-                  <button mat-menu-item type="button" (click)="setPortSource(port, 'none')">Desligar origem</button>
-                }
-                <button mat-menu-item type="button" [disabled]="!!port.customerId" (click)="deleteServicePort(port)">
-                  Excluir porta
+              @if (input.fiberId) {
+                <button mat-icon-button type="button" matTooltip="Desligar" aria-label="Desligar"
+                  (click)="unlinkSplitterPort(splitter, input)">
+                  <mat-icon>link_off</mat-icon>
                 </button>
-              </mat-menu>
+              }
             }
           </div>
-        } @empty {
-          <p class="sheet__empty">Nenhuma porta de atendimento.</p>
         }
-      </section>
+
+        @for (port of outputsOf(splitter); track port.id) {
+          <div class="box__row box__row--compact">
+            <span class="box__row-main">
+              <span>Saída {{ outputNumber(port) }} → {{ outputTarget(port) }}</span>
+            </span>
+            @if (canEdit() && !port.servicePortId) {
+              <button mat-icon-button type="button" matTooltip="Ligar fibra" aria-label="Ligar fibra"
+                (click)="linkSplitterPort(splitter, port)">
+                <mat-icon>link</mat-icon>
+              </button>
+              @if (port.fiberId) {
+                <button mat-icon-button type="button" matTooltip="Desligar" aria-label="Desligar"
+                  (click)="unlinkSplitterPort(splitter, port)">
+                  <mat-icon>link_off</mat-icon>
+                </button>
+              }
+            }
+          </div>
+        }
+      </div>
+    } @empty {
+      <p class="sheet__empty">Nenhum splitter nesta caixa.</p>
     }
-  }
-</aside>
+
+    @if (canEdit()) {
+      <div class="sheet__add">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Divisão</mat-label>
+          <mat-select [value]="newRatio()" (selectionChange)="newRatio.set($event.value)">
+            @for (option of ratios; track option.ratio) {
+              <mat-option [value]="option.ratio">{{ option.label }} ({{ option.outputs }} saídas)</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button type="button" [disabled]="store.saving()" (click)="addSplitter()">
+          <mat-icon>add</mat-icon>
+          Novo splitter
+        </button>
+      </div>
+      <div class="box__toggles">
+        <mat-slide-toggle [checked]="newBalanced()" (change)="newBalanced.set($event.checked)">
+          Balanceado (mesmo sinal em todas as saídas)
+        </mat-slide-toggle>
+        @if (isCto()) {
+          <mat-slide-toggle [checked]="newWithPorts()" (change)="newWithPorts.set($event.checked)">
+            Criar uma porta de atendimento por saída
+          </mat-slide-toggle>
+        }
+      </div>
+    }
+  </section>
+</ng-template>
+
+<ng-template #splicesLink>
+  <div class="box__row">
+    <span class="box__row-main">
+      <span>{{ spliceSummary() }}</span>
+    </span>
+    <button mat-stroked-button type="button" data-action="ver-fusoes" (click)="openSplices.emit()">
+      <mat-icon>merge</mat-icon>
+      Ver fusões
+    </button>
+  </div>
+</ng-template>

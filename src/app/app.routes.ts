@@ -15,5 +15,11 @@ export const routes: Routes = [
       ),
     title: 'GeoFiber — Modelos de rede',
   },
+  {
+    path: 'caixas/:boxId/fusoes',
+    loadComponent: () =>
+      import('./features/box-splices/box-splices-page').then((module) => module.BoxSplicesPage),
+    title: 'GeoFiber — Fusões',
+  },
   { path: '**', redirectTo: '' },
 ];

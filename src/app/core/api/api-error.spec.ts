@@ -32,6 +32,15 @@ describe('parseApiError', () => {
     expect(result.original).toBe('Tray 3 is full');
   });
 
+  it('translates the splice position errors', () => {
+    expect(
+      parseApiError(httpError(409, { detail: 'Position 6 is already occupied in this tray' })).message,
+    ).toBe('A posição 6 desta bandeja já está ocupada.');
+    expect(
+      parseApiError(httpError(400, { detail: 'Position 13 exceeds tray capacity of 12' })).message,
+    ).toBe('A posição 13 não existe: a bandeja tem 12 posições.');
+  });
+
   it('translates the fiber end', () => {
     const result = parseApiError(httpError(409, { detail: 'Fiber end B is not available' }));
     expect(result.message).toContain('ponta B');

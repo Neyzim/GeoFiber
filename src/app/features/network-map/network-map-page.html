@@ -110,6 +110,7 @@
           (closed)="closeSheet()"
           (editData)="editSelectedElement()"
           (openCable)="openCableFromSheet($event)"
+          (openSplices)="openSplices(box.id)"
         />
       } @else if (selectedCustomer(); as customer) {
         <app-customer-sheet

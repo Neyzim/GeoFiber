@@ -11,22 +11,24 @@ export interface OpticalColorDefinition {
   color: OpticalColor;
   label: string;
   hex: string;
+  /** Tinta legível para o número escrito sobre a cor. */
+  ink: 'dark' | 'light';
 }
 
 /** As 12 cores ABNT/TIA de tubos e fibras, na ordem da norma. */
 export const OPTICAL_COLORS: readonly OpticalColorDefinition[] = [
-  { color: 'GREEN', label: 'Verde', hex: '#2e9e44' },
-  { color: 'YELLOW', label: 'Amarelo', hex: '#fdd835' },
-  { color: 'WHITE', label: 'Branco', hex: '#ffffff' },
-  { color: 'BLUE', label: 'Azul', hex: '#1e88e5' },
-  { color: 'RED', label: 'Vermelho', hex: '#e53935' },
-  { color: 'VIOLET', label: 'Violeta', hex: '#8e24aa' },
-  { color: 'BROWN', label: 'Marrom', hex: '#795548' },
-  { color: 'PINK', label: 'Rosa', hex: '#f48fb1' },
-  { color: 'BLACK', label: 'Preto', hex: '#212121' },
-  { color: 'GRAY', label: 'Cinza', hex: '#9e9e9e' },
-  { color: 'ORANGE', label: 'Laranja', hex: '#fb8c00' },
-  { color: 'TURQUOISE', label: 'Turquesa', hex: '#00bcd4' },
+  { color: 'GREEN', label: 'Verde', hex: '#2e9e44', ink: 'dark' },
+  { color: 'YELLOW', label: 'Amarelo', hex: '#fdd835', ink: 'dark' },
+  { color: 'WHITE', label: 'Branco', hex: '#ffffff', ink: 'dark' },
+  { color: 'BLUE', label: 'Azul', hex: '#1e88e5', ink: 'dark' },
+  { color: 'RED', label: 'Vermelho', hex: '#e53935', ink: 'light' },
+  { color: 'VIOLET', label: 'Violeta', hex: '#8e24aa', ink: 'light' },
+  { color: 'BROWN', label: 'Marrom', hex: '#795548', ink: 'light' },
+  { color: 'PINK', label: 'Rosa', hex: '#f48fb1', ink: 'dark' },
+  { color: 'BLACK', label: 'Preto', hex: '#212121', ink: 'light' },
+  { color: 'GRAY', label: 'Cinza', hex: '#9e9e9e', ink: 'dark' },
+  { color: 'ORANGE', label: 'Laranja', hex: '#fb8c00', ink: 'dark' },
+  { color: 'TURQUOISE', label: 'Turquesa', hex: '#00bcd4', ink: 'dark' },
 ];
 
 export function opticalColor(color: OpticalColor | undefined): OpticalColorDefinition {
@@ -42,17 +44,47 @@ export interface SimpleStatusDefinition<S extends string> {
 }
 
 export const FIBER_STATUSES: readonly SimpleStatusDefinition<FiberStatus>[] = [
-  { status: 'AVAILABLE', label: 'Disponível', color: '#2e7d32', hint: 'Livre para ser ligada.' },
-  { status: 'OCCUPIED', label: 'Ocupada', color: '#1e88e5', hint: 'Já está ligada em algum ponto.' },
-  { status: 'BROKEN', label: 'Rompida', color: '#e53935', hint: 'Danificada; não pode ser ligada.' },
-  { status: 'RESERVED', label: 'Reservada', color: '#fb8c00', hint: 'Guardada para uso futuro.' },
+  {
+    status: 'AVAILABLE',
+    label: 'Disponível',
+    color: 'var(--gf-status-normal)',
+    hint: 'Livre para ser ligada.',
+  },
+  {
+    status: 'OCCUPIED',
+    label: 'Ocupada',
+    color: 'var(--gf-status-info)',
+    hint: 'Já está ligada em algum ponto.',
+  },
+  {
+    status: 'BROKEN',
+    label: 'Rompida',
+    color: 'var(--gf-status-critical)',
+    hint: 'Danificada; não pode ser ligada.',
+  },
+  {
+    status: 'RESERVED',
+    label: 'Reservada',
+    color: 'var(--gf-status-alert)',
+    hint: 'Guardada para uso futuro.',
+  },
 ];
 
 export const PORT_STATUSES: readonly SimpleStatusDefinition<PortStatus>[] = [
-  { status: 'FREE', label: 'Livre', color: '#2e7d32', hint: 'Nada ligado.' },
-  { status: 'OCCUPIED', label: 'Ocupada', color: '#1e88e5', hint: 'Em uso.' },
-  { status: 'RESERVED', label: 'Reservada', color: '#fb8c00', hint: 'Guardada para uso futuro.' },
-  { status: 'FAULTY', label: 'Com defeito', color: '#e53935', hint: 'Precisa de reparo.' },
+  { status: 'FREE', label: 'Livre', color: 'var(--gf-status-normal)', hint: 'Nada ligado.' },
+  { status: 'OCCUPIED', label: 'Ocupada', color: 'var(--gf-status-info)', hint: 'Em uso.' },
+  {
+    status: 'RESERVED',
+    label: 'Reservada',
+    color: 'var(--gf-status-alert)',
+    hint: 'Guardada para uso futuro.',
+  },
+  {
+    status: 'FAULTY',
+    label: 'Com defeito',
+    color: 'var(--gf-status-critical)',
+    hint: 'Precisa de reparo.',
+  },
 ];
 
 export function fiberStatusDefinition(status: FiberStatus | undefined) {

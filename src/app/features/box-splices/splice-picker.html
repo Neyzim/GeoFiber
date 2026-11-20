@@ -1,0 +1,89 @@
+<section class="picker" aria-labelledby="picker-title">
+  <header class="picker__head">
+    <h3 id="picker-title">Emenda na posição {{ position() }} · Bandeja {{ trayNumber() }}</h3>
+    <button mat-icon-button type="button" aria-label="Fechar" (click)="closed.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <p class="picker__hint" aria-live="polite">{{ hint() }}</p>
+
+  <div class="picker__columns">
+    @for (column of columns(); track column.side) {
+      <div class="column" [attr.data-side]="column.side">
+        <h4>{{ column.title }}</h4>
+        <div class="column__cables" role="group" [attr.aria-label]="'Cabo do ' + column.title.toLowerCase()">
+          @for (cable of store.cables(); track cable.cableId) {
+            <button type="button" class="chip" [attr.data-cable]="cable.cableId"
+              [attr.aria-pressed]="cable.cableId === column.cableId"
+              (click)="selectCable(column.side, cable.cableId ?? '')">{{ cable.name }}</button>
+          }
+        </div>
+
+        @if (advanced()) {
+          <div class="column__ends" role="group" aria-label="Ponta usada">
+            @for (end of ends; track end) {
+              <button type="button" class="chip chip--small" [attr.data-end]="end"
+                [attr.aria-pressed]="column.end === end" (click)="selectEnd(column.side, end)">Ponta {{ end }}</button>
+            }
+          </div>
+        }
+
+        @for (tube of column.tubes; track tube.number) {
+          <div class="tube" [attr.data-tube]="tube.number">
+            <span class="tube__label">
+              <app-fiber-dot [color]="tube.color" [number]="tube.number" kind="tubo" size="sm" />
+              Tubo {{ tube.number }}
+            </span>
+            <div class="tube__fibers">
+              @for (fiber of tube.fibers; track fiber.info.id) {
+                <button type="button" class="fiber" [attr.data-fiber]="fiber.info.id"
+                  [class.is-busy]="!fiber.pick.free" [class.is-chosen]="fiber.chosen"
+                  [attr.aria-disabled]="!fiber.pick.free" [attr.aria-pressed]="fiber.chosen"
+                  [attr.title]="fiber.pick.reason"
+                  (click)="tapFiber(column.side, fiber)">
+                  <app-fiber-dot [color]="fiber.info.color" [number]="fiber.info.numberInTube" />
+                </button>
+              }
+            </div>
+          </div>
+        } @empty {
+          @if (column.cableId) {
+            <p class="column__empty">
+              Este cabo ainda não tem tubos e fibras. Cadastre na ficha do cabo.
+              <button mat-button type="button" data-action="ficha-do-cabo" (click)="openCable.emit(column.cableId)">
+                Abrir ficha do cabo
+              </button>
+            </p>
+          } @else {
+            <p class="column__empty">Nenhum cabo chega a esta caixa.</p>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="picker__foot">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="picker__loss">
+      <mat-label>Perda (dB)</mat-label>
+      <input matInput name="perda" inputmode="decimal" placeholder="opcional" [value]="loss()"
+        (input)="setLoss($any($event.target).value)" />
+    </mat-form-field>
+    <button type="button" class="chip chip--small" data-action="avancado" [attr.aria-pressed]="advanced()"
+      (click)="advanced.set(!advanced())">Mostrar pontas (avançado)</button>
+  </div>
+
+  @if (error(); as message) {
+    <p class="picker__error" role="alert">{{ message }}</p>
+  }
+
+  <div class="picker__actions">
+    <button mat-button type="button" (click)="closed.emit()">Cancelar</button>
+    <button mat-flat-button type="button" data-action="registrar" [disabled]="!ready() || store.saving()" (click)="save()">
+      @if (store.saving()) {
+        <mat-spinner diameter="18" />
+      }
+      Registrar emenda
+    </button>
+  </div>
+</section>

@@ -1,5 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+} from '@angular/core';
 import { TermHintComponent } from '../../../shared/help/term-hint';
+import { FiberDotComponent } from '../../../shared/common/fiber-dot';
+import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
+import { SheetTab, SheetTabsComponent } from '../../../shared/common/sheet-tabs';
+import { UnifilarSummaryComponent } from '../../../shared/diagram/unifilar-summary';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +22,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CableFiberResponse, FiberEndResponse, FiberStatus } from '../../../core/api/api-types';
 import { RouteItem } from '../../../core/network/cable-route';
+import { lineStateOf } from '../../../core/network/line-state-style';
+import { tubeOccupancy } from '../../../core/network/occupancy';
+import { cableSides } from '../../../core/network/unifilar';
 import { MapCable } from '../../../core/network/map-element';
 import { roleDefinition, statusDefinition } from '../../../core/network/network-catalog';
 import {
@@ -20,7 +36,12 @@ import {
   opticalColor,
   structurePreview,
 } from '../../../core/network/optical-catalog';
-import { CableSheetStore } from './cable-sheet-store';
+import { CableSheetStore, TubeView } from './cable-sheet-store';
+
+const TABS: readonly SheetTab[] = [
+  { id: 'resumo', label: 'Resumo' },
+  { id: 'fibras', label: 'Fibras' },
+];
 
 const ROUTE_LABELS = { first: 'Início', middle: 'Passa por', last: 'Fim' } as const;
 
@@ -32,6 +53,10 @@ const ROUTE_LABELS = { first: 'Início', middle: 'Passa por', last: 'Fim' } as c
   selector: 'app-cable-sheet',
   imports: [
     TermHintComponent,
+    FiberDotComponent,
+    OccupancyBadgeComponent,
+    SheetTabsComponent,
+    UnifilarSummaryComponent,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -41,7 +66,7 @@ const ROUTE_LABELS = { first: 'Início', middle: 'Passa por', last: 'Fim' } as c
     MatTooltipModule,
   ],
   templateUrl: './cable-sheet.html',
-  styleUrl: './cable-sheet.scss',
+  styleUrls: ['../sheet-frame.scss', './cable-sheet.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CableSheetComponent {
@@ -62,6 +87,15 @@ export class CableSheetComponent {
   protected readonly statusOptions = FIBER_STATUSES.filter((item) => item.status !== 'OCCUPIED');
   protected readonly expanded = signal<ReadonlySet<string>>(new Set());
   private readonly chosenPerTube = signal<number | null>(null);
+
+  /** Aba aberta; volta para o Resumo quando outro cabo é aberto. */
+  protected readonly tab = linkedSignal<string, string>({
+    source: () => this.cable().id,
+    computation: () => 'resumo',
+  });
+  protected readonly tabs = TABS;
+  protected readonly sides = computed(() => cableSides(this.store.routeItems()));
+  protected readonly lineState = computed(() => lineStateOf(this.cable().status));
 
   protected readonly role = computed(() => roleDefinition(this.cable().role));
   protected readonly status = computed(() => statusDefinition(this.cable().status));
@@ -90,6 +124,10 @@ export class CableSheetComponent {
 
   protected colorOf(color: Parameters<typeof opticalColor>[0]) {
     return opticalColor(color);
+  }
+
+  protected tubeUse(tube: TubeView) {
+    return tubeOccupancy(tube.fibers);
   }
 
   protected fiberStatus(status: FiberStatus | undefined) {

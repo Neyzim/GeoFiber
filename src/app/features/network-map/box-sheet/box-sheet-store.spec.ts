@@ -1,5 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { Subject, of } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { BoxOverviewResponse } from '../../../core/api/api-types';
 import { BoxApi } from '../../../core/api/resources/box-api';
 import { CableApi } from '../../../core/api/resources/cable-api';
@@ -92,12 +93,43 @@ describe('BoxSheetStore', () => {
     expect(boxApi.overview).toHaveBeenCalledTimes(2);
   });
 
-  it('creates a splice', () => {
+  it('saves a splice at an exact position and tells the caller, reloading on success', () => {
+    const { store, spliceApi, boxApi } = setup();
+    store.open('b1');
+    const body = { trayNumber: 1, positionNumber: 6, inputFiberId: 'f1', outputFiberId: 'f2' };
+    const done = vi.fn();
+    store.saveSplice(body, done);
+    expect(spliceApi.create).toHaveBeenCalledWith('b1', body);
+    expect(done).toHaveBeenCalledWith(null);
+    expect(boxApi.overview).toHaveBeenCalledTimes(2);
+    expect(store.saving()).toBe(false);
+  });
+
+  it('keeps the overview on screen while it reloads', () => {
+    const { store, boxApi } = setup();
+    store.open('b1');
+    boxApi.overview.mockReturnValueOnce(new Subject<BoxOverviewResponse>());
+    store.reload();
+    expect(store.state()).toBe('loading');
+    expect(store.overview()?.box?.name).toBe('CTO-01');
+  });
+
+  it('gives the translated error back to the caller instead of a snack bar', () => {
     const { store, spliceApi } = setup();
     store.open('b1');
-    const body = { trayNumber: 1, inputFiberId: 'f1', outputFiberId: 'f2' };
-    store.addSplice(body);
-    expect(spliceApi.create).toHaveBeenCalledWith('b1', body);
+    spliceApi.create.mockReturnValueOnce(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: { detail: 'Position 6 is already occupied in this tray' },
+          }),
+      ),
+    );
+    const done = vi.fn();
+    store.saveSplice({ trayNumber: 1, positionNumber: 6, inputFiberId: 'a', outputFiberId: 'b' }, done);
+    expect(done).toHaveBeenCalledWith('A posição 6 desta bandeja já está ocupada.');
+    expect(store.saving()).toBe(false);
   });
 
   it('links a splitter port keeping its attenuation, and unlinks it', () => {

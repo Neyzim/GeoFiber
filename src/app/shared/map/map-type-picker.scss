@@ -4,10 +4,10 @@
 }
 
 .type-picker {
-  border-radius: 12px;
-  background: var(--mat-sys-surface-container-high, #fff);
-  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-border);
+  box-shadow: var(--gf-shadow-float);
   overflow: hidden;
 }
 
@@ -15,8 +15,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 6px 6px 14px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.08));
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--gf-border);
 }
 
 .type-picker__title {
@@ -34,16 +34,16 @@
 
 .type-picker__hint {
   margin: 0;
-  padding: 8px 14px 0;
+  padding: 8px 16px 0;
   font: var(--mat-sys-body-small, 400 12px/1.4 sans-serif);
-  color: var(--mat-sys-on-surface-variant, #546e7a);
+  color: var(--gf-text-2);
 }
 
 .type-picker__grid {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px;
+  gap: 4px;
+  padding: 8px;
   max-height: 46vh;
   overflow: auto;
 }
@@ -51,22 +51,22 @@
 .type-picker__option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
+  gap: 12px;
+  padding: 8px 8px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--gf-radius-panel);
   background: transparent;
   color: inherit;
   cursor: pointer;
   text-align: left;
 
   &:hover {
-    background: var(--mat-sys-surface-container, rgba(0, 0, 0, 0.04));
+    background: var(--gf-surface-2);
   }
 
   &.is-active {
-    background: var(--mat-sys-secondary-container, #dbe4f0);
-    border-color: var(--mat-sys-primary, #1e88e5);
+    background: var(--gf-accent-soft);
+    border-color: var(--gf-accent);
   }
 }
 
@@ -75,9 +75,9 @@
   place-items: center;
   width: 34px;
   height: 24px;
-  border-radius: 7px;
-  color: #fff;
-  font: 700 9px/1 Roboto, Arial, sans-serif;
+  border-radius: var(--gf-radius-control);
+  color: var(--gf-ink-light);
+  font: 700 9px/1 var(--gf-font-ui);
   letter-spacing: 0.02em;
   flex: none;
 }
@@ -100,7 +100,7 @@
 
 .type-picker__count {
   font: var(--mat-sys-label-medium, 500 12px/1 sans-serif);
-  color: var(--mat-sys-on-surface-variant, #546e7a);
+  color: var(--gf-text-2);
   min-width: 18px;
   text-align: right;
 }

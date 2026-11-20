@@ -27,22 +27,6 @@ export const BASE_LAYERS: readonly BaseLayerDefinition[] = [
     attribution: 'Imagens &copy; Esri, Maxar, Earthstar Geographics',
     maxZoom: 19,
   },
-  {
-    key: 'light',
-    label: 'Claro (CARTO)',
-    icon: 'light_mode',
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    maxZoom: 20,
-  },
-  {
-    key: 'dark',
-    label: 'Escuro (CARTO)',
-    icon: 'dark_mode',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    maxZoom: 20,
-  },
 ];
 
 export const DEFAULT_BASE_LAYER_KEY = 'streets';

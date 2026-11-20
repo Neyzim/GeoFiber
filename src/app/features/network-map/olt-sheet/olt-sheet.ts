@@ -1,5 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+} from '@angular/core';
 import { TermHintComponent } from '../../../shared/help/term-hint';
+import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
+import { SheetTab, SheetTabsComponent } from '../../../shared/common/sheet-tabs';
+import { UnifilarSummaryComponent } from '../../../shared/diagram/unifilar-summary';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,7 +24,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { filter } from 'rxjs';
 import { AttachedCableResponse, OltPortResponse, PortStatus } from '../../../core/api/api-types';
 import { fiberLabel, nextNumber } from '../../../core/network/box-interior';
+import { lineStateOf } from '../../../core/network/line-state-style';
 import { MapElement } from '../../../core/network/map-element';
+import { Occupancy, oltPortOccupancy } from '../../../core/network/occupancy';
+import { SlotGroup } from '../../../core/network/olt-ports';
+import { oltSides } from '../../../core/network/unifilar';
 import {
   groupDefinition,
   roleDefinition,
@@ -27,11 +43,14 @@ import {
 } from '../box-sheet/fiber-link-dialog';
 import { OltSheetStore } from './olt-sheet-store';
 
-/** Ficha da OLT selecionada: portas PON por placa e os cabos que saem dela. */
+/** Ficha da OLT selecionada: abas Resumo (cabos que saem) e Portas PON (por placa). */
 @Component({
   selector: 'app-olt-sheet',
   imports: [
     TermHintComponent,
+    OccupancyBadgeComponent,
+    SheetTabsComponent,
+    UnifilarSummaryComponent,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -42,7 +61,7 @@ import { OltSheetStore } from './olt-sheet-store';
     MatTooltipModule,
   ],
   templateUrl: './olt-sheet.html',
-  styleUrls: ['../cable-sheet/cable-sheet.scss', '../box-sheet/box-sheet.scss'],
+  styleUrls: ['../sheet-frame.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OltSheetComponent {
@@ -63,6 +82,18 @@ export class OltSheetComponent {
 
   protected readonly group = computed(() => groupDefinition(this.olt().group));
   protected readonly status = computed(() => statusDefinition(this.olt().status));
+
+  /** Aba aberta; volta para o Resumo sempre que outra OLT é selecionada. */
+  protected readonly tab = linkedSignal<string, string>({
+    source: () => this.olt().id,
+    computation: () => 'resumo',
+  });
+  protected readonly tabs: readonly SheetTab[] = [
+    { id: 'resumo', label: 'Resumo' },
+    { id: 'portas', label: 'Portas PON' },
+  ];
+  protected readonly sides = computed(() => oltSides(this.store.cables()));
+  protected readonly lineState = computed(() => lineStateOf(this.olt().status));
   /** Placa sugerida: a última existente (ou 1). */
   protected readonly newSlot = computed(
     () =>
@@ -73,6 +104,10 @@ export class OltSheetComponent {
   protected setSlot(value: string): void {
     const slot = Number(value);
     this.chosenSlot.set(Number.isInteger(slot) && slot > 0 ? slot : null);
+  }
+
+  protected slotUse(group: SlotGroup): Occupancy {
+    return oltPortOccupancy(group.ports);
   }
 
   protected roleLabel(cable: AttachedCableResponse): string {

@@ -4,19 +4,19 @@
 }
 
 .layer-panel {
-  border-radius: 12px;
-  background: var(--mat-sys-surface-container-high, #fff);
-  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
-  padding-bottom: 6px;
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-border);
+  box-shadow: var(--gf-shadow-float);
+  padding-bottom: 8px;
 }
 
 .layer-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 6px 6px 14px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.08));
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--gf-border);
 }
 
 .layer-panel__title {
@@ -33,21 +33,21 @@
 .layer-panel__options {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   padding: 8px 12px;
 }
 
 .layer-panel__option {
   --mat-radio-label-text-size: 13px;
-  padding: 2px 0;
+  padding: 4px 0;
 
   mat-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;
-    margin-right: 6px;
+    margin-right: 8px;
     vertical-align: middle;
-    color: var(--mat-sys-on-surface-variant, #546e7a);
+    color: var(--gf-text-2);
   }
 }
 
@@ -59,5 +59,5 @@
 
 .layer-panel__opacity-label {
   font: var(--mat-sys-label-medium, 500 12px/1.3 sans-serif);
-  color: var(--mat-sys-on-surface-variant, #546e7a);
+  color: var(--gf-text-2);
 }

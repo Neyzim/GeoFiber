@@ -1,73 +1,17 @@
-// Complementos da ficha da caixa (a base vem de cable-sheet.scss).
-
-.box__group {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--mat-sys-outline-variant, #d8dee6);
-  border-radius: 10px;
-  padding: 4px 10px 6px;
-}
-
-.box__group-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-
-  strong {
-    flex: 1;
-  }
-}
-
-.box__row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 6px 0;
-  border: 0;
-  border-top: 1px dashed var(--mat-sys-outline-variant, #d8dee6);
-  background: none;
-  color: inherit;
-  font: var(--mat-sys-body-medium);
-  text-align: left;
-}
-
-.box__row--compact {
-  padding: 2px 0;
-}
-
-.box__row--link {
-  cursor: pointer;
-  border-top: 0;
-  border-radius: 8px;
-  padding: 6px 8px;
-
-  &:hover {
-    background: var(--mat-sys-surface-container, #eef2f6);
-  }
-}
-
-.box__row-main {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-  overflow-wrap: anywhere;
-
-  small {
-    color: var(--mat-sys-on-surface-variant);
-  }
-}
-
-.box__arrow {
-  color: var(--mat-sys-on-surface-variant);
-}
+// Complementos da ficha da caixa (a base vem de ../sheet-frame.scss).
 
 .box__toggles {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.box__splice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px dashed var(--gf-border);
 }
 
 // Ficha do cliente (reaproveita esta folha).
@@ -78,5 +22,5 @@
 
 .customer__delete {
   align-self: flex-start;
-  color: var(--mat-sys-error, #b3261e);
+  color: var(--gf-status-critical);
 }

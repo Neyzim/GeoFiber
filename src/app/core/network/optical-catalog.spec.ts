@@ -1,8 +1,10 @@
 import {
   OPTICAL_COLORS,
   fiberLinkText,
+  fiberStatusDefinition,
   opticalColor,
   planStructure,
+  portStatusDefinition,
   structurePreview,
 } from './optical-catalog';
 
@@ -23,6 +25,23 @@ describe('optical catalog', () => {
       'Turquesa',
     ]);
     expect(opticalColor('WHITE').label).toBe('Branco');
+  });
+
+  it('colors fiber and port statuses with theme tokens', () => {
+    expect(fiberStatusDefinition('AVAILABLE').color).toBe('var(--gf-status-normal)');
+    expect(fiberStatusDefinition('OCCUPIED').color).toBe('var(--gf-status-info)');
+    expect(fiberStatusDefinition('BROKEN').color).toBe('var(--gf-status-critical)');
+    expect(fiberStatusDefinition('RESERVED').color).toBe('var(--gf-status-alert)');
+    expect(portStatusDefinition('FREE').color).toBe('var(--gf-status-normal)');
+    expect(portStatusDefinition('FAULTY').color).toBe('var(--gf-status-critical)');
+  });
+
+  it('gives each ABNT color a readable ink for the number on top', () => {
+    const ink = Object.fromEntries(OPTICAL_COLORS.map((item) => [item.color, item.ink]));
+    expect(ink).toEqual({
+      GREEN: 'dark', YELLOW: 'dark', WHITE: 'dark', BLUE: 'dark', RED: 'light', VIOLET: 'light',
+      BROWN: 'light', PINK: 'dark', BLACK: 'light', GRAY: 'dark', ORANGE: 'dark', TURQUOISE: 'dark',
+    });
   });
 });
 

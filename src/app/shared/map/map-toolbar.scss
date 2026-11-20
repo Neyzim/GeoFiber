@@ -7,11 +7,11 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 6px;
-  border-radius: 14px;
-  background: var(--mat-sys-surface-container-high, #fff);
-  border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  padding: 8px;
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-border);
+  box-shadow: var(--gf-shadow-float);
   backdrop-filter: blur(2px);
 }
 
@@ -22,17 +22,19 @@
 }
 
 .map-toolbar__button {
-  --mat-icon-button-state-layer-shape: 10px;
-  border-radius: 10px;
-  color: var(--mat-sys-on-surface-variant, #455a64);
+  --mat-icon-button-state-layer-shape: var(--gf-radius-control);
+  min-width: var(--gf-touch);
+  min-height: var(--gf-touch);
+  border-radius: var(--gf-radius-control);
+  color: var(--gf-text-2);
 
   &.is-active {
-    background: var(--mat-sys-primary-container, #d7e3ff);
-    color: var(--mat-sys-on-primary-container, #001b3f);
+    background: var(--gf-accent-soft);
+    color: var(--gf-text);
   }
 
   &--danger {
-    color: var(--mat-sys-error, #b3261e);
+    color: var(--gf-status-critical);
   }
 }
 

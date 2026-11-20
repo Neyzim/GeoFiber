@@ -5,19 +5,19 @@
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   flex-wrap: wrap;
-  padding: 6px 14px;
-  background: var(--mat-sys-surface-container-high, #fff);
-  border-top: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  padding: 4px 16px;
+  background: var(--gf-surface);
+  border-top: 1px solid var(--gf-border);
   font: var(--mat-sys-body-small, 400 12px/1.4 sans-serif);
-  color: var(--mat-sys-on-surface-variant, #455a64);
+  color: var(--gf-text-2);
 }
 
 .status-bar__item {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
 }
 
@@ -37,6 +37,7 @@
 }
 
 .status-bar__value {
+  font-family: var(--gf-font-data);
   font-variant-numeric: tabular-nums;
-  color: var(--mat-sys-on-surface, #1f2933);
+  color: var(--gf-text);
 }

@@ -58,6 +58,14 @@ const TRANSLATIONS: readonly DetailTranslation[] = [
     'Um cliente cancelado não pode ocupar uma porta. Reative o cliente primeiro.',
   ),
   { pattern: /^Tray (\d+) is full$/, message: (m) => `A bandeja ${m[1]} está cheia.` },
+  {
+    pattern: /^Position (\d+) is already occupied in this tray$/,
+    message: (m) => `A posição ${m[1]} desta bandeja já está ocupada.`,
+  },
+  {
+    pattern: /^Position (\d+) exceeds tray capacity of (\d+)$/,
+    message: (m) => `A posição ${m[1]} não existe: a bandeja tem ${m[2]} posições.`,
+  },
   fixed(
     /^Fusions are removed through the splice endpoint$/,
     'Fusões são removidas pela lista de fusões da bandeja.',

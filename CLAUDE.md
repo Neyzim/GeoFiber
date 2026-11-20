@@ -44,10 +44,16 @@ leaflet.markercluster (CommonJS liberado no `angular.json`), Vitest via `ng test
 | `src/app/core/api/` | Cliente HTTP por recurso (`resources/*-api.ts`), tipos gerados, tradução de erros (`error-messages.ts`). |
 | `src/app/core/network/` | Regras puras e estado do mapa: `network-catalog` (grupos, funções, situações, estilo das linhas), `map-element`, `network-map-repository` (único ponto que fala com a API para o mapa), `network-map-state` (seleção, busca, filtros), `optical-catalog`, `cable-route`, `box-interior`, `olt-ports`, `customer-rules`, `glossary`, `view-summary`. |
 | `src/app/features/network-map/` | Página do mapa e as fichas laterais: `cable-sheet/`, `box-sheet/` (com `fiber-link-dialog`), `olt-sheet/`, `customer-sheet/`; `sheet-support.ts`. |
+| `src/app/features/box-splices/` | Tela de fusões `/caixas/:boxId/fusoes`: `box-splices-page`, `cable-strip`, `tray-board`, `splice-picker`, `splice-detail`. Regras em `core/network/splice-board.ts`; volta ao mapa por `core/services/map-return.ts`. |
 | `src/app/shared/map/` | `geo-map` (Leaflet), marcadores, barra de ferramentas, legenda, barra de status. |
 | `src/app/shared/network/` | Formulários de OLT, caixa e cliente (`form-support.ts` compartilhado). |
 | `src/app/shared/cable/` | Formulário do cabo. |
 | `src/app/shared/help/` | Glossário, "?" nos termos, "O que estou vendo?". |
+| `src/app/shared/common/` | `app-fiber-dot` (bolinha ABNT), `app-occupancy-badge` ("3/12"), `app-sheet-tabs`. |
+| `src/app/shared/diagram/` | `app-unifilar-summary` (linha do topo da ficha), `app-diagram-line` (uma emenda). |
+| `src/theme/_tokens.scss` | Tokens `--gf-*` (cores `light-dark()`, raios, sombra, fontes) e ponte para `--mat-sys-*`. Nunca `prefers-color-scheme` em estilo. |
+| `features/network-map/sheet-frame.scss` | Moldura comum das fichas (topo fixo, corpo rola, 400px / gaveta 60dvh < 900px). |
+| `core/network/{unifilar,occupancy,line-state-style}.ts` | Lados da linha do topo, contas de ocupação, forma da linha por estado. |
 | `docs/SPECS.md` | Especificação técnica: módulos (§2) e regras de interface RI-01…RI-25 (§3). |
 | `docs/GUIA.md` | Guia de uso para quem opera o sistema. |
 | `docs/superpowers/` | Roadmap, designs e planos por etapa. |
@@ -85,23 +91,28 @@ Roadmap em `docs/superpowers/specs/2026-11-19-frontend-roadmap-design.md`. Decis
 "A" agora (canvas + cluster), "B" (busca por área + cache) quando o backend tiver; **rastreio de
 fibra adiado**; modelos de rede são atalhos locais.
 
-**Visual redesign (Esquema Unifilar):** Executado com TDD em Tasks 1–7. Novo design visual aprovado
-e integrado: entrada → elemento → saída em fichas, ocupação sempre visível (3/12 posições), estado
-pela forma da linha (solid/dashed/dotted), paleta Esquema Unifilar + tema escuro/claro com cores ABNT.
+**Visual "Esquema Unifilar":** executado pelo plano
+`docs/superpowers/plans/2026-11-20-redesign-unifilar-app.md` (Tasks 1–14; design em
+`docs/superpowers/specs/2026-11-20-redesign-unifilar-app-design.md`, RI-26…RI-31 no SPECS). O plano
+antigo `2026-11-20-visual-redesign-unifilar.md` foi substituído (commits dele: `77906cb`, `2407fab`,
+`c6b62c9`, `93a955b`, `156a534`). O trabalho do plano novo **não foi commitado**: as mensagens
+sugeridas por tarefa estão nos passos "Registrar" do plano. Tokens `--gf-*` em `src/theme/`, tema pela
+classe `html.dark-theme`, fichas com linha "chega → elemento → sai" + abas, diagrama por emenda,
+ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o mapa fica em ruas
+(OpenStreetMap) ou satélite; as camadas do CARTO saíram porque passaram a exigir chave.
 
 - **Etapa 0–1:** fundação e mapa ligado à API ✅ (OLTs, caixas, clientes, cabos; criar, editar, mover,
   excluir; legenda, busca, filtros, tema escuro).
 - **Etapa 2:** ficha do cabo ✅ (lista de elementos editável, destaque no mapa, tubos e fibras).
 - **Etapa 3:** ficha da caixa ✅ (bandejas, fusões, conectores, splitters, portas de atendimento).
-  - Redesign visual (Unifilar) em progresso: OccupancyBadgeComponent integrado, DiagramLineComponent pronto.
-  - **Próximo:** Tela de fusões em rota `/caixas/:boxId/fusoes` com novo design (aprovado em 2026-11-20).
+  - **Tela de fusões** ✅ `/caixas/:boxId/fusoes` (plano `docs/superpowers/plans/2026-11-20-splice-screen-impl.md`,
+    design `2026-11-20-tela-de-fusoes-design.md`, RI-32/33). Não commitada; falta conferir no navegador.
 - **Etapa 4:** ficha da OLT (portas PON por placa, criação em lote, ligar fibra).
 - **Etapa 5:** clientes (cadastro pelo mapa, CTO mais próxima, porta livre com sinal, situação,
   histórico).
 - **Etapa 6:** ajuda para leigos (glossário, "?" nos termos, "O que estou vendo?").
 
-Testes: 48 arquivos / 241 passando; build ok. Visual validado em código (TDD, 100% cobertura de testes).
-**Necessário:** validação no navegador com `npm start` para verificar tema claro/escuro e responsividade.
+Testes: 63 arquivos / 352 passando; build ok. Falta a conferência no navegador (ver Pendências).
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 
@@ -109,8 +120,27 @@ Testes: 48 arquivos / 241 passando; build ok. Visual validado em código (TDD, 1
 - Um único diálogo de fibras serve fusão, conector, splitter e porta; sempre envia a ponta explícita.
 - Posição do cliente vem do clique no mapa e não é editável no formulário.
 - O balão do cabo usa a lista carregada pela ficha (uma requisição só).
+- Unifilar: painel lateral de 400px no computador; gaveta embaixo só no celular.
+- Unifilar: gaveta do celular com 60dvh (não 240–280px), para caber topo + abas + conteúdo.
+- Unifilar: destaque verde mais escuro (`#177a54`) para botões/aba ativa no claro; `#1f9d6b` fica como situação "normal".
+- Unifilar: duas cores novas de situação, `info` (azul, instalado/ocupado) e `inactive` (cinza).
+- Unifilar: fontes IBM Plex Sans + IBM Plex Mono.
+- Unifilar: traços distintos para planejado, reservado, desativado e rompido.
+- Unifilar: situação numa linha abaixo do nome; "Editar dados" vira botão de ícone no cabeçalho.
+- Fusões: fibra de cabo que passa pela caixa, no "abrir cabo", mostra a ponta B (chega) e, se livre, a A.
+- Fusões: o nome curto da emenda é "CABO-01 Verde·2" = cabo, cor do tubo, número da fibra no tubo.
+- Fusões: a consulta usa o nome completo já existente ("CABO-01, tubo 1 (Verde), fibra 2 (Amarelo)").
+- Fusões: "Abrir ficha do cabo" (cabo sem fibras) volta ao mapa com o cabo selecionado.
+- Fusões: "+ bandeja" mostra as capacidades em botões (6/12/24/36/48), sem menu.
+- Unifilar: `.impecable.md` não foi renomeado nem apagado (regras consolidadas no spec e no `DESIGN.md`).
 
 ### Pendências conhecidas (menores)
+
+- **Validar no navegador a tela de fusões** (celular e computador, claro e escuro, link direto,
+  voltar ao mapa, emendar, erro 409 no painel).
+
+- **Validar no navegador o redesign Unifilar** (lista no Task 14, Step 5 do plano
+  `2026-11-20-redesign-unifilar-app.md`) até o dono conferir.
 
 - Clicar em outro cabo durante "Escolher no mapa" descarta o rascunho.
 - Trocar a ponta (modo avançado) não limpa a fibra escolhida que deixou de estar livre.

@@ -41,4 +41,21 @@ describe('OccupancyBadgeComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('12/12');
   });
+
+  it('uses the given unit', () => {
+    fixture.componentRef.setInput('occupied', 6);
+    fixture.componentRef.setInput('capacity', 8);
+    fixture.componentRef.setInput('unit', 'ocupadas');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent.trim()).toBe('6/8 ocupadas');
+  });
+
+  it('renders nothing when capacity is 0', () => {
+    fixture.componentRef.setInput('occupied', 0);
+    fixture.componentRef.setInput('capacity', 0);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent.trim()).toBe('');
+  });
 });
