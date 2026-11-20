@@ -69,7 +69,7 @@
           <div class="box__group">
             <div class="box__group-head">
               <strong>Bandeja {{ tray.trayNumber }}</strong>
-              <span class="sheet__count">{{ tray.usedPositions ?? 0 }} de {{ tray.capacity }} posições</span>
+              <app-occupancy-badge [occupied]="tray.usedPositions ?? 0" [capacity]="tray.capacity ?? 0" />
               @if (canEdit() && !(tray.usedPositions ?? 0)) {
                 <button mat-icon-button type="button" matTooltip="Excluir bandeja"
                   (click)="deleteTray(tray.id, tray.trayNumber)">

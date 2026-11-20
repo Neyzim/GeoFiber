@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { TermHintComponent } from '../../../shared/help/term-hint';
+import { DiagramLineComponent } from '../../../shared/diagram/diagram-line.component';
+import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -63,6 +65,8 @@ interface FreeOutput {
   selector: 'app-box-sheet',
   imports: [
     TermHintComponent,
+    DiagramLineComponent,
+    OccupancyBadgeComponent,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
