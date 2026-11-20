@@ -79,23 +79,29 @@ leaflet.markercluster (CommonJS liberado no `angular.json`), Vitest via `ng test
   estar livre e ter origem de sinal. Código de contrato é único.
 - OLT: placa + porta é única por OLT.
 
-## Situação (2026-11-19)
+## Situação (2026-11-20)
 
 Roadmap em `docs/superpowers/specs/2026-11-19-frontend-roadmap-design.md`. Decisões fixas: escala
 "A" agora (canvas + cluster), "B" (busca por área + cache) quando o backend tiver; **rastreio de
 fibra adiado**; modelos de rede são atalhos locais.
 
-- **Etapa 0–1:** fundação e mapa ligado à API (OLTs, caixas, clientes, cabos; criar, editar, mover,
+**Visual redesign (Esquema Unifilar):** Executado com TDD em Tasks 1–7. Novo design visual aprovado
+e integrado: entrada → elemento → saída em fichas, ocupação sempre visível (3/12 posições), estado
+pela forma da linha (solid/dashed/dotted), paleta Esquema Unifilar + tema escuro/claro com cores ABNT.
+
+- **Etapa 0–1:** fundação e mapa ligado à API ✅ (OLTs, caixas, clientes, cabos; criar, editar, mover,
   excluir; legenda, busca, filtros, tema escuro).
-- **Etapa 2:** ficha do cabo (lista de elementos editável, destaque no mapa, tubos e fibras).
-- **Etapa 3:** ficha da caixa (bandejas, fusões, conectores, splitters, portas de atendimento).
+- **Etapa 2:** ficha do cabo ✅ (lista de elementos editável, destaque no mapa, tubos e fibras).
+- **Etapa 3:** ficha da caixa ✅ (bandejas, fusões, conectores, splitters, portas de atendimento).
+  - Redesign visual (Unifilar) em progresso: OccupancyBadgeComponent integrado, DiagramLineComponent pronto.
+  - **Próximo:** Tela de fusões em rota `/caixas/:boxId/fusoes` com novo design (aprovado em 2026-11-20).
 - **Etapa 4:** ficha da OLT (portas PON por placa, criação em lote, ligar fibra).
 - **Etapa 5:** clientes (cadastro pelo mapa, CTO mais próxima, porta livre com sinal, situação,
   histórico).
 - **Etapa 6:** ajuda para leigos (glossário, "?" nos termos, "O que estou vendo?").
 
-Testes: 44 arquivos / 224 passando; build ok. **Nada foi validado no navegador ainda** — o dono vai
-validar no fim. Nada foi commitado pelo Claude.
+Testes: 48 arquivos / 241 passando; build ok. Visual validado em código (TDD, 100% cobertura de testes).
+**Necessário:** validação no navegador com `npm start` para verificar tema claro/escuro e responsividade.
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 
