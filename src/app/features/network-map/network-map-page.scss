@@ -82,16 +82,37 @@
   }
 }
 
-// Botões de ajuda para quem não é técnico (Etapa 6).
+// Popup de escolha de tipo: ao lado da barra de ferramentas, sem empurrar nada.
+.project__popup {
+  position: absolute;
+  top: 0;
+  left: 48px;
+  max-height: calc(100dvh - 120px);
+}
+
+// Botões de ajuda para quem não é técnico (Etapa 6): canto inferior esquerdo, acima da barra de
+// situação.
 .project__help {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 1100;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  pointer-events: auto;
+  gap: 6px;
 
   button {
+    --mat-button-outlined-container-height: 32px;
+    --mat-button-outlined-horizontal-padding: 10px;
     border: 1px solid var(--gf-border);
     background: var(--gf-surface);
     box-shadow: var(--gf-shadow-float);
+    font-size: 12px;
+
+    mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+    }
   }
 }

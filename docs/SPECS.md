@@ -280,7 +280,7 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
   o formulário já como "Ativo" para escolher a porta. Mudança rápida reenvia todos os dados atuais.
 - **RI-23 Histórico.** Mais recente primeiro; recarrega sozinho quando a situação, a porta ou a CTO
   do cliente mudam. Excluir o cadastro é só para erro de cadastro (o texto orienta a cancelar).
-- **RI-24 Ajuda contextual.** Os botões "O que estou vendo?" e "Glossário" ficam sempre no mapa. A
+- **RI-24 Ajuda contextual.** Os botões "O que estou vendo?" e "Glossário" ficam sempre no mapa, no canto inferior esquerdo (a escala do mapa fica à direita). A
   frase conta OLTs, DIOs, CEOs, CTOs e clientes visíveis e os cabos, com singular/plural, e avisa
   quantos pontos e cabos estão escondidos por filtros, busca ou camadas ocultas.
 - **RI-25 Linguagem.** Nenhum código do backend aparece na tela (papéis, razões, situações e pontas
@@ -315,6 +315,10 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
   com bandeja/posição, outra caixa, conector, splitter, porta de atendimento, OLT, rompida,
   reservada). A mesma fibra não vale dos dois lados. Erro do servidor aparece no painel e mantém as
   escolhas; sucesso fecha o painel e a tela recarrega sem sumir.
+- **RI-34 Espaço do mapa.** A barra de ferramentas é uma coluna fina de 40px sobre o mapa (botões
+  de 34px, ícones de 20px, dicas à direita). O painel lateral expandido tem 232px (até 64% da
+  largura em telas < 820px) e recolhido 56px (48px no celular). A escolha do tipo (elemento ou
+  função do cabo) é um popup de 216px ao lado da barra, em grade de 2 colunas com rolagem própria.
 
 ---
 

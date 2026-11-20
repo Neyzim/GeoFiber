@@ -132,6 +132,9 @@ Testes: 63 arquivos / 352 passando; build ok. Falta a conferência no navegador 
 - Fusões: a consulta usa o nome completo já existente ("CABO-01, tubo 1 (Verde), fibra 2 (Amarelo)").
 - Fusões: "Abrir ficha do cabo" (cabo sem fibras) volta ao mapa com o cabo selecionado.
 - Fusões: "+ bandeja" mostra as capacidades em botões (6/12/24/36/48), sem menu.
+- Mapa: barra de ferramentas em coluna fina (40px, botões de 34px) e painel lateral expandido com 232px (RI-34).
+- Mapa: listras com zoom do navegador ≠ 100% vinham do `plus-lighter` do Leaflet 1.9.4; `styles.scss` usa blocos de 257px com mistura normal (conferido em 50%, 67%, 100% e 125%).
+- Mapa: ajuda no canto inferior esquerdo; a escala do Leaflet foi para o canto inferior direito; escolha de tipo vira popup de 216px ao lado da barra.
 - Unifilar: `.impecable.md` não foi renomeado nem apagado (regras consolidadas no spec e no `DESIGN.md`).
 
 ### Pendências conhecidas (menores)

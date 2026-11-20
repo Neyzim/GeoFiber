@@ -158,7 +158,7 @@ placa mostra quantas portas estão ocupadas, ex.: "6/8 ocupadas").
 
 ### Ajuda dentro do sistema
 
-- **O que estou vendo?** (botão no mapa): diz em uma frase o que está na tela ("Você está vendo
+- **O que estou vendo?** (botão no canto inferior esquerdo do mapa): diz em uma frase o que está na tela ("Você está vendo
   1 OLT, 3 CTOs e 12 clientes, ligados por 5 cabos"), avisa se algum filtro esconde parte da rede e
   explica as cores dos pontos e das linhas.
 - **Glossário:** procure qualquer palavra (OLT, splitter, fusão, porta PON…); não precisa de acento.

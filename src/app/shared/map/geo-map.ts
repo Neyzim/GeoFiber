@@ -313,7 +313,8 @@ export class GeoMapComponent implements OnDestroy {
     });
     this.map = map;
 
-    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+    // Escala à direita: o canto inferior esquerdo é da ajuda ("O que estou vendo?", glossário).
+    L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
     this.applyBaseLayer(this.baseLayerKey(), this.baseLayerOpacity());
     const clusterOptions: L.MarkerClusterGroupOptions = {

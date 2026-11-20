@@ -255,6 +255,16 @@ body {
   font-family: var(--gf-font-ui);
 }
 
+// Listras no mapa com o zoom do navegador (ou a escala do Windows) diferente de 100%: os blocos de
+// 256px caem em posições fracionadas e ficam frestas entre eles. O Leaflet 1.9.4 tenta esconder
+// isso com `mix-blend-mode: plus-lighter`, mas a soma deixa linhas claras onde os blocos se tocam.
+// Aqui a mistura volta ao normal e cada bloco cresce 1px para cobrir a fresta (0,4%, invisível).
+.leaflet-container img.leaflet-tile {
+  width: 257px !important;
+  height: 257px !important;
+  mix-blend-mode: normal;
+}
+
 .leaflet-control-attribution,
 .leaflet-control-scale-line {
   background: var(--gf-surface);
