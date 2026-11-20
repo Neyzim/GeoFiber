@@ -1,0 +1,25 @@
+<div class="diagram-line">
+  <div class="entrance">
+    <span class="label">{{ entrance()?.cable }}</span>
+    <div class="fiber" [style.background]="entrance()?.fiber.color">
+      {{ entrance()?.fiber.number }}
+    </div>
+  </div>
+
+  <svg class="connector" [attr.data-state]="state()">
+    <line x1="0" y1="12" x2="100%" y2="12" [attr.stroke-dasharray]="lineStyle().dasharray" />
+  </svg>
+
+  <div class="box">{{ box()?.name }}</div>
+
+  <svg class="connector" [attr.data-state]="state()">
+    <line x1="0" y1="12" x2="100%" y2="12" [attr.stroke-dasharray]="lineStyle().dasharray" />
+  </svg>
+
+  <div class="exit">
+    <span class="label">{{ exit()?.cable }}</span>
+    <div class="fiber" [style.background]="exit()?.fiber.color">
+      {{ exit()?.fiber.number }}
+    </div>
+  </div>
+</div>
