@@ -131,6 +131,31 @@ A tela de fusões imita a caixa aberta na sua frente. Ela tem endereço próprio
 No celular, o painel de emenda sobe por cima da parte de baixo da tela; no computador ele fica à
 direita da bandeja.
 
+### Importar a rede de um KMZ ou KML
+
+Use quando a rede já está desenhada em outro sistema (OZMap, Google Earth). Abra **Importar KMZ/KML**
+no painel lateral.
+
+1. **Escolha o arquivo** (.kmz ou .kml), arrastando ou pelo botão.
+2. **Veja os grupos.** Itens com o mesmo ícone e pasta ficam juntos. Cada grupo mostra quantos itens
+   tem, quantos são novos e quantos já existem, e alguns nomes. Se a pasta ou os nomes começam com
+   CTO, CEO, DIO ou OLT, o tipo já vem sugerido: confira.
+3. **Escolha o que cada grupo vira.** Pontos: CTO, CEO, DIO, OLT ou Ignorar. Linhas: Backbone,
+   Alimentação, Distribuição, Drop, Interconexão ou Ignorar; para cabos, informe quantas fibras
+   têm. Enquanto algum grupo estiver sem escolha, o botão Importar fica desligado.
+4. **Ajuste item a item, se precisar.** Toque em **Abrir** no grupo: troque o tipo de um item ou
+   mande ignorá-lo.
+5. **Confira no mapa.** A prévia mostra o que será criado. "Ver no mapa" leva ao mapa já enquadrando
+   a importação.
+6. **Importe.** Tudo é gravado de uma vez. Se der erro, nada é gravado.
+
+Itens que já existem não são mexidos. Se um elemento existe mas mudou de lugar, aparece a opção
+**Atualizar posição** no item; por padrão ela fica desligada. Importar de novo não duplica, e nada é
+apagado porque sumiu do arquivo.
+
+As pontas dos cabos novos são ligadas à caixa ou OLT mais próxima (até 15 m). Fusões e fibras
+continuam sendo registradas na tela de fusões.
+
 ### Portas PON da OLT
 
 Ao clicar numa OLT, abre a **ficha da OLT**: quantas portas PON existem, quantas estão em uso e os

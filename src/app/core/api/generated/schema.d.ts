@@ -294,6 +294,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/network": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Importa caixas, OLTs, cabos e pontas numa única transação
+         * @description Tudo ou nada: qualquer falha desfaz a importação inteira. Não apaga nada.
+         */
+        post: operations["importNetwork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/customers": {
         parameters: {
             query?: never;
@@ -962,6 +982,111 @@ export interface components {
             fiberEnd?: "A" | "B";
             /** Format: uuid */
             customerId?: string;
+        };
+        CableItem: {
+            /** @description Chave única na requisição */
+            ref: string;
+            /**
+             * @description CREATE cria o cabo; RESHAPE troca só o traçado de um cabo existente
+             * @enum {string}
+             */
+            action: "CREATE" | "MOVE" | "RESHAPE";
+            /**
+             * Format: uuid
+             * @description Obrigatório em RESHAPE: id do cabo existente
+             */
+            id?: string;
+            /** @description Obrigatório em CREATE */
+            name?: string;
+            description?: string;
+            /**
+             * @description Obrigatório em CREATE
+             * @enum {string}
+             */
+            role?: "BACKBONE" | "FEEDER" | "DISTRIBUTION" | "DROP" | "INTERCONNECTION";
+            /**
+             * Format: int32
+             * @description Obrigatório em CREATE, inteiro maior que zero
+             */
+            fiberCapacity?: number;
+            /** @description Traçado na ordem do percurso, no mínimo 2 pontos */
+            coordinates?: components["schemas"]["CoordinateDto"][];
+            /** @description Ponta inicial (opcional). Só em CREATE */
+            start?: components["schemas"]["EndpointRef"];
+            /** @description Ponta final (opcional). Só em CREATE */
+            end?: components["schemas"]["EndpointRef"];
+        };
+        ElementItem: {
+            /** @description Chave única na requisição */
+            ref: string;
+            /**
+             * @description CREATE cria; MOVE só troca a localização de um elemento existente
+             * @enum {string}
+             */
+            action: "CREATE" | "MOVE" | "RESHAPE";
+            /**
+             * @description BOX ou OLT
+             * @enum {string}
+             */
+            kind: "BOX" | "OLT";
+            /**
+             * @description Obrigatório em BOX (CTO, CEO ou DIO); proibido em OLT
+             * @enum {string}
+             */
+            type?: "CTO" | "CEO" | "DIO";
+            /** @description Obrigatório em CREATE */
+            name?: string;
+            description?: string;
+            /**
+             * Format: uuid
+             * @description Obrigatório em MOVE: id do elemento existente
+             */
+            id?: string;
+            location?: components["schemas"]["CoordinateDto"];
+        };
+        EndpointRef: {
+            ref?: string;
+            /** Format: uuid */
+            boxId?: string;
+            /** Format: uuid */
+            oltId?: string;
+        };
+        /** @description Importação de rede: elementos (caixas e OLTs), cabos e suas pontas, gravados numa transação */
+        NetworkImportRequest: {
+            /**
+             * @description Situação dos itens criados
+             * @enum {string}
+             */
+            usageStatus: "PLANNED" | "INSTALLED" | "ACTIVE" | "DAMAGED" | "DEACTIVATED";
+            elements?: components["schemas"]["ElementItem"][];
+            cables?: components["schemas"]["CableItem"][];
+        };
+        Created: {
+            /** Format: int32 */
+            boxes?: number;
+            /** Format: int32 */
+            olts?: number;
+            /** Format: int32 */
+            cables?: number;
+            /** Format: int32 */
+            attachments?: number;
+        };
+        NetworkImportResponse: {
+            created?: components["schemas"]["Created"];
+            /**
+             * Format: int32
+             * @description Quantidade de MOVE feitos
+             */
+            moved?: number;
+            /**
+             * Format: int32
+             * @description Quantidade de RESHAPE feitos
+             */
+            reshaped?: number;
+            /** @description uuid de todo ref da requisição (criados, movidos e redesenhados) */
+            ids?: {
+                [key: string]: string;
+            };
         };
         CableStructureRequest: {
             /** @description Tubos a criar; cada um é preenchido com fibras até a capacidade, nas cores ABNT */
@@ -2868,6 +2993,57 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["OltPortResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    importNetwork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NetworkImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NetworkImportResponse"];
                 };
             };
             /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */

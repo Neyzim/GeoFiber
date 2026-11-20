@@ -67,6 +67,18 @@ const TRANSLATIONS: readonly DetailTranslation[] = [
     message: (m) => `A posição ${m[1]} não existe: a bandeja tem ${m[2]} posições.`,
   },
   fixed(
+    /^Import has elements that already exist$/,
+    'Alguns itens já existem na rede (alguém importou antes?). Conferimos de novo: revise e importe outra vez.',
+  ),
+  fixed(
+    /^Import exceeds 10000 items$/,
+    'O arquivo tem itens demais para uma importação (máximo 10.000). Divida o arquivo.',
+  ),
+  fixed(
+    /^Cable has connected fibers and cannot be reshaped$/,
+    'Um cabo com fibras ligadas não pode ter o traçado trocado. Deixe-o como está.',
+  ),
+  fixed(
     /^Fusions are removed through the splice endpoint$/,
     'Fusões são removidas pela lista de fusões da bandeja.',
   ),

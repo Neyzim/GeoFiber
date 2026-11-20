@@ -45,10 +45,16 @@ Convenção: **RI** = regra de interface.
   com todas as posições; emenda registrada com dois toques em fibras coloridas numa posição exata;
   consulta da emenda; cabos "abertos" com onde cada fibra está emendada. Substitui a lista de fusões
   e o diálogo "Nova fusão" da ficha da caixa.
+- **Importação de KMZ/KML** (`/importar`; [design](superpowers/specs/2026-11-20-importar-kmz-design.md),
+  [plano](superpowers/plans/2026-11-20-importar-kmz.md)): lê o arquivo no navegador, agrupa os itens
+  (pontos por pasta e ícone; linhas por pasta, cor e espessura), a pessoa decide o tipo de cada
+  grupo ou item, reconhece o que já existe (sem duplicar), mostra a prévia no mapa e grava tudo de
+  uma vez. Depende do endpoint `POST /imports/network` no backend.
 
 ### 1.2 Ainda não entregue
 - Rastreio do sinal de ponta a ponta (adiado no roadmap) e escala B (listas paginadas).
 - Busca por área e cache (Etapa B). Rastreio de fibra (futuro).
+- Exportar KMZ/KML e importar clientes pelo arquivo (o cliente exige contrato e porta).
 
 ---
 
@@ -78,6 +84,7 @@ Todos os caminhos são relativos a `/api/v1`.
 | `FiberApi` | `GET/POST /tubes/{tubeId}/fibers`, `PUT/DELETE /tubes/{tubeId}/fibers/{fiberId}`, `PUT /tubes/{tubeId}/fibers/{fiberId}/status` |
 | `TrayApi` | `GET/POST /boxes/{boxId}/trays`, `PUT/DELETE /boxes/{boxId}/trays/{trayId}` |
 | `SpliceApi` | `GET/POST /boxes/{boxId}/splices`, `DELETE /boxes/{boxId}/splices/{spliceId}` |
+| `ImportApi` | `POST /imports/network` (importação de KMZ/KML: lista pronta, gravada numa transação) |
 | `SplitterApi` | `GET/POST /boxes/{boxId}/splitters`, `PUT/DELETE /boxes/{boxId}/splitters/{splitterId}`, `PUT /splitters/{splitterId}/ports/{portId}` |
 | `ServicePortApi` | `GET/POST /boxes/{boxId}/service-ports`, `PUT/DELETE /boxes/{boxId}/service-ports/{portId}` |
 | `ConnectionApi` | `GET/POST /boxes/{boxId}/connections`, `DELETE /boxes/{boxId}/connections/{connectionId}` |
@@ -161,6 +168,22 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
 | `splice-picker.ts` | Escolha das fibras: duas colunas (chega/sai) com cabos, tubos e fibras coloridas; frases de ajuda, perda, pontas no modo avançado e "Registrar emenda". |
 | `splice-detail.ts` | Consulta: posição, de onde chega, para onde sai, perda; "Ver cabo no mapa" e "Excluir emenda". |
 | `core/services/map-return.ts` | Recado em memória para o mapa: selecionar (e centralizar) a caixa ou o cabo quando a rede carregar. |
+
+### 2.4.2 Importação de rede (`core/import`, `features/network-import`)
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `core/import/network-file.ts` | Abre o KMZ (zip: `doc.kml` ou o primeiro `.kml`; imagens guardadas por caminho) ou o KML; decodifica pelo `encoding` do XML. |
+| `core/import/kml-reader.ts` | Lê pontos e linhas com pasta, nome, descrição em texto e estilo (cores `aabbggrr` viram `#rrggbb`); casa tags pelo nome local; pula geometria ruim e avisa. |
+| `core/import/import-groups.ts` | Agrupa (pontos: pasta + ícone; linhas: pasta + cor + espessura) e sugere o tipo pela pasta ou pela maioria dos nomes. |
+| `core/import/import-match.ts` | Reconhece o que já existe (regra em RI-35). |
+| `core/import/import-request.ts` | Monta o corpo do `POST`, o resumo da tela e liga as pontas dos cabos à caixa/OLT mais próxima (15 m). |
+| `core/import/import-preview.ts` | Prévia no mapa: itens novos e movidos escolhidos. |
+| `core/network/geo-distance.ts` | Distância em metros (haversine), usada por clientes e pela importação. |
+| `core/api/import-types.ts` | Apelidos dos tipos gerados de `POST /imports/network` (`npm run api:types`). |
+| `features/network-import/network-import-store.ts` | Estado da tela, provido pela página: arquivo, grupos, escolhas, resumo e envio. Só recarrega a rede depois de 409. |
+| `features/network-import/network-import-page.ts` | Página `/importar`: soltar ou escolher o arquivo, grupos, situação, ligação das pontas, prévia, importar e resultado. |
+| `features/network-import/import-group-row.ts` | Uma linha de grupo: tipo, fibras (cabos), abrir para ver e trocar item a item (200 por vez), "Atualizar posição". |
 
 ### 2.5 Ficha da OLT (`features/network-map/olt-sheet`)
 
@@ -322,6 +345,18 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
 
 ---
 
+- **RI-35 Importar KMZ/KML.** Só com permissão de edição. Nada é apagado por ter sumido do arquivo.
+  Cada grupo precisa de um tipo antes de importar (sem escolha, o botão fica desligado); a pessoa
+  troca item a item. Já existe = mesmo tipo e nome normalizado (sem acento, maiúsculas, hífen ou
+  espaço). Sem nome ou com nome repetido no arquivo, vale a posição: mesmo tipo a até 5 m. Cabo: as
+  duas pontas a até 5 m, em qualquer ordem. Mesmo nome com tipo diferente não é duplicado: cria com
+  o aviso "já existe uma CTO com este nome". Movido (mesmo nome, outra posição): padrão manter;
+  atualiza só se escolhido. Cabo com fibra ligada não tem o traçado trocado (o backend recusa). Pontas
+  de cabo novo ligam à caixa ou OLT mais próxima a até 15 m, sem passagem automática. Situação padrão
+  dos itens novos: Instalado; fibras por grupo de cabo: 12. Item sem nome recebe o próximo número livre
+  do tipo ("CTO importada N", "Cabo importado N"), pulando nomes já usados na rede e no arquivo. Tudo ou nada: uma requisição; acima de
+  10.000 itens não envia. Erros do servidor são traduzidos em `error-messages.ts`.
+
 ## 4. Testes
 
 `npm test` (Vitest). Os serviços da API são testados contra a URL, o método e o corpo exatos de
@@ -333,6 +368,7 @@ corpo inválido, valores variáveis e textos desconhecidos.
 - Sem paginação nem busca por área: o mapa carrega a rede inteira (a Etapa B traz a busca por
   área e o cache).
 - Clientes aparecem no mapa, mas o cadastro deles chega na Etapa 5.
+- Importação de KMZ/KML depende do endpoint `POST /imports/network` no backend; sem ele, o envio falha. Não há exportação nem importação de clientes.
 - A lista completa de elementos do cabo (passagens) é editada na ficha do cabo (Etapa 2).
 - Os modelos não ficam vinculados aos elementos: só preenchem o formulário.
 - Os tipos gerados marcam quase todos os campos de resposta como opcionais, porque o OpenAPI do

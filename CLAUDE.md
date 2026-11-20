@@ -44,6 +44,8 @@ leaflet.markercluster (CommonJS liberado no `angular.json`), Vitest via `ng test
 | `src/app/core/api/` | Cliente HTTP por recurso (`resources/*-api.ts`), tipos gerados, tradução de erros (`error-messages.ts`). |
 | `src/app/core/network/` | Regras puras e estado do mapa: `network-catalog` (grupos, funções, situações, estilo das linhas), `map-element`, `network-map-repository` (único ponto que fala com a API para o mapa), `network-map-state` (seleção, busca, filtros), `optical-catalog`, `cable-route`, `box-interior`, `olt-ports`, `customer-rules`, `glossary`, `view-summary`. |
 | `src/app/features/network-map/` | Página do mapa e as fichas laterais: `cable-sheet/`, `box-sheet/` (com `fiber-link-dialog`), `olt-sheet/`, `customer-sheet/`; `sheet-support.ts`. |
+| `src/app/core/import/` | Importação de KMZ/KML: `network-file` (zip e encoding), `kml-reader`, `import-groups`, `import-match` (duplicados), `import-request` (pedido e ligação de pontas), `import-preview`. |
+| `src/app/features/network-import/` | Tela `/importar`: `network-import-store` (estado), `network-import-page`, `import-group-row`. |
 | `src/app/features/box-splices/` | Tela de fusões `/caixas/:boxId/fusoes`: `box-splices-page`, `cable-strip`, `tray-board`, `splice-picker`, `splice-detail`. Regras em `core/network/splice-board.ts`; volta ao mapa por `core/services/map-return.ts`. |
 | `src/app/shared/map/` | `geo-map` (Leaflet), marcadores, barra de ferramentas, legenda, barra de status. |
 | `src/app/shared/network/` | Formulários de OLT, caixa e cliente (`form-support.ts` compartilhado). |
@@ -112,7 +114,12 @@ ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o 
   histórico).
 - **Etapa 6:** ajuda para leigos (glossário, "?" nos termos, "O que estou vendo?").
 
-Testes: 63 arquivos / 352 passando; build ok. Falta a conferência no navegador (ver Pendências).
+**Importação de KMZ/KML** (design `docs/superpowers/specs/2026-11-20-importar-kmz-design.md`, plano
+`docs/superpowers/plans/2026-11-20-importar-kmz.md`, RI-35, GUIA): leitura, agrupamento, duplicados,
+pedido, serviço, store, tela `/importar`, prévia no mapa. Não commitado. Depende do endpoint
+`POST /imports/network` no backend (o dono implementa; contrato no design). Backend publicado; `npm run api:types` feito e `core/api/import-types.ts` usa os tipos gerados.
+
+Testes: 74 arquivos / 414 passando; build ok. Falta a conferência no navegador (ver Pendências).
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 
@@ -137,7 +144,16 @@ Testes: 63 arquivos / 352 passando; build ok. Falta a conferência no navegador 
 - Mapa: ajuda no canto inferior esquerdo; a escala do Leaflet foi para o canto inferior direito; escolha de tipo vira popup de 216px ao lado da barra.
 - Unifilar: `.impecable.md` não foi renomeado nem apagado (regras consolidadas no spec e no `DESIGN.md`).
 
+- Importação: selects nativos (`<select>`) em vez de `mat-select`: testes diretos e acessível; visual igual.
+- Importação: a prévia mostra só itens novos e movidos escolhidos (iguais e ignorados ficam de fora).
+- Importação: pedido sem nada a importar é bloqueado com mensagem, não enviado.
+- Importação: só erro 409 recarrega a rede; outros erros mantêm o rascunho.
+- Importação: no jsdom o mapa é substituído por um stub nos testes da página (o Leaflet não roda ali).
+
 ### Pendências conhecidas (menores)
+
+- **Validar no navegador a importação de KMZ/KML** (arquivo real do OZMap e do Google Earth, grupos,
+  duplicados ao importar de novo, "Ver no mapa", erro 409) depois que o backend publicar o endpoint.
 
 - **Validar no navegador a tela de fusões** (celular e computador, claro e escuro, link direto,
   voltar ao mapa, emendar, erro 409 no painel).
