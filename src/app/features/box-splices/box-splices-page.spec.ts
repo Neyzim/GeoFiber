@@ -150,7 +150,7 @@ describe('BoxSplicesPage', { timeout: 20000 }, () => {
   it('keeps the map position when the box was already selected', () => {
     const { fixture, mapReturn } = render({ selection: { type: 'element', key: 'box:b1' } });
     click(fixture, '[data-action="voltar"]');
-    expect(mapReturn.take()?.focus).toBe(false);
+    expect(mapReturn.take()).toEqual({ selection: { type: 'element', key: 'box:b1' }, focus: false });
   });
 
   it('shows a cable on the map from the splice card', () => {

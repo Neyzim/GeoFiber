@@ -59,6 +59,8 @@ Use os tipos pelos aliases de `src/app/core/api/api-types.ts` (ex.: `BoxResponse
 | `src/app/features/network-map/cable-sheet/` | Ficha do cabo: por onde passa (lista editável), tubos e fibras. |
 | `src/app/features/network-map/box-sheet/` | Ficha da caixa: resumo das fusões, conectores, splitters e portas de atendimento. |
 | `src/app/features/box-splices/` | Tela de fusões (`/caixas/:boxId/fusoes`): a bandeja como a física, cabos abertos e emenda com dois toques nas fibras coloridas. |
+| `src/app/core/import/` | Importação de KMZ/KML: leitura do arquivo e do KML, agrupamento, reconhecimento de duplicados, prévia e montagem do pedido. |
+| `src/app/features/network-import/` | Tela `/importar`: escolher o arquivo, decidir o tipo de cada grupo e importar de uma vez. |
 | `src/app/features/network-map/olt-sheet/` | Ficha da OLT: portas PON por placa e ligação com as fibras. |
 | `src/app/features/network-map/customer-sheet/` | Ficha do cliente: situação, quem atende e histórico. |
 | `src/app/shared/help/` | Ajuda para leigos: glossário, "?" nos termos e "O que estou vendo?". |

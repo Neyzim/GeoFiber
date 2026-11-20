@@ -21,5 +21,13 @@ export const routes: Routes = [
       import('./features/box-splices/box-splices-page').then((module) => module.BoxSplicesPage),
     title: 'GeoFiber — Fusões',
   },
+  {
+    path: 'importar',
+    loadComponent: () =>
+      import('./features/network-import/network-import-page').then(
+        (module) => module.NetworkImportPage,
+      ),
+    title: 'GeoFiber — Importar rede',
+  },
   { path: '**', redirectTo: '' },
 ];

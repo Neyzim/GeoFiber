@@ -352,6 +352,10 @@ export class NetworkMapPage implements OnInit {
   private applyReturn(): void {
     const target = this.mapReturn.take();
     if (!target) return;
+    if ('fit' in target) {
+      this.viewport.focusAll(target.fit);
+      return;
+    }
     // Seleciona sempre; centralizar não mostra aviso se falhar.
     const { selection, focus } = target;
     if (selection.type === 'element') {

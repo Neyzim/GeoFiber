@@ -1,0 +1,90 @@
+<article class="row">
+  <header class="row__head">
+    @if (iconUrl(); as src) {
+      <img class="row__icon" [src]="src" alt="" />
+    } @else {
+      <span class="row__swatch" [style.background]="swatch()" aria-hidden="true"></span>
+    }
+
+    <div class="row__titles">
+      <strong>{{ group().label }}</strong>
+      <small>
+        {{ counts().total }} itens: {{ counts().novos }} novos · {{ counts().existem }} já existem ·
+        {{ counts().mudaram }} mudaram de lugar
+      </small>
+      <small class="row__sample">{{ sample() }}</small>
+    </div>
+
+    <label class="row__type">
+      <span class="visually-hidden">Vira</span>
+      <select data-group-target (change)="onGroupTarget($any($event.target).value)">
+        @if (choice() === null) {
+          <option value="" selected>Escolha…</option>
+        }
+        @for (t of targets(); track t.target) {
+          <option [value]="t.target" [selected]="choice() === t.target">{{ t.label }}</option>
+        }
+      </select>
+    </label>
+
+    @if (isLine()) {
+      <label class="row__fibers">
+        <span>Fibras</span>
+        <input
+          data-fibers
+          type="number"
+          min="1"
+          [value]="fibers()"
+          (change)="onFibers($any($event.target).value)"
+        />
+      </label>
+    }
+
+    <button type="button" class="row__toggle" data-toggle [attr.aria-expanded]="open()" (click)="toggle()">
+      {{ open() ? 'Fechar' : 'Abrir' }}
+    </button>
+  </header>
+
+  @if (open()) {
+    <ul class="row__items">
+      @for (item of visibleItems(); track item.ref) {
+        <li class="item">
+          <div class="item__main">
+            <span class="item__name" data-item-name>{{ item.name || '(sem nome)' }}</span>
+            <small class="item__status">{{ statusOf(item.ref) }}</small>
+            @if (takenBy(item.ref); as other) {
+              <small class="item__warn">Atenção: já existe uma {{ other }} com este nome.</small>
+            }
+          </div>
+          <div class="item__controls">
+            <select
+              data-item-target
+              aria-label="Tipo deste item"
+              (change)="onItemTarget(item.ref, $any($event.target).value)"
+            >
+              <option value="" [selected]="itemTarget(item.ref) === ''">Do grupo</option>
+              @for (t of targets(); track t.target) {
+                <option [value]="t.target" [selected]="itemTarget(item.ref) === t.target">{{ t.label }}</option>
+              }
+            </select>
+            @if (isMoved(item.ref)) {
+              <label class="item__move">
+                <input
+                  data-move
+                  type="checkbox"
+                  [checked]="isMovedChosen(item.ref)"
+                  (change)="onMove(item.ref, $any($event.target).checked)"
+                />
+                Atualizar posição
+              </label>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (group().items.length > shown()) {
+      <button type="button" class="row__more" data-more (click)="more()">Mostrar mais {{ page }}</button>
+    }
+  }
+</article>

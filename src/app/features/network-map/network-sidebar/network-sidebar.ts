@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { MapTool } from '../../../core/models/geo.model';
+import { NetworkMapState } from '../../../core/network/network-map-state';
 import { ThemeService } from '../../../core/services/theme';
 
 /**
@@ -27,6 +28,7 @@ export class NetworkSidebarComponent {
   readonly activeTool = input<MapTool>('select');
 
   private readonly theme = inject(ThemeService);
+  protected readonly canEdit = inject(NetworkMapState).canEdit;
 
   protected readonly collapsed = signal(false);
   protected readonly isDark = this.theme.isDark;

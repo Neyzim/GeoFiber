@@ -63,6 +63,16 @@
         </span>
         <mat-icon class="sidebar__nav-arrow">chevron_right</mat-icon>
       </a>
+      @if (canEdit()) {
+        <a routerLink="/importar" class="sidebar__nav-item">
+          <mat-icon>upload_file</mat-icon>
+          <span class="sidebar__nav-text">
+            <strong>Importar KMZ/KML</strong>
+            <small>Traga a rede de outro sistema</small>
+          </span>
+          <mat-icon class="sidebar__nav-arrow">chevron_right</mat-icon>
+        </a>
+      }
     </nav>
 
     <footer class="sidebar__footer">

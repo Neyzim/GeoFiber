@@ -1,0 +1,101 @@
+<main class="import">
+  <header class="import__head">
+    <a class="import__back" routerLink="/" aria-label="Voltar ao mapa" title="Voltar ao mapa">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <div class="import__titles">
+      <h1>Importar rede</h1>
+      @if (store.fileName()) {
+        <p class="import__file">{{ store.fileName() }}</p>
+      }
+    </div>
+  </header>
+
+  @if (!canEdit()) {
+    <p class="import__notice">Sem permissão para importar.</p>
+  } @else if (store.state() === 'done') {
+    <section class="import__done">
+      <p>{{ resultText() }}</p>
+      <div class="import__actions">
+        <button type="button" class="btn btn--primary" (click)="viewOnMap(store.importedPoints())">Ver no mapa</button>
+        <button type="button" class="btn" (click)="store.reset()">Importar outro arquivo</button>
+      </div>
+    </section>
+  } @else if (store.state() === 'empty' || store.state() === 'reading') {
+    <section class="drop" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+      <mat-icon>upload_file</mat-icon>
+      <p>Solte aqui um arquivo .kmz ou .kml</p>
+      <p class="drop__or">ou</p>
+      <button type="button" class="btn btn--primary" (click)="chooseFile()">Escolher arquivo</button>
+      <input #fileInput hidden type="file" accept=".kmz,.kml" (change)="onFile($event)" />
+      @if (store.state() === 'reading') {
+        <p class="drop__reading">Lendo o arquivo…</p>
+      }
+    </section>
+  } @else {
+    @if (store.warnings().length) {
+      <ul class="import__warnings">
+        @for (w of store.warnings(); track w) {
+          <li>{{ w }}</li>
+        }
+      </ul>
+    }
+
+    <section class="import__section">
+      <h2>Pontos</h2>
+      @for (g of pointGroups(); track g.key) {
+        <app-import-group-row [group]="g" />
+      }
+    </section>
+
+    <section class="import__section">
+      <h2>Linhas</h2>
+      @for (g of lineGroups(); track g.key) {
+        <app-import-group-row [group]="g" />
+      }
+    </section>
+
+    <section class="import__preview">
+      <header class="import__preview-head">
+        <h2>Prévia no mapa</h2>
+        <button type="button" class="btn" (click)="viewOnMap(store.preview().points)">Ver no mapa</button>
+      </header>
+      <app-geo-map
+        class="import__map"
+        [elements]="store.preview().elements"
+        [paths]="store.preview().paths"
+        [editable]="false"
+      />
+    </section>
+
+    <section class="import__options">
+      <label class="import__field">
+        <span>Situação dos itens novos</span>
+        <select (change)="onUsage($any($event.target).value)">
+          @for (s of usageOptions; track s.status) {
+            <option [value]="s.status" [selected]="store.choices().usageStatus === s.status">{{ s.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="import__check">
+        <input
+          type="checkbox"
+          [checked]="store.choices().linkCableEnds"
+          (change)="onLinkEnds($any($event.target).checked)"
+        />
+        Ligar as pontas dos cabos às caixas e OLTs a até 15 m ({{ store.summary().attachments }} ligações)
+      </label>
+    </section>
+
+    <footer class="import__actions">
+      <button type="button" class="btn" (click)="store.reset()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="!canImport()" (click)="store.submit()">
+        {{ importLabel() }}
+      </button>
+    </footer>
+  }
+
+  @if (store.error()) {
+    <p class="import__error" role="alert">{{ store.error() }}</p>
+  }
+</main>

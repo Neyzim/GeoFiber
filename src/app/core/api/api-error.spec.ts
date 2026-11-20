@@ -41,6 +41,20 @@ describe('parseApiError', () => {
     ).toBe('A posição 13 não existe: a bandeja tem 12 posições.');
   });
 
+  it('translates the network import errors', () => {
+    expect(
+      parseApiError(httpError(409, { detail: 'Import has elements that already exist' })).message,
+    ).toBe(
+      'Alguns itens já existem na rede (alguém importou antes?). Conferimos de novo: revise e importe outra vez.',
+    );
+    expect(parseApiError(httpError(400, { detail: 'Import exceeds 10000 items' })).message).toBe(
+      'O arquivo tem itens demais para uma importação (máximo 10.000). Divida o arquivo.',
+    );
+    expect(
+      parseApiError(httpError(409, { detail: 'Cable has connected fibers and cannot be reshaped' })).message,
+    ).toBe('Um cabo com fibras ligadas não pode ter o traçado trocado. Deixe-o como está.');
+  });
+
   it('translates the fiber end', () => {
     const result = parseApiError(httpError(409, { detail: 'Fiber end B is not available' }));
     expect(result.message).toContain('ponta B');
