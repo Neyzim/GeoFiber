@@ -86,6 +86,33 @@ function selected(fixture: ComponentFixture<BoxSheetComponent>, id: string): str
 
 // Primeira renderização com Material pode passar de 5 s com a suíte inteira rodando.
 describe('BoxSheetComponent', { timeout: 20000 }, () => {
+  it('Ver impacto no cabeçalho pede o impacto desta caixa', () => {
+    const fixture = render('CTO');
+    let emitted = 0;
+    fixture.componentInstance.impact.subscribe(() => emitted++);
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-impact]')!.click();
+    expect(emitted).toBe(1);
+  });
+
+  it('Rastrear no cabeçalho emite o pedido de rastreio da caixa', () => {
+    const fixture = render('CTO');
+    let emitted = 0;
+    fixture.componentInstance.trace.subscribe(() => emitted++);
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-trace-box]')!.click();
+    expect(emitted).toBe(1);
+  });
+
+  it('Rastrear em cada splitter emite o id dele', () => {
+    const fixture = render('CEO');
+    clickTab(fixture, 'splitters');
+    let ids: string[] = [];
+    fixture.componentInstance.traceSplitter.subscribe((id) => ids.push(id));
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-trace-splitter]')!.click();
+    expect(ids).toEqual(['sp1']);
+  });
+
   it('opens a CTO on Resumo, without Fusões when there is no tray or connector', () => {
     const fixture = render('CTO');
     expect(tabLabels(fixture)).toEqual(['Resumo', 'Portas']);

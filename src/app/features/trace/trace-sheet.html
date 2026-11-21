@@ -1,0 +1,111 @@
+<aside class="sheet" aria-label="Por onde passa o sinal">
+  <div class="sheet__top">
+    <header class="sheet__header">
+      <div class="sheet__titles">
+        <h2>{{ title }}</h2>
+        @if (store.kind()) {
+          <p class="sheet__status">Ponto inicial: {{ store.query()?.kind === 'SPLITTER_PORT' ? 'saída do splitter' : 'item da rede' }}</p>
+        }
+      </div>
+      @if (store.canGoBack() || hasOrigin()) {
+        <button mat-stroked-button type="button" data-back (click)="goBack()">Voltar</button>
+      }
+      <button mat-icon-button type="button" matTooltip="Fechar" aria-label="Fechar ficha" (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    <div class="trace__directions" role="group" aria-label="Sentido do caminho">
+      @for (d of directions; track d.value) {
+        <button
+          type="button"
+          class="trace__direction"
+          [attr.data-direction]="d.value"
+          [attr.aria-pressed]="store.direction() === d.value"
+          (click)="setDirection(d.value)"
+        >
+          {{ d.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (store.state() === 'loading') {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="sheet__body">
+    @if (store.state() === 'error') {
+      <div class="sheet__error" role="alert">
+        <span>{{ store.error() }}</span>
+      </div>
+    } @else if (store.state() === 'ready') {
+      <p class="sheet__lead" data-headline>{{ headline() }}</p>
+
+      @if (steps().length) {
+        <section class="sheet__section">
+          <h3>Caminho</h3>
+          <ol class="trace__steps">
+            @for (step of steps(); track $index) {
+              <li data-step>
+                <strong>{{ stepKind(step) }}</strong>
+                <span>{{ step.label }}</span>
+                @if (stepDetail(step); as detail) {
+                  <small>{{ detail }}</small>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+      }
+
+      @if (breaks().length) {
+        <section class="sheet__section">
+          <h3>Onde para</h3>
+          <ul class="trace__breaks">
+            @for (item of breaks(); track $index) {
+              <li data-break>
+                <strong>{{ breakText(item) }}</strong>
+                @if (item.at?.label) {
+                  <small>{{ item.at?.label }}</small>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (showBranches()) {
+        <section class="sheet__section">
+          <h3>Saídas</h3>
+          <p class="sheet__hint" data-splitter-summary>{{ summary() }}</p>
+          @if (branches().length) {
+            <ul class="trace__branches">
+              @for (branch of branches(); track branch.outputNumber) {
+                <li class="trace__branch" data-branch>
+                  <span>{{ branchText(branch) }}</span>
+                  @if (canOpenBranch(branch)) {
+                    <button type="button" class="sheet__link" data-branch-open (click)="openBranch(branch)">
+                      Ver clientes desta saída
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      @if (customers().length) {
+        <section class="sheet__section">
+          <h3>Clientes</h3>
+          <ul class="trace__customers">
+            @for (customer of customers(); track customer.id) {
+              <li data-customer>{{ customer.name }}</li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  </div>
+</aside>

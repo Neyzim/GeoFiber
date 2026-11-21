@@ -156,6 +156,47 @@ apagado porque sumiu do arquivo.
 As pontas dos cabos novos são ligadas à caixa ou OLT mais próxima (até 15 m). Fusões e fibras
 continuam sendo registradas na tela de fusões.
 
+### Rastrear o caminho da fibra
+
+Para saber por onde o sinal passa, toque no ícone de rota (**Rastrear**):
+
+- na **caixa**, no cabeçalho: mostra o caminho desta caixa;
+- num **splitter**, na lista de splitters da caixa: mostra o caminho desse splitter;
+- numa **fibra**, dentro da ficha do cabo (abra o tubo): mostra o caminho dessa fibra;
+- numa **emenda**, na tela de fusões ("Rastrear esta emenda"): volta ao mapa com o caminho dela.
+- numa **porta PON** da OLT, na aba Portas: o ícone de rota mostra o caminho do sinal que sai daquela
+  porta, até os clientes.
+
+A ficha **Por onde passa o sinal** mostra:
+
+- **Até a OLT**: de onde vem o sinal.
+- **Até os clientes**: para onde o sinal vai.
+- **Caminho**: os passos em ordem, com a fibra (cor e tubo) em cada cabo. No mapa, o caminho aparece na **cor da própria fibra** (amarelo, verde, etc.), com contorno escuro, e o resto do mapa fica mais claro.
+- **Onde para**: se o caminho para em algum ponto, aparece a frase do motivo. No mapa, esse ponto
+  tem um marcador vermelho; toque nele para ver a frase.
+- **Saídas** (só no splitter, até os clientes): quantas saídas têm cliente e quantas estão livres.
+  "Ver clientes desta saída" abre a saída; "Voltar" volta.
+
+**Voltar** aparece sempre que o rastreio veio de outro item: se você abriu uma saída de splitter, volta
+para o rastreio anterior; se não, fecha o rastreio e reabre o cabo, a caixa ou a OLT de onde você saiu.
+
+Uma ficha por vez: ao abrir o rastreio, a ficha do cabo, da caixa ou da OLT fecha, e o contrário
+também vale.
+
+### Ver o impacto de uma manutenção
+
+Antes de mexer num equipamento, toque no ícone de alerta (**Ver impacto de manutenção**) na ficha do
+cabo, da caixa ou da OLT. A ficha **Impacto de manutenção** mostra:
+
+- o resumo: "Se este cabo sair, 12 clientes ficam sem sinal, em 3 caixas.";
+- as contagens: clientes, caixas e OLTs que dependem do item;
+- a lista de clientes agrupada por caixa. Toque numa caixa para ver onde ela fica no mapa.
+
+No mapa, o cabo aparece em roxo e as caixas, clientes e OLTs afetados aparecem como marcadores. Se
+a lista for longa (mais de 2000 clientes), a ficha avisa, e o total continua o real.
+
+Só o caminho gravado conta: se existir outra ligação que não esteja cadastrada, ela não aparece aqui.
+
 ### Portas PON da OLT
 
 Ao clicar numa OLT, abre a **ficha da OLT**: quantas portas PON existem, quantas estão em uso e os

@@ -25,6 +25,14 @@ describe('SpliceDetailComponent', { timeout: 20000 }, () => {
     expect(content).toContain('Perda: 0,05 dB');
   });
 
+  it('Rastrear esta emenda emite o id dela', () => {
+    const fixture = render();
+    let ids: string[] = [];
+    fixture.componentInstance.traceSplice.subscribe((id) => ids.push(id));
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-trace-splice]')!.click();
+    expect(ids).toEqual([DEFAULT_SPLICES[0].id]);
+  });
+
   it('opens each cable on the map', () => {
     const fixture = render();
     const viewed = vi.fn();

@@ -45,6 +45,8 @@ leaflet.markercluster (CommonJS liberado no `angular.json`), Vitest via `ng test
 | `src/app/core/network/` | Regras puras e estado do mapa: `network-catalog` (grupos, funções, situações, estilo das linhas), `map-element`, `network-map-repository` (único ponto que fala com a API para o mapa), `network-map-state` (seleção, busca, filtros), `optical-catalog`, `cable-route`, `box-interior`, `olt-ports`, `customer-rules`, `glossary`, `view-summary`. |
 | `src/app/features/network-map/` | Página do mapa e as fichas laterais: `cable-sheet/`, `box-sheet/` (com `fiber-link-dialog`), `olt-sheet/`, `customer-sheet/`; `sheet-support.ts`. |
 | `src/app/core/import/` | Importação de KMZ/KML: `network-file` (zip e encoding), `kml-reader`, `import-groups`, `import-match` (duplicados), `import-request` (pedido e ligação de pontas), `import-preview`. |
+| `src/app/features/trace/` | Rastreio da fibra: `trace-store` (consulta, sentido, "Voltar"), `trace-sheet`. Regras em `core/network/trace-view` e `trace-map`. |
+| `src/app/features/impact/` | Impacto de manutenção: `impact-store` (consulta), `impact-sheet` (clientes por caixa). Regras em `core/network/impact-view`. |
 | `src/app/features/network-import/` | Tela `/importar`: `network-import-store` (estado), `network-import-page`, `import-group-row`. |
 | `src/app/features/box-splices/` | Tela de fusões `/caixas/:boxId/fusoes`: `box-splices-page`, `cable-strip`, `tray-board`, `splice-picker`, `splice-detail`. Regras em `core/network/splice-board.ts`; volta ao mapa por `core/services/map-return.ts`. |
 | `src/app/shared/map/` | `geo-map` (Leaflet), marcadores, barra de ferramentas, legenda, barra de status. |
@@ -119,7 +121,19 @@ ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o 
 pedido, serviço, store, tela `/importar`, prévia no mapa. Não commitado. Depende do endpoint
 `POST /imports/network` no backend (o dono implementa; contrato no design). Backend publicado; `npm run api:types` feito e `core/api/import-types.ts` usa os tipos gerados.
 
-Testes: 74 arquivos / 414 passando; build ok. Falta a conferência no navegador (ver Pendências).
+**Rastreio da fibra** (design `docs/superpowers/specs/2026-11-20-rastreio-fibra-design.md`, plano
+`docs/superpowers/plans/2026-11-20-rastreio-fibra.md`, RI-36, GUIA): endpoint `GET /trace/{kind}/{id}`
+já publicado no backend; front implementado (ficha, store, marcadores vermelhos no mapa, entradas
+na caixa, splitter, fibra, emenda e `?trace=`). Não commitado. Página do mapa e entradas sem spec
+próprio (Leaflet não roda no jsdom): conferir no navegador.
+
+**Impacto de manutenção** (design `docs/superpowers/specs/2026-11-20-impacto-manutencao-design.md`, plano
+`docs/superpowers/plans/2026-11-20-impacto-manutencao.md`, RI-37, GUIA): endpoints
+`GET /impact/{cables|boxes|olts}/{id}` publicados no backend; front implementado (ficha, store, marcadores
+por tipo no mapa, traçado roxo do cabo alvo, entradas no cabo, caixa e OLT). Não commitado. A página do
+mapa não tem spec (Leaflet não roda no jsdom): conferir no navegador.
+
+Testes: 85 arquivos / 466 passando; build ok. Falta a conferência no navegador (ver Pendências).
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 

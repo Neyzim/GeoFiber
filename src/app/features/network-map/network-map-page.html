@@ -12,7 +12,10 @@
       [selectedElementKey]="selectedElementKey()"
       [highlightedKeys]="highlightedKeys()"
       [editable]="editable()"
-      [paths]="paths()"
+      [paths]="mapPaths()"
+      [breakMarkers]="traceBreaks()"
+      [traceFocus]="!!trace.query() || !!impact.query()"
+      [impactMarkers]="impactMarkerList()"
       [selectedPathId]="selectedCableId()"
       [draftOrigin]="draftOrigin()"
       [previewColor]="previewColor()"
@@ -93,6 +96,8 @@
           (closed)="closeSheet()"
           (editData)="editSelectedCable()"
           (focusItem)="onRouteItemFocus($event)"
+          (traceFiber)="openTrace('FIBER', $event)"
+          (impact)="openImpact('cables', cable.id)"
         />
       } @else if (selectedBox(); as box) {
         <app-box-sheet
@@ -102,6 +107,9 @@
           (editData)="editSelectedElement()"
           (openCable)="openCableFromSheet($event)"
           (openSplices)="openSplices(box.id)"
+          (trace)="openTrace('BOX', box.id)"
+          (traceSplitter)="openTrace('SPLITTER', $event)"
+          (impact)="openImpact('boxes', box.id)"
         />
       } @else if (selectedCustomer(); as customer) {
         <app-customer-sheet
@@ -115,11 +123,23 @@
       } @else if (selectedOlt(); as olt) {
         <app-olt-sheet
           [olt]="olt"
+          (impact)="openImpact('olts', olt.id)"
+          (tracePort)="openTrace('FIBER', $event, 'DOWNSTREAM')"
           [canEdit]="editable()"
           (closed)="closeSheet()"
           (editData)="editSelectedElement()"
           (openCable)="openCableFromSheet($event)"
         />
+      }
+      @if (traceSheetOpen()) {
+        <app-trace-sheet
+          [hasOrigin]="traceHasOrigin()"
+          (closed)="closeTrace()"
+          (leave)="leaveTrace()"
+        />
+      }
+      @if (impactSheetOpen()) {
+        <app-impact-sheet (closed)="impact.close()" (focusBox)="focusImpactBox($event)" />
       }
       @if (showLayerPanel()) {
         <app-map-layer-panel

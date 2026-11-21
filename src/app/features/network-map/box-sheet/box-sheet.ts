@@ -115,6 +115,12 @@ export class BoxSheetComponent {
   readonly openCable = output<string>();
   /** "Ver fusões": abre a tela de fusões desta caixa. */
   readonly openSplices = output<void>();
+  /** "Rastrear": pede a ficha de rastreio desta caixa. */
+  readonly trace = output<void>();
+  /** "Rastrear" numa linha de splitter: envia o id do splitter. */
+  readonly traceSplitter = output<string>();
+  /** "Ver impacto": pede a ficha de impacto deste item. */
+  readonly impact = output<void>();
 
   protected readonly ratios = SPLITTER_RATIOS;
   protected readonly newRatio = signal<SplitterRatio>('RATIO_1_8');

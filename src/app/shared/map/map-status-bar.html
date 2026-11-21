@@ -4,7 +4,7 @@
     <span class="status-bar__value">{{ pointer() | coordinate: 'decimal': 6 }}</span>
   </span>
 
-  <span class="status-bar__item">
+  <span class="status-bar__item status-bar__item--dms">
     <span class="status-bar__label">Centro</span>
     <span class="status-bar__value">{{ view()?.center | coordinate: 'dms' }}</span>
   </span>
@@ -14,7 +14,7 @@
     <span class="status-bar__value">{{ view()?.zoom ?? '—' }}</span>
   </span>
 
-  <span class="status-bar__item">
+  <span class="status-bar__item status-bar__item--tool">
     <span class="status-bar__label">Ferramenta</span>
     <span class="status-bar__value">{{ toolLabel() }}</span>
   </span>

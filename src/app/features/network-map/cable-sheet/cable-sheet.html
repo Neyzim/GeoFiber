@@ -17,6 +17,10 @@
           <mat-icon>edit</mat-icon>
         </button>
       }
+      <button mat-icon-button type="button" matTooltip="Ver impacto de manutenção" aria-label="Ver impacto de manutenção"
+        data-impact (click)="impact.emit()">
+        <mat-icon>warning_amber</mat-icon>
+      </button>
       <button mat-icon-button type="button" matTooltip="Fechar ficha" aria-label="Fechar ficha" (click)="closed.emit()">
         <mat-icon>close</mat-icon>
       </button>
@@ -175,6 +179,12 @@
                           [matTooltip]="fiberStatus(fiber.status).hint">
                           {{ fiberStatus(fiber.status).label }}
                         </span>
+                        @if (fiber.id) {
+                          <button mat-icon-button type="button" matTooltip="Rastrear esta fibra"
+                            aria-label="Rastrear esta fibra" data-trace-fiber (click)="traceFiber.emit(fiber.id)">
+                            <mat-icon>route</mat-icon>
+                          </button>
+                        }
                         @if (canEdit() && fiber.status !== 'OCCUPIED') {
                           <button mat-icon-button type="button" [matMenuTriggerFor]="statusMenu"
                             matTooltip="Mudar situação">

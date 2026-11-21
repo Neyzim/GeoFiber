@@ -14,6 +14,10 @@
           <mat-icon>edit</mat-icon>
         </button>
       }
+      <button mat-icon-button type="button" matTooltip="Ver impacto de manutenção" aria-label="Ver impacto de manutenção"
+        data-impact (click)="impact.emit()">
+        <mat-icon>warning_amber</mat-icon>
+      </button>
       <button mat-icon-button type="button" matTooltip="Fechar ficha" aria-label="Fechar ficha" (click)="closed.emit()">
         <mat-icon>close</mat-icon>
       </button>
@@ -80,6 +84,12 @@
                     <span class="sheet__chip" [style.--gf-chip-color]="portStatus(port).color" [matTooltip]="portStatus(port).hint">
                       {{ portStatus(port).label }}
                     </span>
+                    @if (port.fiberId) {
+                      <button mat-icon-button type="button" data-trace-port matTooltip="Ver o caminho do sinal desta porta"
+                        aria-label="Ver o caminho do sinal desta porta" (click)="tracePort.emit(port.fiberId)">
+                        <mat-icon>route</mat-icon>
+                      </button>
+                    }
                     @if (canEdit()) {
                       <button mat-icon-button type="button" matTooltip="Mais ações" aria-label="Mais ações" [matMenuTriggerFor]="portMenu">
                         <mat-icon>more_vert</mat-icon>

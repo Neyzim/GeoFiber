@@ -37,6 +37,8 @@ export interface GeoPath {
   dashArray?: string;
   /** Opacidade da linha (padrão 0.9). */
   opacity?: number;
+  /** Traçado em destaque: fica inteiro enquanto o resto do mapa esmaece (rastreio). */
+  emphasis?: boolean;
   /** Desenha um marcador em cada vértice (usado na pré-visualização). */
   showVertices?: boolean;
   /** HTML do balão de informações exibido quando o cabo é selecionado. */

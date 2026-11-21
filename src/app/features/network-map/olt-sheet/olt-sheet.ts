@@ -74,6 +74,10 @@ export class OltSheetComponent {
   readonly closed = output<void>();
   readonly editData = output<void>();
   readonly openCable = output<string>();
+  /** "Ver impacto": pede a ficha de impacto deste item. */
+  readonly impact = output<void>();
+  /** Pede o caminho do sinal de uma porta PON: id da fibra ligada a ela. */
+  readonly tracePort = output<string>();
 
   protected readonly countOptions = [1, 4, 8, 16];
   protected readonly newCount = signal(16);

@@ -82,6 +82,10 @@ export class CableSheetComponent {
   readonly closed = output<void>();
   readonly editData = output<void>();
   readonly focusItem = output<RouteItem>();
+  /** "Rastrear" numa fibra: envia o id da fibra. */
+  readonly traceFiber = output<string>();
+  /** "Ver impacto": pede a ficha de impacto deste item. */
+  readonly impact = output<void>();
 
   protected readonly perTubeOptions = FIBERS_PER_TUBE_OPTIONS;
   protected readonly statusOptions = FIBER_STATUSES.filter((item) => item.status !== 'OCCUPIED');

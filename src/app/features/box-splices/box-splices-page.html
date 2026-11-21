@@ -85,7 +85,7 @@
               (done)="closePanel()" (closed)="closePanel()" (openCable)="viewCable($event)" />
           } @else if (detail(); as splice) {
             <app-splice-detail [splice]="splice" [canEdit]="canEdit()" (closed)="closePanel()"
-              (viewCable)="viewCable($event)" (deleteRequested)="deleteSplice($event)" />
+              (viewCable)="viewCable($event)" (traceSplice)="traceSplice($event)" (deleteRequested)="deleteSplice($event)" />
           }
         </aside>
       }

@@ -183,6 +183,11 @@ export class BoxSplicesPage {
   }
 
   /** "Ver cabo no mapa" e "Abrir ficha do cabo": volta ao mapa com o cabo selecionado. */
+  /** Abre o rastreio da emenda no mapa (a tela de fusões fecha; o mapa mostra o caminho). */
+  protected traceSplice(spliceId: string): void {
+    void this.router.navigate(['/'], { queryParams: { trace: `SPLICE:${spliceId}` } });
+  }
+
   protected viewCable(cableId: string): void {
     this.mapReturn.request({ type: 'cable', id: cableId }, true);
     void this.router.navigate(['/']);

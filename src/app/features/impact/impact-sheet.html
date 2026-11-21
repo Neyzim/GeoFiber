@@ -1,0 +1,46 @@
+<aside class="sheet" aria-label="Impacto de manutenção">
+  <div class="sheet__top">
+    <header class="sheet__header">
+      <div class="sheet__titles">
+        <h2>{{ title }}</h2>
+        @if (totals()) {
+          <p class="sheet__status" data-totals>{{ totals() }}</p>
+        }
+      </div>
+      <button mat-icon-button type="button" matTooltip="Fechar" aria-label="Fechar ficha" (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+  </div>
+
+  @if (store.state() === 'loading') {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="sheet__body">
+    @if (store.state() === 'error') {
+      <div class="sheet__error" role="alert">
+        <span>{{ store.error() }}</span>
+      </div>
+    } @else if (store.state() === 'ready') {
+      <p class="sheet__lead" data-summary>{{ summary() }}</p>
+
+      @if (truncated(); as note) {
+        <p class="sheet__hint" data-truncated>{{ note }}</p>
+      }
+
+      @for (box of boxes(); track box.id) {
+        <section class="sheet__section">
+          <button type="button" class="sheet__link" data-box (click)="focusBox.emit(box.id!)">
+            {{ box.label }}
+          </button>
+          <ul class="impact__customers">
+            @for (customer of box.customers ?? []; track customer.id) {
+              <li data-customer>{{ customerName(customer.name) }}</li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  </div>
+</aside>

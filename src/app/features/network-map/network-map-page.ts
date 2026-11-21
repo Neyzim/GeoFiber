@@ -13,7 +13,16 @@ import { ComponentType } from '@angular/cdk/portal';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TraceSheetComponent } from '../trace/trace-sheet';
+import { TraceStore } from '../trace/trace-store';
+import { TraceDirection, TraceKind } from '../../core/api/trace-types';
+import { parseTraceQuery } from '../../core/network/trace-view';
+import { tracePaths, traceMarkers } from '../../core/network/trace-map';
+import { ImpactSheetComponent } from '../impact/impact-sheet';
+import { ImpactStore } from '../impact/impact-store';
+import { ImpactKind } from '../../core/api/impact-types';
+import { ImpactMarker, impactMarkers, impactTargetPath } from '../../core/network/impact-view';
 import { Observable, map } from 'rxjs';
 import { BoxType, CableRole, InfrastructureStatus } from '../../core/api/api-types';
 import { BASE_LAYERS, DEFAULT_MAP_VIEW } from '../../core/constants/map.constants';
@@ -37,7 +46,7 @@ import {
   statusDefinition,
 } from '../../core/network/network-catalog';
 import { NetworkMapRepository } from '../../core/network/network-map-repository';
-import { LegendGroupKey, NetworkMapState } from '../../core/network/network-map-state';
+import { LegendGroupKey, NetworkMapState, Selection } from '../../core/network/network-map-state';
 import { MapPreferencesService } from '../../core/services/map-preferences';
 import { MapReturnService } from '../../core/services/map-return';
 import { MapViewportService } from '../../core/services/map-viewport';
@@ -97,6 +106,8 @@ const CREATABLE_GROUPS = ELEMENT_GROUPS;
     MatIconModule,
     MapLayerPanelComponent,
     OltSheetComponent,
+    TraceSheetComponent,
+    ImpactSheetComponent,
     MapLegendComponent,
     MapStatusBarComponent,
     MapToolbarComponent,
@@ -106,7 +117,7 @@ const CREATABLE_GROUPS = ELEMENT_GROUPS;
   templateUrl: './network-map-page.html',
   styleUrl: './network-map-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [BoxSheetStore, CableSheetStore, OltSheetStore],
+  providers: [BoxSheetStore, CableSheetStore, OltSheetStore, TraceStore, ImpactStore],
   host: {
     '(document:keydown.escape)': 'onEscape()',
   },
@@ -127,6 +138,45 @@ export class NetworkMapPage implements OnInit {
 
   protected readonly baseLayers = BASE_LAYERS;
   protected readonly preferencesState = this.preferences;
+
+  protected readonly trace = inject(TraceStore);
+  protected readonly impact = inject(ImpactStore);
+  private readonly route = inject(ActivatedRoute);
+  /** Traçados do rastreio aberto somados aos do mapa. */
+  protected readonly mapPaths = computed<readonly GeoPath[]>(() => {
+    const response = this.trace.response();
+    const impactResponse = this.impact.response();
+    const extra: GeoPath[] = response ? [...tracePaths(response)] : [];
+    const target = impactResponse ? impactTargetPath(impactResponse) : null;
+    if (target) extra.push(target);
+    return extra.length > 0 ? [...this.paths(), ...extra] : this.paths();
+  });
+  protected readonly traceBreaks = computed(() => {
+    const response = this.trace.response();
+    return response ? traceMarkers(response).markers : [];
+  });
+  protected readonly impactMarkerList = computed<readonly ImpactMarker[]>(() => {
+    const response = this.impact.response();
+    return response ? impactMarkers(response) : [];
+  });
+  /** A ficha do impacto aparece só quando nenhuma outra ficha está aberta. */
+  protected readonly impactSheetOpen = computed(
+    () =>
+      !!this.impact.query() &&
+      !this.selectedCable() &&
+      !this.selectedBox() &&
+      !this.selectedOlt() &&
+      !this.selectedCustomer(),
+  );
+  /** A ficha do rastreio aparece só quando nenhuma outra ficha está aberta. */
+  protected readonly traceSheetOpen = computed(
+    () =>
+      !!this.trace.query() &&
+      !this.selectedCable() &&
+      !this.selectedBox() &&
+      !this.selectedOlt() &&
+      !this.selectedCustomer(),
+  );
 
   protected readonly loadState = this.repository.loadState;
   /** Ferramentas de edição liberadas: rede carregada e permissão de edição. */
@@ -153,6 +203,10 @@ export class NetworkMapPage implements OnInit {
     const selection = this.state.selection();
     return selection?.type === 'cable' ? selection.id : null;
   });
+
+  /** Seleção de onde o rastreio partiu: o botão Voltar devolve a tela a ela. */
+  private readonly traceOrigin = signal<Selection>(null);
+  protected readonly traceHasOrigin = computed(() => this.traceOrigin() !== null);
 
   protected readonly activeTool = signal<MapTool>('select');
   /** Tipo criado pela ferramenta "Adicionar elemento". */
@@ -331,15 +385,27 @@ export class NetworkMapPage implements OnInit {
     // A ficha acompanha a seleção: abre com o cabo selecionado e fecha sem ele.
     effect(() => {
       const cable = this.selectedCable();
-      untracked(() => (cable ? this.sheet.open(cable.id) : this.sheet.close()));
+      untracked(() => {
+        if (cable) this.closeInspectors();
+        if (cable) this.sheet.open(cable.id);
+        else this.sheet.close();
+      });
     });
     effect(() => {
       const box = this.selectedBox();
-      untracked(() => (box ? this.boxSheet.open(box.id) : this.boxSheet.close()));
+      untracked(() => {
+        if (box) this.closeInspectors();
+        if (box) this.boxSheet.open(box.id);
+        else this.boxSheet.close();
+      });
     });
     effect(() => {
       const olt = this.selectedOlt();
-      untracked(() => (olt ? this.oltSheet.open(olt.id) : this.oltSheet.close()));
+      untracked(() => {
+        if (olt) this.closeInspectors();
+        if (olt) this.oltSheet.open(olt.id);
+        else this.oltSheet.close();
+      });
     });
     // Volta de outra tela (ex.: fusões): seleciona o que foi pedido quando a rede carregar e o
     // mapa Leaflet existir (`viewport.ready` lê um signal, então o efeito roda de novo).
@@ -347,6 +413,78 @@ export class NetworkMapPage implements OnInit {
       if (this.loadState() !== 'ready' || !this.viewport.ready) return;
       untracked(() => this.applyReturn());
     });
+
+    // Rastreio aberto: enquadra o caminho e as quebras no mapa.
+    effect(() => {
+      const response = this.trace.response();
+      if (!response || !this.viewport.ready) return;
+      untracked(() => {
+        const points = [
+          ...tracePaths(response).flatMap((path) => path.points),
+          ...traceMarkers(response).markers.map((marker) => marker.point),
+        ];
+        if (points.length > 0) this.viewport.focusAll(points);
+      });
+    });
+
+    // Impacto aberto: enquadra o item e os afetados.
+    effect(() => {
+      const response = this.impact.response();
+      if (!response || !this.viewport.ready) return;
+      untracked(() => {
+        const points = [
+          ...(impactTargetPath(response)?.points ?? []),
+          ...impactMarkers(response).map((marker) => marker.point),
+        ];
+        if (points.length > 0) this.viewport.focusAll(points);
+      });
+    });
+
+    // Endereço direto com ?trace=KIND:ID (ex.: volta da tela de fusões).
+    const fromUrl = parseTraceQuery(this.route.snapshot.queryParamMap.get('trace'));
+    if (fromUrl) {
+      this.trace.open(fromUrl.kind, fromUrl.id);
+    }
+  }
+
+  /** Abre o impacto de manutenção de um cabo, caixa ou OLT. Substitui as outras fichas. */
+  protected openImpact(kind: ImpactKind, id: string): void {
+    this.state.select(null);
+    this.closeTrace();
+    this.impact.open(kind, id);
+  }
+
+  /** Fecha o rastreio e o impacto: nenhum dos dois fica aberto junto de outra ficha. */
+  private closeInspectors(): void {
+    this.closeTrace();
+    this.impact.close();
+  }
+
+  /** Enquadra uma caixa afetada, pela posição dela na resposta do impacto. */
+  protected focusImpactBox(boxId: string): void {
+    const box = this.impact.response()?.boxes?.find((item) => item.id === boxId);
+    const point = box?.coordinates?.[0];
+    if (point) this.viewport.focusAll([{ lat: point.latitude, lng: point.longitude }]);
+  }
+
+  /** Abre o rastreio de um ponto. A ficha do rastreio substitui as outras fichas. */
+  protected openTrace(kind: TraceKind, id: string, direction: TraceDirection = 'UPSTREAM'): void {
+    if (!this.trace.query()) this.traceOrigin.set(this.state.selection());
+    this.state.select(null);
+    this.impact.close();
+    this.trace.open(kind, id, direction);
+  }
+
+  /** Voltar sem saída aberta: fecha o rastreio e reabre o item de onde ele partiu. */
+  protected leaveTrace(): void {
+    const origin = this.traceOrigin();
+    this.closeTrace();
+    if (origin) this.state.select(origin);
+  }
+
+  protected closeTrace(): void {
+    this.traceOrigin.set(null);
+    this.trace.close();
   }
 
   private applyReturn(): void {

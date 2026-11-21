@@ -68,6 +68,14 @@ function clickTab(fixture: ComponentFixture<OltSheetComponent>, id: string): voi
 
 // Primeira renderização com Material pode passar de 5 s com a suíte inteira rodando.
 describe('OltSheetComponent', { timeout: 20000 }, () => {
+  it('Ver impacto no cabeçalho pede o impacto desta OLT, mesmo sem clientes', () => {
+    const fixture = render();
+    let emitted = 0;
+    fixture.componentInstance.impact.subscribe(() => emitted++);
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-impact]')!.click();
+    expect(emitted).toBe(1);
+  });
+
   it('shows the Resumo and Portas PON tabs', () => {
     const fixture = render();
     const labels = Array.from(
@@ -99,6 +107,20 @@ describe('OltSheetComponent', { timeout: 20000 }, () => {
     expect(content).toContain('PON 1');
     expect(content).toContain('Nada ligado');
     expect(content).toContain('Envia sinal por CABO-01, tubo 1 (Verde), fibra 1 (Verde)');
+  });
+
+  it('a porta ligada a uma fibra pede o caminho dessa fibra; a livre não tem o botão', () => {
+    const fixture = render();
+    clickTab(fixture, 'portas');
+    let fibers: string[] = [];
+    fixture.componentInstance.tracePort.subscribe((id) => fibers.push(id));
+
+    const buttons = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-trace-port]'),
+    );
+    expect(buttons.length).toBe(1);
+    buttons[0].click();
+    expect(fibers).toEqual(['f1']);
   });
 
   it('returns to Resumo when another OLT is selected', () => {

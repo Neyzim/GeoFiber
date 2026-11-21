@@ -93,6 +93,24 @@ describe('CableSheetComponent', { timeout: 20000 }, () => {
     expect(line?.getAttribute('stroke-dasharray')).toBe('4 4');
   });
 
+  it('Ver impacto no cabeçalho pede o impacto deste cabo', () => {
+    let emitted = 0;
+    fixture.componentInstance.impact.subscribe(() => emitted++);
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-impact]')!.click();
+    expect(emitted).toBe(1);
+  });
+
+  it('Rastrear numa fibra emite o id dela', () => {
+    clickTab('fibras');
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.sheet__tube-head')!.click();
+    fixture.detectChanges();
+    let ids: string[] = [];
+    fixture.componentInstance.traceFiber.subscribe((id) => ids.push(id));
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-trace-fiber]')!.click();
+    expect(ids).toEqual(['f1']);
+  });
+
   it('Fibras shows tube occupancy and ABNT color dots', () => {
     clickTab('fibras');
     expect(text()).toContain('1/2 em uso');

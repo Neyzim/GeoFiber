@@ -493,6 +493,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/trace/{kind}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rastreia a fibra a partir de um ponto
+         * @description Só leitura. Para em quebras, laços e no limite de 50 passos. Em splitter descendo, devolve o resumo das saídas.
+         */
+        get: operations["trace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/olts/{oltId}/cables": {
         parameters: {
             query?: never;
@@ -502,6 +522,66 @@ export interface paths {
         };
         /** Lista os cabos anexados à OLT */
         get: operations["cablesOfOlt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/impact/olts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Impacto de uma OLT
+         * @description Clientes atendidos pelas portas PON da OLT.
+         */
+        get: operations["olt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/impact/cables/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Impacto de um cabo
+         * @description Clientes cujo caminho até a OLT usa algum trecho do cabo. Lista cortada em 2000 clientes; totais exatos.
+         */
+        get: operations["cable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/impact/boxes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Impacto de uma caixa
+         * @description Clientes cujo caminho passa por algum elemento da caixa (fusão, conector, splitter ou porta).
+         */
+        get: operations["box"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1194,6 +1274,71 @@ export interface components {
             /** Format: double */
             attenuationDb?: number;
         };
+        FiberInfo: {
+            /** @enum {string} */
+            color?: "GREEN" | "YELLOW" | "WHITE" | "BLUE" | "RED" | "VIOLET" | "BROWN" | "PINK" | "BLACK" | "GRAY" | "ORANGE" | "TURQUOISE";
+            /** Format: int32 */
+            number?: number;
+            /** @enum {string} */
+            tube?: "GREEN" | "YELLOW" | "WHITE" | "BLUE" | "RED" | "VIOLET" | "BROWN" | "PINK" | "BLACK" | "GRAY" | "ORANGE" | "TURQUOISE";
+        };
+        TraceBranch: {
+            /** Format: int32 */
+            outputNumber?: number;
+            /** @enum {string} */
+            status?: "CUSTOMERS" | "FREE" | "BROKEN";
+            /** Format: int32 */
+            customerCount?: number;
+            /** Format: uuid */
+            traceRef?: string;
+        };
+        TraceBreak: {
+            /** @enum {string} */
+            reason?: "NO_CONNECTION" | "NO_SIGNAL" | "NO_CUSTOMER" | "LOOP" | "DEPTH_LIMIT";
+            at?: components["schemas"]["TraceItem"];
+        };
+        TraceCustomer: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+        };
+        TraceItem: {
+            /** @enum {string} */
+            kind?: "FIBER_END" | "FIBER" | "BOX" | "SPLITTER" | "SPLICE" | "SPLITTER_PORT" | "CABLE" | "OLT_PORT" | "SERVICE_PORT";
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            coordinates?: components["schemas"]["CoordinateDto"][];
+        };
+        TracePosition: {
+            /** Format: int32 */
+            tray?: number;
+            /** Format: int32 */
+            number?: number;
+        };
+        TraceResponse: {
+            start?: components["schemas"]["TraceItem"];
+            /** @enum {string} */
+            direction?: "UPSTREAM" | "DOWNSTREAM";
+            /** @enum {string} */
+            status?: "REACHED_OLT" | "REACHED_CUSTOMERS" | "BROKEN" | "EMPTY";
+            steps?: components["schemas"]["TraceStep"][];
+            breaks?: components["schemas"]["TraceBreak"][];
+            /** @description Só no rastreio de splitter (ou que desce até um): resumo de cada saída */
+            branches?: components["schemas"]["TraceBranch"][];
+            /** @description Clientes alcançados pelo caminho (descida até porta de atendimento) */
+            customers?: components["schemas"]["TraceCustomer"][];
+        };
+        TraceStep: {
+            /** @enum {string} */
+            kind?: "FIBER_END" | "FIBER" | "BOX" | "SPLITTER" | "SPLICE" | "SPLITTER_PORT" | "CABLE" | "OLT_PORT" | "SERVICE_PORT";
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            fiber?: components["schemas"]["FiberInfo"];
+            position?: components["schemas"]["TracePosition"];
+            coordinates?: components["schemas"]["CoordinateDto"][];
+        };
         AttachedCableResponse: {
             /** Format: uuid */
             cableId?: string;
@@ -1208,6 +1353,48 @@ export interface components {
             attachmentRole?: "START" | "PASS_THROUGH" | "END";
             /** Format: int32 */
             sequenceNumber?: number;
+        };
+        ImpactBox: {
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            coordinates?: components["schemas"]["CoordinateDto"][];
+            customers?: components["schemas"]["ImpactCustomer"][];
+        };
+        ImpactCustomer: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            coordinates?: components["schemas"]["CoordinateDto"][];
+        };
+        ImpactOlt: {
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            coordinates?: components["schemas"]["CoordinateDto"][];
+        };
+        ImpactResponse: {
+            target?: components["schemas"]["ImpactTarget"];
+            totals?: components["schemas"]["ImpactTotals"];
+            boxes?: components["schemas"]["ImpactBox"][];
+            olts?: components["schemas"]["ImpactOlt"][];
+            truncated?: boolean;
+        };
+        ImpactTarget: {
+            /** @enum {string} */
+            kind?: "CABLE" | "BOX" | "OLT";
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            coordinates?: components["schemas"]["CoordinateDto"][];
+        };
+        ImpactTotals: {
+            /** Format: int32 */
+            customers?: number;
+            /** Format: int32 */
+            boxes?: number;
+            /** Format: int32 */
+            olts?: number;
         };
         CustomerHistoryResponse: {
             /** @enum {string} */
@@ -4034,6 +4221,58 @@ export interface operations {
             };
         };
     };
+    trace: {
+        parameters: {
+            query: {
+                direction: "UPSTREAM" | "DOWNSTREAM";
+            };
+            header?: never;
+            path: {
+                kind: "FIBER_END" | "FIBER" | "BOX" | "SPLITTER" | "SPLICE" | "SPLITTER_PORT";
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TraceResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     cablesOfOlt: {
         parameters: {
             query?: never;
@@ -4052,6 +4291,153 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AttachedCableResponse"][];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    olt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ImpactResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    cable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ImpactResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    box: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ImpactResponse"];
                 };
             };
             /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */

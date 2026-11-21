@@ -34,6 +34,11 @@ import { BoxSheetStore } from '../network-map/box-sheet/box-sheet-store';
     </div>
 
     <div class="detail__actions">
+      @if (splice().id; as spliceId) {
+        <button mat-stroked-button type="button" data-trace-splice (click)="traceSplice.emit(spliceId)">
+          Rastrear esta emenda
+        </button>
+      }
       @for (cable of cables(); track cable.id) {
         <button mat-stroked-button type="button" [attr.data-cable]="cable.id" (click)="viewCable.emit(cable.id)">
           Ver {{ cable.name }} no mapa
@@ -73,6 +78,8 @@ export class SpliceDetailComponent {
 
   readonly closed = output<void>();
   readonly viewCable = output<string>();
+  /** "Rastrear esta emenda": envia o id da emenda. */
+  readonly traceSplice = output<string>();
   readonly deleteRequested = output<SpliceResponse>();
 
   private readonly input = computed(() => this.fiber(this.splice().inputFiberId));

@@ -1,3 +1,5 @@
+import type { TraceMarker } from '../../core/network/trace-map';
+import type { ImpactMarker } from '../../core/network/impact-view';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -45,6 +47,13 @@ import { MAP_FOCUS_CLASS, pathOpacity } from './map-focus';
 /** Distância (px) dentro da qual um clique no mapa "gruda" em um elemento. */
 const SNAP_DISTANCE_PX = 15;
 
+/** Cor e tamanho do marcador de impacto por tipo (caixa, cliente, OLT). */
+const IMPACT_STYLE: Record<ImpactMarker['kind'], { fill: string; radius: number }> = {
+  box: { fill: '#f9a825', radius: 8 },
+  customer: { fill: '#00897b', radius: 5 },
+  olt: { fill: '#3949ab', radius: 9 },
+};
+
 /**
  * Mapa Leaflet reutilizável.
  *
@@ -88,6 +97,15 @@ export class GeoMapComponent implements OnDestroy {
 
   /** Cabos (polilinhas) a exibir sobre o mapa. */
   readonly paths = input<readonly GeoPath[]>([]);
+
+  /** Marcadores vermelhos de quebra do rastreio: só leitura, não arrastam. */
+  readonly breakMarkers = input<readonly TraceMarker[]>([]);
+
+  /** Rastreio aberto: o resto do mapa esmaece e os traçados em destaque ficam inteiros. */
+  readonly traceFocus = input(false);
+
+  /** Caixas, clientes e OLTs afetados por uma manutenção: marcadores só de leitura. */
+  readonly impactMarkers = input<readonly ImpactMarker[]>([]);
   /** Cabo destacado. */
   readonly selectedPathId = input<string | null>(null);
   /** Âncora do traçado em construção: liga o último vértice ao cursor. */
@@ -142,6 +160,8 @@ export class GeoMapComponent implements OnDestroy {
   /** Renderizador canvas compartilhado pelas linhas dos cabos. */
   private readonly cableRenderer = L.canvas({ tolerance: 6 });
   private readonly pathLines = new Map<string, L.Polyline>();
+  private breakLayer: L.LayerGroup | null = null;
+  private impactLayer: L.LayerGroup | null = null;
   private readonly vertexMarkers: L.Marker[] = [];
 
   constructor() {
@@ -165,8 +185,9 @@ export class GeoMapComponent implements OnDestroy {
     effect(() => {
       const key = this.selectedElementKey();
       const pathId = this.selectedPathId();
+      const traceFocus = this.traceFocus();
       if (this.map) {
-        this.applyFocus(!!key || !!pathId);
+        this.applyFocus(!!key || !!pathId || traceFocus);
       }
     });
 
@@ -198,9 +219,24 @@ export class GeoMapComponent implements OnDestroy {
       const selectedPathId = this.selectedPathId();
       const elementKey = this.selectedElementKey();
       const tool = this.activeTool();
+      const traceFocus = this.traceFocus();
       if (this.map) {
-        this.syncPaths(paths, selectedPathId, !!selectedPathId || !!elementKey);
+        this.syncPaths(paths, selectedPathId, !!selectedPathId || !!elementKey || traceFocus);
         this.syncVertexHandles(paths, selectedPathId, tool);
+      }
+    });
+
+    effect(() => {
+      const impact = this.impactMarkers();
+      if (this.map) {
+        this.syncImpactMarkers(impact);
+      }
+    });
+
+    effect(() => {
+      const markers = this.breakMarkers();
+      if (this.map) {
+        this.syncBreakMarkers(markers);
       }
     });
 
@@ -329,9 +365,13 @@ export class GeoMapComponent implements OnDestroy {
     this.syncPaths(
       this.paths(),
       this.selectedPathId(),
-      !!this.selectedPathId() || !!this.selectedElementKey(),
+      !!this.selectedPathId() || !!this.selectedElementKey() || this.traceFocus(),
     );
-    this.applyFocus(!!this.selectedPathId() || !!this.selectedElementKey());
+    this.applyFocus(!!this.selectedPathId() || !!this.selectedElementKey() || this.traceFocus());
+    this.breakLayer = L.layerGroup().addTo(map);
+    this.syncBreakMarkers(this.breakMarkers());
+    this.impactLayer = L.layerGroup().addTo(map);
+    this.syncImpactMarkers(this.impactMarkers());
 
     map.on('click', (event: L.LeafletMouseEvent) => this.emitMapClick(event.latlng));
 
@@ -733,6 +773,47 @@ export class GeoMapComponent implements OnDestroy {
     this.map?.getContainer().classList.toggle(MAP_FOCUS_CLASS, hasFocus);
   }
 
+  /** Redesenha os marcadores de quebra; cada um abre a frase do motivo ao ser tocado. */
+  private syncBreakMarkers(markers: readonly TraceMarker[]): void {
+    if (!this.breakLayer) {
+      return;
+    }
+    this.breakLayer.clearLayers();
+    for (const item of markers) {
+      L.circleMarker([item.point.lat, item.point.lng], {
+        radius: 8,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: '#d32f2f',
+        fillOpacity: 1,
+        interactive: true,
+      })
+        .bindPopup(item.message)
+        .addTo(this.breakLayer);
+    }
+  }
+
+  /** Desenha os marcadores de impacto por tipo: caixa, cliente e OLT. Cada um mostra o nome ao ser tocado. */
+  private syncImpactMarkers(markers: readonly ImpactMarker[]): void {
+    if (!this.impactLayer) {
+      return;
+    }
+    this.impactLayer.clearLayers();
+    for (const item of markers) {
+      const style = IMPACT_STYLE[item.kind];
+      L.circleMarker([item.point.lat, item.point.lng], {
+        radius: style.radius,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: style.fill,
+        fillOpacity: 1,
+        interactive: true,
+      })
+        .bindPopup(item.label)
+        .addTo(this.impactLayer);
+    }
+  }
+
   private syncPaths(
     paths: readonly GeoPath[],
     selectedPathId: string | null,
@@ -752,7 +833,8 @@ export class GeoMapComponent implements OnDestroy {
     }
 
     for (const path of paths) {
-      const selected = path.id === selectedPathId;
+      // Destaque (rastreio) conta como selecionado: fica inteiro e um pouco mais grosso.
+      const selected = path.id === selectedPathId || !!path.emphasis;
       const latlngs = path.points.map((point) => L.latLng(point.lat, point.lng));
       const style: L.PolylineOptions = {
         color: path.color,

@@ -85,6 +85,8 @@ Todos os caminhos são relativos a `/api/v1`.
 | `TrayApi` | `GET/POST /boxes/{boxId}/trays`, `PUT/DELETE /boxes/{boxId}/trays/{trayId}` |
 | `SpliceApi` | `GET/POST /boxes/{boxId}/splices`, `DELETE /boxes/{boxId}/splices/{spliceId}` |
 | `ImportApi` | `POST /imports/network` (importação de KMZ/KML: lista pronta, gravada numa transação) |
+| `TraceApi` | `GET /trace/{kind}/{id}?direction=` (rastreio da fibra: só leitura, o backend calcula o caminho) |
+| `ImpactApi` | `GET /impact/{cables|boxes|olts}/{id}` (impacto de manutenção: clientes, caixas e OLTs que ficam sem sinal; só leitura) |
 | `SplitterApi` | `GET/POST /boxes/{boxId}/splitters`, `PUT/DELETE /boxes/{boxId}/splitters/{splitterId}`, `PUT /splitters/{splitterId}/ports/{portId}` |
 | `ServicePortApi` | `GET/POST /boxes/{boxId}/service-ports`, `PUT/DELETE /boxes/{boxId}/service-ports/{portId}` |
 | `ConnectionApi` | `GET/POST /boxes/{boxId}/connections`, `DELETE /boxes/{boxId}/connections/{connectionId}` |
@@ -184,6 +186,34 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
 | `features/network-import/network-import-store.ts` | Estado da tela, provido pela página: arquivo, grupos, escolhas, resumo e envio. Só recarrega a rede depois de 409. |
 | `features/network-import/network-import-page.ts` | Página `/importar`: soltar ou escolher o arquivo, grupos, situação, ligação das pontas, prévia, importar e resultado. |
 | `features/network-import/import-group-row.ts` | Uma linha de grupo: tipo, fibras (cabos), abrir para ver e trocar item a item (200 por vez), "Atualizar posição". |
+
+### 2.4.3 Rastreio da fibra (`features/trace`, `core/network/trace-view.ts`, `trace-map.ts`)
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `core/api/trace-types.ts` | Apelidos dos tipos gerados do rastreio (`npm run api:types`). |
+| `core/api/resources/trace-api.ts` | `TraceApi.trace(kind, id, direction)`. |
+| `core/network/trace-view.ts` | Frases pt-BR (quebras, títulos, saídas do splitter, tipo de passo, fibra) e leitura de `?trace=KIND:ID`. |
+| `core/network/trace-map.ts` | `tracePaths` (traçado dos trechos de cabo) e `traceMarkers` (marcadores vermelhos). |
+| `features/trace/trace-store.ts` | Consulta atual, sentido, saída aberta e "Voltar". Provido pela página do mapa. |
+| `features/trace/trace-sheet.ts` | Ficha: caminho em ordem, quebras, saídas do splitter e clientes. |
+
+Entradas: "Rastrear" no cabeçalho da caixa e em cada splitter, em cada fibra da ficha do cabo e em cada
+emenda da tela de fusões (que volta ao mapa com `?trace=SPLICE:<id>`).
+
+### 2.4.4 Impacto de manutenção (`features/impact`, `core/network/impact-view.ts`)
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `core/api/impact-types.ts` | Apelidos dos tipos gerados do impacto (`npm run api:types`). |
+| `core/api/resources/impact-api.ts` | `ImpactApi.impact(kind, id)`, com `kind` = `cables`, `boxes` ou `olts`. |
+| `core/network/impact-view.ts` | Frases de resumo e de totais, aviso de corte, marcadores (caixa, cliente, OLT) e traçado do cabo alvo. |
+| `features/impact/impact-store.ts` | Consulta atual; uma consulta nova cancela a anterior. Provido pela página do mapa. |
+| `features/impact/impact-sheet.ts` | Ficha: resumo, totais, aviso de corte e lista de clientes por caixa. Clicar numa caixa enquadra no mapa. |
+
+Entradas: "Ver impacto de manutenção" (ícone de alerta) no cabeçalho da ficha do cabo, da caixa e da OLT.
+O mapa destaca o traçado do cabo alvo (roxo) e mostra caixas (amarelo), clientes (verde-azulado) e
+OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo foco do rastreio.
 
 ### 2.5 Ficha da OLT (`features/network-map/olt-sheet`)
 
@@ -356,6 +386,24 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
   dos itens novos: Instalado; fibras por grupo de cabo: 12. Item sem nome recebe o próximo número livre
   do tipo ("CTO importada N", "Cabo importado N"), pulando nomes já usados na rede e no arquivo. Tudo ou nada: uma requisição; acima de
   10.000 itens não envia. Erros do servidor são traduzidos em `error-messages.ts`.
+
+- **RI-36 Rastreio da fibra.** Só leitura: nada é gravado. Uma ficha por vez: abrir o rastreio fecha
+  a ficha do cabo, da caixa ou da OLT, e selecionar um desses fecha o rastreio. O traçado usa a
+  cor da própria fibra com contorno escuro; o resto do mapa esmaece (mesmo foco da seleção, RI-31). Sentido "Até a OLT"
+  ou "Até os clientes" (muda o caminho, não a cor). Só a última consulta chega à tela: resposta de uma consulta
+  anterior é descartada. Splitter descendo mostra o resumo ("8 saídas: 5 com cliente, 3 livres");
+  "Ver clientes desta saída" abre a saída (`SPLITTER_PORT`) e "Voltar" retorna. Sem saída aberta, "Voltar"
+  fecha o rastreio e reabre o item de origem (cabo, caixa ou OLT), guardado ao abrir. A porta PON
+  ligada a uma fibra abre o rastreio dessa fibra no sentido descendo (`FIBER`, `DOWNSTREAM`). Saída livre não abre.
+  Quebras viram marcador vermelho no mapa, na posição do item ou, sem posição, na última caixa do
+  caminho; sem nenhuma posição ficam só na lista. 404 mostra "Não encontramos este item na rede.".
+
+- **RI-37 Impacto de manutenção.** Só leitura. Um cliente depende de um item quando o caminho dele até
+  a OLT passa por esse item (cabo, caixa ou OLT); vale só o caminho gravado, sem rota alternativa. A
+  ficha agrupa os clientes por caixa de atendimento. A lista corta em 2000 clientes e avisa; os totais
+  continuam exatos. Abrir o impacto fecha o rastreio e as outras fichas, e o contrário também vale.
+  Item sem clientes mostra "Nenhum cliente depende deste item."; cliente ou caixa sem posição fica só
+  na lista. 404 mostra "Não encontramos este item na rede.".
 
 ## 4. Testes
 

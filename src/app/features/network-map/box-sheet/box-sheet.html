@@ -9,11 +9,19 @@
           {{ group().label }} · {{ status().label }}
         </p>
       </div>
+      <button mat-icon-button type="button" matTooltip="Rastrear o caminho" aria-label="Rastrear o caminho"
+        data-trace-box (click)="trace.emit()">
+        <mat-icon>route</mat-icon>
+      </button>
       @if (canEdit()) {
         <button mat-icon-button type="button" matTooltip="Editar dados" aria-label="Editar dados" (click)="editData.emit()">
           <mat-icon>edit</mat-icon>
         </button>
       }
+      <button mat-icon-button type="button" matTooltip="Ver impacto de manutenção" aria-label="Ver impacto de manutenção"
+        data-impact (click)="impact.emit()">
+        <mat-icon>warning_amber</mat-icon>
+      </button>
       <button mat-icon-button type="button" matTooltip="Fechar ficha" aria-label="Fechar ficha" (click)="closed.emit()">
         <mat-icon>close</mat-icon>
       </button>
@@ -181,6 +189,12 @@
           <strong>{{ splitterName(splitter) }}</strong>
           <app-occupancy-badge [occupied]="splitterUse(splitter).occupied" [capacity]="splitterUse(splitter).capacity"
             unit="saídas em uso" />
+          @if (splitter.id) {
+            <button mat-icon-button type="button" matTooltip="Rastrear este splitter" aria-label="Rastrear este splitter"
+              data-trace-splitter (click)="traceSplitter.emit(splitter.id)">
+              <mat-icon>route</mat-icon>
+            </button>
+          }
           @if (canEdit()) {
             <button mat-icon-button type="button" matTooltip="Excluir splitter" aria-label="Excluir splitter"
               (click)="deleteSplitter(splitter)">
