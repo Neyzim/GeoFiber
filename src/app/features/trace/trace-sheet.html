@@ -1,4 +1,5 @@
-<aside class="sheet" aria-label="Por onde passa o sinal">
+<aside class="sheet" aria-label="Por onde passa o sinal" appSheetDrag (sheetDismiss)="closed.emit()">
+  <div class="sheet__grip" data-sheet-grip aria-hidden="true"></div>
   <div class="sheet__top">
     <header class="sheet__header">
       <div class="sheet__titles">

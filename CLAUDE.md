@@ -16,7 +16,8 @@ Documentação de rede FTTH sobre um mapa. Dois públicos: o **técnico** que do
   implementa lá); não contornar no front.
 - Textos de tela em **pt-BR simples**; nenhum código do backend (`START`, `RATIO_1_8`…) aparece na
   tela; pontas A/B só em modo avançado.
-- Autenticação virá depois: edição passa por `NetworkMapState.canEdit` (hoje sempre `true`).
+- Login obrigatório (`core/auth`): o interceptor põe Bearer e `withCredentials` em toda chamada à API;
+  `canEdit` segue `true` (o backend decide o dono). Token só em memória, nunca em storage.
 
 ## Comandos
 
@@ -42,13 +43,14 @@ leaflet.markercluster (CommonJS liberado no `angular.json`), Vitest via `ng test
 | Caminho | O quê |
 |---|---|
 | `src/app/core/api/` | Cliente HTTP por recurso (`resources/*-api.ts`), tipos gerados, tradução de erros (`error-messages.ts`). |
+| `src/app/core/auth/` | `auth-session` (sessão, refresh único, renovação), `auth.interceptor`, `auth-guards` (`authGuard`, `guestGuard`, `safeReturnUrl`), `auth-api`, `jwt`, `roles`. `adminGuard`. Página `/entrar` em `features/auth/`; `/usuarios` em `features/users/` (`users-store`, `users-page`); diálogos de cadastro e troca de senha em `shared/users/`. |
 | `src/app/core/network/` | Regras puras e estado do mapa: `network-catalog` (grupos, funções, situações, estilo das linhas), `map-element`, `network-map-repository` (único ponto que fala com a API para o mapa), `network-map-state` (seleção, busca, filtros), `optical-catalog`, `cable-route`, `box-interior`, `olt-ports`, `customer-rules`, `glossary`, `view-summary`. |
 | `src/app/features/network-map/` | Página do mapa e as fichas laterais: `cable-sheet/`, `box-sheet/` (com `fiber-link-dialog`), `olt-sheet/`, `customer-sheet/`; `sheet-support.ts`. |
 | `src/app/core/import/` | Importação de KMZ/KML: `network-file` (zip e encoding), `kml-reader`, `import-groups`, `import-match` (duplicados), `import-request` (pedido e ligação de pontas), `import-preview`. |
 | `src/app/features/trace/` | Rastreio da fibra: `trace-store` (consulta, sentido, "Voltar"), `trace-sheet`. Regras em `core/network/trace-view` e `trace-map`. |
 | `src/app/features/impact/` | Impacto de manutenção: `impact-store` (consulta), `impact-sheet` (clientes por caixa). Regras em `core/network/impact-view`. |
 | `src/app/features/network-import/` | Tela `/importar`: `network-import-store` (estado), `network-import-page`, `import-group-row`. |
-| `src/app/features/box-splices/` | Tela de fusões `/caixas/:boxId/fusoes`: `box-splices-page`, `cable-strip`, `tray-board`, `splice-picker`, `splice-detail`. Regras em `core/network/splice-board.ts`; volta ao mapa por `core/services/map-return.ts`. |
+| `src/app/features/box-splices/` | Diagrama de fusões `/caixas/:boxId/fusoes`: `box-splices-page`, `fiber-list` (abas por cabo), `fiber-drawer` (gaveta), `splice-detail`. Regras em `core/network/{fiber-destinations,splice-plan,splice-board}.ts`; volta ao mapa por `core/services/map-return.ts`. |
 | `src/app/shared/map/` | `geo-map` (Leaflet), marcadores, barra de ferramentas, legenda, barra de status. |
 | `src/app/shared/network/` | Formulários de OLT, caixa e cliente (`form-support.ts` compartilhado). |
 | `src/app/shared/cable/` | Formulário do cabo. |
@@ -56,7 +58,7 @@ leaflet.markercluster (CommonJS liberado no `angular.json`), Vitest via `ng test
 | `src/app/shared/common/` | `app-fiber-dot` (bolinha ABNT), `app-occupancy-badge` ("3/12"), `app-sheet-tabs`. |
 | `src/app/shared/diagram/` | `app-unifilar-summary` (linha do topo da ficha), `app-diagram-line` (uma emenda). |
 | `src/theme/_tokens.scss` | Tokens `--gf-*` (cores `light-dark()`, raios, sombra, fontes) e ponte para `--mat-sys-*`. Nunca `prefers-color-scheme` em estilo. |
-| `features/network-map/sheet-frame.scss` | Moldura comum das fichas (topo fixo, corpo rola, 400px / gaveta 60dvh < 900px). |
+| `features/network-map/sheet-frame.scss` | Moldura comum das fichas (topo fixo, corpo rola, 400px / gaveta arrastável < 900px: `appSheetDrag` + `core/network/sheet-drag.ts`). |
 | `core/network/{unifilar,occupancy,line-state-style}.ts` | Lados da linha do topo, contas de ocupação, forma da linha por estado. |
 | `docs/SPECS.md` | Especificação técnica: módulos (§2) e regras de interface RI-01…RI-25 (§3). |
 | `docs/GUIA.md` | Guia de uso para quem opera o sistema. |
@@ -109,12 +111,22 @@ ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o 
   excluir; legenda, busca, filtros, tema escuro).
 - **Etapa 2:** ficha do cabo ✅ (lista de elementos editável, destaque no mapa, tubos e fibras).
 - **Etapa 3:** ficha da caixa ✅ (bandejas, fusões, conectores, splitters, portas de atendimento).
-  - **Tela de fusões** ✅ `/caixas/:boxId/fusoes` (plano `docs/superpowers/plans/2026-11-20-splice-screen-impl.md`,
-    design `2026-11-20-tela-de-fusoes-design.md`, RI-32/33). Não commitada; falta conferir no navegador.
+  - **Diagrama de fusões** ✅ etapa 1 `/caixas/:boxId/fusoes` (plano `docs/superpowers/plans/2026-11-21-diagrama-de-fusoes.md`,
+    design `2026-11-20-diagrama-de-fusoes-design.md`, RI-32/33): lista por cabo, gaveta, emenda por dois
+    toques; substituiu a tela de bandejas. Não commitado; falta conferir no navegador. Etapa 2 (desenho
+    clássico no computador) pendente.
 - **Etapa 4:** ficha da OLT (portas PON por placa, criação em lote, ligar fibra).
 - **Etapa 5:** clientes (cadastro pelo mapa, CTO mais próxima, porta livre com sinal, situação,
   histórico).
 - **Etapa 6:** ajuda para leigos (glossário, "?" nos termos, "O que estou vendo?").
+- **Segurança, etapa 1** ✅ (design `docs/superpowers/specs/2026-11-21-seguranca-frontend-design.md`,
+  plano `docs/superpowers/plans/2026-11-21-seguranca-frontend.md`, RI-38, GUIA "Entrar e sair"): login,
+  sessão em memória, refresh único, renovação, logout, guardas, 401/403, cadastro de usuário. Não
+  commitada; conferir no navegador. **Etapa 2** ✅ gerenciar usuários `/usuarios` (design
+  `docs/superpowers/specs/2026-11-21-gerenciar-usuarios-design.md`, plano
+  `docs/superpowers/plans/2026-11-21-gerenciar-usuarios.md`, RI-39, GUIA "Gerenciar usuários"): lista,
+  desativar/reativar, trocar senha, cadastrar. Não commitada; conferir no navegador. Nome de quem
+  entrou espera `GET /auth/me`.
 
 **Importação de KMZ/KML** (design `docs/superpowers/specs/2026-11-20-importar-kmz-design.md`, plano
 `docs/superpowers/plans/2026-11-20-importar-kmz.md`, RI-35, GUIA): leitura, agrupamento, duplicados,
@@ -133,7 +145,13 @@ próprio (Leaflet não roda no jsdom): conferir no navegador.
 por tipo no mapa, traçado roxo do cabo alvo, entradas no cabo, caixa e OLT). Não commitado. A página do
 mapa não tem spec (Leaflet não roda no jsdom): conferir no navegador.
 
-Testes: 85 arquivos / 466 passando; build ok. Falta a conferência no navegador (ver Pendências).
+**Ajustes do mapa no celular e excluir pela ficha** (design `docs/superpowers/specs/2026-11-22-ajustes-mapa-celular-design.md`,
+plano `docs/superpowers/plans/2026-11-22-ajustes-mapa-celular.md`, RI-40, GUIA "Como usar o mapa"): ⋮ → Excluir
+nas fichas de caixa/OLT/cabo, painel lateral começa recolhido, ajuda some com ficha aberta no celular,
+"Toque aqui para editar" no balão, foco acima da gaveta, gaveta arrastável (`core/network/sheet-drag`,
+`shared/common/sheet-drag.directive`), faixa "Criar …" (`shared/map/create-banner`). Não commitado; conferir no navegador.
+
+Testes: 103 arquivos / 598 passando; build ok. Falta a conferência no navegador (ver Pendências).
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 
@@ -142,7 +160,7 @@ Testes: 85 arquivos / 466 passando; build ok. Falta a conferência no navegador 
 - Posição do cliente vem do clique no mapa e não é editável no formulário.
 - O balão do cabo usa a lista carregada pela ficha (uma requisição só).
 - Unifilar: painel lateral de 400px no computador; gaveta embaixo só no celular.
-- Unifilar: gaveta do celular com 60dvh (não 240–280px), para caber topo + abas + conteúdo.
+- Unifilar: gaveta do celular arrastável: abre com 35%, vai livremente até 90%, soltar abaixo de 20% fecha (pedido do dono em 2026-11-22; antes era 60dvh fixo).
 - Unifilar: destaque verde mais escuro (`#177a54`) para botões/aba ativa no claro; `#1f9d6b` fica como situação "normal".
 - Unifilar: duas cores novas de situação, `info` (azul, instalado/ocupado) e `inactive` (cinza).
 - Unifilar: fontes IBM Plex Sans + IBM Plex Mono.
@@ -158,6 +176,11 @@ Testes: 85 arquivos / 466 passando; build ok. Falta a conferência no navegador 
 - Mapa: ajuda no canto inferior esquerdo; a escala do Leaflet foi para o canto inferior direito; escolha de tipo vira popup de 216px ao lado da barra.
 - Unifilar: `.impecable.md` não foi renomeado nem apagado (regras consolidadas no spec e no `DESIGN.md`).
 
+- Usuários: entrada só no painel lateral (como Importar KMZ/KML); saiu do menu de conta para não duplicar. Como o painel agora começa recolhido, Importar e Usuários também aparecem como ícones no painel recolhido.
+- Mapa (2026-11-22): a ajuda ("O que estou vendo?", "Glossário") some com ficha aberta só no celular; no computador fica.
+- Mapa (2026-11-22): menu ⋮ das fichas só com "Excluir"; a faixa "Criar …" vale para elemento e cabo ("Criar cabo de distribuição").
+- Mapa (2026-11-22): entrar na criação (elemento ou cabo) tira a seleção; rastreio e impacto abertos continuam.
+- Mapa (2026-11-22): o X da janela de escolha do tipo só fecha a janela (a faixa "Criar …" fica); o X da faixa ou ESC encerra a criação.
 - Importação: selects nativos (`<select>`) em vez de `mat-select`: testes diretos e acessível; visual igual.
 - Importação: a prévia mostra só itens novos e movidos escolhidos (iguais e ignorados ficam de fora).
 - Importação: pedido sem nada a importar é bloqueado com mensagem, não enviado.
@@ -169,8 +192,11 @@ Testes: 85 arquivos / 466 passando; build ok. Falta a conferência no navegador 
 - **Validar no navegador a importação de KMZ/KML** (arquivo real do OZMap e do Google Earth, grupos,
   duplicados ao importar de novo, "Ver no mapa", erro 409) depois que o backend publicar o endpoint.
 
-- **Validar no navegador a tela de fusões** (celular e computador, claro e escuro, link direto,
+- **Validar no navegador o diagrama de fusões** (celular e computador, claro e escuro, link direto,
   voltar ao mapa, emendar, erro 409 no painel).
+
+- **Validar no navegador os ajustes do mapa no celular** (gaveta arrastável nas seis fichas, foco acima da
+  gaveta, "Toque aqui para editar" sem criar/desselecionar, faixa "Criar …", ⋮ → Excluir, ajuda escondida).
 
 - **Validar no navegador o redesign Unifilar** (lista no Task 14, Step 5 do plano
   `2026-11-20-redesign-unifilar-app.md`) até o dono conferir.

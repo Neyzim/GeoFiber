@@ -1,0 +1,60 @@
+<div class="users">
+  <header class="users__header">
+    <a mat-icon-button routerLink="/" matTooltip="Voltar ao mapa" aria-label="Voltar ao mapa" class="users__back">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <div class="users__titles">
+      <h1>Usuários</h1>
+      <p>Desative a conta de quem saiu da equipe e troque a senha de quem esqueceu.</p>
+    </div>
+    <button mat-flat-button type="button" data-action="cadastrar" (click)="create()">
+      <mat-icon>person_add</mat-icon>
+      Cadastrar
+    </button>
+  </header>
+
+  @if (store.loadError(); as message) {
+    <div class="users__state users__state--error" role="alert">
+      <p>{{ message }}</p>
+      <button mat-stroked-button type="button" data-action="tentar-novamente" (click)="store.load()">
+        Tentar novamente
+      </button>
+    </div>
+  } @else if (store.loading() && store.users().length === 0) {
+    <p class="users__state" role="status">Carregando usuários...</p>
+  } @else {
+    <ul class="users__list" aria-label="Usuários">
+      @for (user of store.users(); track user.id) {
+        <li class="users__row" [class.users__row--inactive]="!user.active" [attr.data-user-id]="user.id">
+          <div class="users__who">
+            <span class="users__name">
+              {{ user.name }}@if (isMe(user)) {<span class="users__me"> (você)</span>}
+            </span>
+            <span class="users__email">{{ user.email }}</span>
+          </div>
+          <span class="users__summary">{{ summary(user) }}</span>
+          <div class="users__actions">
+            <button mat-stroked-button type="button" data-action="trocar-senha"
+              [disabled]="store.busyId() === user.id" (click)="changePassword(user)">
+              <mat-icon>key</mat-icon>
+              Trocar senha
+            </button>
+            @if (user.active) {
+              @if (!isMe(user)) {
+                <button mat-stroked-button type="button" data-action="desativar" class="users__danger"
+                  [disabled]="store.busyId() === user.id" (click)="deactivate(user)">
+                  Desativar
+                </button>
+              }
+            } @else {
+              <button mat-stroked-button type="button" data-action="reativar"
+                [disabled]="store.busyId() === user.id" (click)="reactivate(user)">
+                Reativar
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>

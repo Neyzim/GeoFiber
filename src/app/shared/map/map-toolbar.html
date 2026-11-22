@@ -89,4 +89,31 @@
       <mat-icon>legend_toggle</mat-icon>
     </button>
   </div>
+
+  <mat-divider />
+
+  <div class="map-toolbar__group">
+    <button
+      mat-icon-button
+      type="button"
+      class="map-toolbar__button"
+      data-action="conta"
+      aria-label="Conta"
+      matTooltip="Conta"
+      matTooltipPosition="right"
+      [matMenuTriggerFor]="account"
+    >
+      <mat-icon>account_circle</mat-icon>
+    </button>
+  </div>
 </div>
+
+<mat-menu #account="matMenu" xPosition="after">
+  @if (roleLabel()) {
+    <p class="map-toolbar__role">{{ roleLabel() }}</p>
+  }
+  <button mat-menu-item type="button" data-action="sair" (click)="signOut.emit()">
+    <mat-icon>logout</mat-icon>
+    <span>Sair</span>
+  </button>
+</mat-menu>

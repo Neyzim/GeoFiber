@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { SheetDragDirective } from '../../shared/common/sheet-drag.directive';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -12,7 +13,7 @@ import { ImpactStore } from './impact-store';
  */
 @Component({
   selector: 'app-impact-sheet',
-  imports: [MatIconModule, MatProgressBarModule, MatTooltipModule],
+  imports: [SheetDragDirective, MatIconModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: './impact-sheet.html',
   styleUrls: ['../network-map/sheet-frame.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

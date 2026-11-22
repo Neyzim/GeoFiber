@@ -84,8 +84,9 @@
 
 @media (max-width: 899.98px) {
   :host { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1150; }
+  // Gaveta arrastável (appSheetDrag): abre em 35%, vai até 90%; abaixo de 20% fecha.
   .sheet {
-    width: 100%; max-width: none; height: 60dvh; max-height: none;
+    width: 100%; max-width: none; height: var(--gf-sheet-height, 35dvh); max-height: none;
     border-width: 1px 0 0; border-radius: var(--gf-radius-panel) var(--gf-radius-panel) 0 0;
   }
 }

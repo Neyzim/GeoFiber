@@ -12,7 +12,7 @@ export const TEST_API = 'http://api.test/api/v1';
 export interface EndpointCase<T> {
   name: string;
   call: (api: T) => Observable<unknown>;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** Caminho depois de `/api/v1`, ex.: `/boxes/b1`. */
   path: string;
   body?: unknown;

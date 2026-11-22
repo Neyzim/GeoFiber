@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/users/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Redefine a senha
+         * @description Troca a senha e encerra as sessões abertas do usuário.
+         */
+        put: operations["resetPassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tubes/{tubeId}/fibers/{fiberId}": {
         parameters: {
             query?: never;
@@ -240,6 +260,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista os usuários
+         * @description Todos os usuários, ativos e inativos, por nome. Sem senha.
+         */
+        get: operations["list"];
+        put?: never;
+        /**
+         * Cadastra um usuário
+         * @description Cria um MEMBER ou outro ADMIN. E-mail precisa ser único.
+         */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tubes/{tubeId}/fibers": {
         parameters: {
             query?: never;
@@ -251,7 +295,7 @@ export interface paths {
         get: operations["findByTube"];
         put?: never;
         /** Cadastra uma fibra no tubo (as pontas A e B são criadas junto) */
-        post: operations["create"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -269,7 +313,7 @@ export interface paths {
         get: operations["findAll"];
         put?: never;
         /** Cadastra uma OLT */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -287,7 +331,7 @@ export interface paths {
         get: operations["findByOlt"];
         put?: never;
         /** Cadastra uma porta PON, opcionalmente ligada a uma fibra (ponta A por padrão) */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -325,7 +369,7 @@ export interface paths {
         get: operations["findAll_1"];
         put?: never;
         /** Cadastra um cliente, opcionalmente numa porta de atendimento */
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -343,7 +387,7 @@ export interface paths {
         get: operations["findAll_2"];
         put?: never;
         /** Cadastra um cabo com traçado e capacidade de fibras */
-        post: operations["create_4"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -361,7 +405,7 @@ export interface paths {
         get: operations["findByCable_1"];
         put?: never;
         /** Cadastra um tubo no cabo */
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -378,7 +422,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Cria tubos e todas as suas fibras (cores ABNT) numa única transação */
-        post: operations["create_6"];
+        post: operations["create_7"];
         delete?: never;
         options?: never;
         head?: never;
@@ -396,7 +440,7 @@ export interface paths {
         get: operations["findAll_3"];
         put?: never;
         /** Cadastra uma caixa (CTO, CEO ou DIO) */
-        post: operations["create_7"];
+        post: operations["create_8"];
         delete?: never;
         options?: never;
         head?: never;
@@ -414,7 +458,7 @@ export interface paths {
         get: operations["findByBox"];
         put?: never;
         /** Cadastra uma bandeja na caixa */
-        post: operations["create_8"];
+        post: operations["create_9"];
         delete?: never;
         options?: never;
         head?: never;
@@ -432,7 +476,7 @@ export interface paths {
         get: operations["findByBox_1"];
         put?: never;
         /** Cadastra um splitter; em CTO gera uma porta de atendimento por saída */
-        post: operations["create_9"];
+        post: operations["create_10"];
         delete?: never;
         options?: never;
         head?: never;
@@ -450,7 +494,7 @@ export interface paths {
         get: operations["findByBox_2"];
         put?: never;
         /** Registra uma fusão na bandeja; posição pode ser fornecida ou será a próxima livre */
-        post: operations["create_10"];
+        post: operations["create_11"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,7 +512,7 @@ export interface paths {
         get: operations["findByBox_3"];
         put?: never;
         /** Cadastra uma porta de atendimento na CTO */
-        post: operations["create_11"];
+        post: operations["create_12"];
         delete?: never;
         options?: never;
         head?: never;
@@ -486,11 +530,91 @@ export interface paths {
         get: operations["findByBox_4"];
         put?: never;
         /** Liga duas pontas de fibra por conector */
-        post: operations["create_12"];
+        post: operations["create_13"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Renova o access token
+         * @description Lê o refresh token do cookie e gira um novo par. Reuso de token antigo encerra todas as sessões do usuário.
+         */
+        post: operations["refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sai da sessão atual
+         * @description Revoga o refresh token do cookie e apaga o cookie.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entra com e-mail e senha
+         * @description Devolve o access token (15 min) e grava o refresh token (14 dias) em cookie httpOnly.
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Ativa ou desativa um usuário
+         * @description Desativar revoga as sessões do usuário. Não é possível desativar a própria conta.
+         */
+        patch: operations["setActive"];
         trace?: never;
     };
     "/api/v1/trace/{kind}/{id}": {
@@ -696,6 +820,9 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ResetPasswordRequest: {
+            password: string;
+        };
         FiberRequest: {
             /** Format: int32 */
             numberInTube: number;
@@ -1063,6 +1190,28 @@ export interface components {
             /** Format: uuid */
             customerId?: string;
         };
+        CreateUserRequest: {
+            /** @example Maria Silva */
+            name: string;
+            /**
+             * Format: email
+             * @example maria@equipe.com
+             */
+            email: string;
+            /** @example senha-com-dez-chars */
+            password: string;
+            /** @enum {string} */
+            role: "ADMIN" | "MEMBER";
+        };
+        UserResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            email?: string;
+            /** @enum {string} */
+            role?: "ADMIN" | "MEMBER";
+            active?: boolean;
+        };
         CableItem: {
             /** @description Chave única na requisição */
             ref: string;
@@ -1273,6 +1422,23 @@ export interface components {
             fiberBEnd?: "A" | "B";
             /** Format: double */
             attenuationDb?: number;
+        };
+        TokenResponse: {
+            accessToken?: string;
+            /** Format: int64 */
+            expiresIn?: number;
+        };
+        LoginRequest: {
+            /**
+             * Format: email
+             * @example admin@equipe.com
+             */
+            email: string;
+            /** @example senha-do-admin */
+            password: string;
+        };
+        SetActiveRequest: {
+            active: boolean;
         };
         FiberInfo: {
             /** @enum {string} */
@@ -1491,6 +1657,57 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     update: {
         parameters: {
             query?: never;
@@ -2909,6 +3126,104 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserResponse"][];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
     findByTube: {
         parameters: {
             query?: never;
@@ -2958,7 +3273,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -3058,7 +3373,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -3158,7 +3473,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -3309,7 +3624,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -3407,7 +3722,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -3507,7 +3822,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -3560,7 +3875,7 @@ export interface operations {
             };
         };
     };
-    create_6: {
+    create_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -3660,7 +3975,7 @@ export interface operations {
             };
         };
     };
-    create_7: {
+    create_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -3760,7 +4075,7 @@ export interface operations {
             };
         };
     };
-    create_8: {
+    create_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -3862,7 +4177,7 @@ export interface operations {
             };
         };
     };
-    create_9: {
+    create_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -3964,7 +4279,7 @@ export interface operations {
             };
         };
     };
-    create_10: {
+    create_11: {
         parameters: {
             query?: never;
             header?: never;
@@ -4066,7 +4381,7 @@ export interface operations {
             };
         };
     };
-    create_11: {
+    create_12: {
         parameters: {
             query?: never;
             header?: never;
@@ -4168,7 +4483,7 @@ export interface operations {
             };
         };
     };
-    create_12: {
+    create_13: {
         parameters: {
             query?: never;
             header?: never;
@@ -4190,6 +4505,206 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                geofiber_refresh?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                geofiber_refresh?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Recurso inexistente ou que não pertence ao recurso pai (ProblemDetail) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflito com dados existentes, como ligação ocupada ou dependência (ProblemDetail) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    setActive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetActiveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserResponse"];
                 };
             };
             /** @description Payload inválido ou regra de entrada violada (ProblemDetail; validação traz `errors`) */

@@ -8,6 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { SheetDragDirective } from '../../../shared/common/sheet-drag.directive';
 import { TermHintComponent } from '../../../shared/help/term-hint';
 import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
 import { SheetTab, SheetTabsComponent } from '../../../shared/common/sheet-tabs';
@@ -46,7 +47,7 @@ import { OltSheetStore } from './olt-sheet-store';
 /** Ficha da OLT selecionada: abas Resumo (cabos que saem) e Portas PON (por placa). */
 @Component({
   selector: 'app-olt-sheet',
-  imports: [
+  imports: [SheetDragDirective, 
     TermHintComponent,
     OccupancyBadgeComponent,
     SheetTabsComponent,
@@ -72,6 +73,8 @@ export class OltSheetComponent {
   readonly canEdit = input(true);
 
   readonly closed = output<void>();
+  /** "Mais ações" → "Excluir": a página confirma e exclui. */
+  readonly remove = output<void>();
   readonly editData = output<void>();
   readonly openCable = output<string>();
   /** "Ver impacto": pede a ficha de impacto deste item. */

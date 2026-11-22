@@ -52,7 +52,7 @@ function root(fixture: Fixture): HTMLElement {
 }
 
 function text(fixture: Fixture): string {
-  return root(fixture).textContent ?? '';
+  return (root(fixture).textContent ?? '').replace(/\s+/g, ' ');
 }
 
 function click(fixture: Fixture, selector: string): void {
@@ -60,10 +60,10 @@ function click(fixture: Fixture, selector: string): void {
   fixture.detectChanges();
 }
 
-function tabs(fixture: Fixture): string[] {
-  return Array.from(root(fixture).querySelectorAll('[data-tray-tab]')).map(
-    (tab) => tab.textContent?.trim() ?? '',
-  );
+/** Chama o `done` que a página passou ao store. */
+function finishSplice(store: FakeBoxStore, error: string | null, spliceId?: string) {
+  const done = store.spliceFibers.mock.calls[0][2] as (error: string | null, id?: string) => void;
+  done(error, spliceId);
 }
 
 describe('BoxSplicesPage', { timeout: 20000 }, () => {
@@ -76,65 +76,103 @@ describe('BoxSplicesPage', { timeout: 20000 }, () => {
     expect(header).toContain('Ativo');
   });
 
-  it('shows one tab per tray with its occupancy', () => {
+  it('lista as fibras do primeiro cabo que chega com o destino', () => {
     const { fixture } = render();
-    expect(tabs(fixture)).toEqual(['Bandeja 1 · 1/6', 'Bandeja 2 · 0/12']);
-    expect(root(fixture).querySelectorAll('[data-position]').length).toBe(6);
-
-    click(fixture, '[data-tray-tab="2"]');
-    expect(root(fixture).querySelectorAll('[data-position]').length).toBe(12);
+    expect(root(fixture).querySelector('[data-cable-tab="c1"]')?.getAttribute('aria-selected')).toBe('true');
+    expect(root(fixture).querySelector('[data-fiber="a2"]')?.textContent).toContain('→ CABO-02 · Verde 3');
+    expect(root(fixture).querySelector('[data-fiber="a1"]')?.textContent).toContain('livre');
   });
 
-  it('opens the fiber choice on an empty position and the splice card on a used one', () => {
+  it('tocar numa fibra abre a gaveta; Fechar fecha', () => {
     const { fixture } = render();
-    click(fixture, '[data-position="1"]');
-    expect(root(fixture).querySelector('app-splice-picker')).toBeTruthy();
-    expect(text(fixture)).toContain('Emenda na posição 1 · Bandeja 1');
+    click(fixture, '[data-fiber="a1"]');
+    expect(text(fixture)).toContain('Esta fibra está livre nesta caixa.');
+    click(fixture, '[data-action="fechar"]');
+    expect(root(fixture).querySelector('app-fiber-drawer')).toBeNull();
+  });
 
-    click(fixture, '[data-position="2"]');
-    expect(root(fixture).querySelector('app-splice-picker')).toBeNull();
+  it('emendar: Emendar → escolhe na aba do outro cabo → confirma e chama spliceFibers com bandeja e pontas', () => {
+    const { fixture, store } = render();
+    click(fixture, '[data-fiber="a1"]');
+    click(fixture, '[data-action="emendar"]');
+    expect(text(fixture)).toContain('Escolha a fibra que vai emendar com CABO-01 · 1 Verde');
+    expect(root(fixture).querySelector('[data-cable-tab="c2"]')?.getAttribute('aria-selected')).toBe('true');
+    expect(root(fixture).querySelector<HTMLButtonElement>('[data-fiber="b3"]')!.disabled).toBe(true);
+
+    click(fixture, '[data-fiber="b1"]');
+    expect(text(fixture)).toContain('Nova emenda');
+    expect(text(fixture)).toContain('Vai para a bandeja 1, na próxima posição livre.');
+    click(fixture, '[data-action="confirmar"]');
+    expect(store.spliceFibers).toHaveBeenCalledWith(
+      { kind: 'existing', trayNumber: 1 },
+      { inputFiberId: 'a1', inputFiberEnd: 'B', outputFiberId: 'b1', outputFiberEnd: 'A' },
+      expect.any(Function),
+    );
+  });
+
+  it('após emendar, a gaveta mostra a emenda nova', () => {
+    const { fixture, store } = render();
+    click(fixture, '[data-fiber="a1"]');
+    click(fixture, '[data-action="emendar"]');
+    click(fixture, '[data-fiber="b1"]');
+    click(fixture, '[data-action="confirmar"]');
+    finishSplice(store, null, 's1');
+    fixture.detectChanges();
+    expect(text(fixture)).not.toContain('Escolha a fibra');
     expect(text(fixture)).toContain('Posição 2 · Bandeja 1');
   });
 
-  it('closes the card when the splice is gone after deleting it', () => {
+  it('erro ao emendar aparece na gaveta e mantém a escolha', () => {
     const { fixture, store } = render();
-    click(fixture, '[data-position="2"]');
-    click(fixture, '[data-action="excluir-emenda"]');
-    expect(store.deleteSplice).toHaveBeenCalledWith('s1');
-
-    store.splices.set([]);
+    click(fixture, '[data-fiber="a1"]');
+    click(fixture, '[data-action="emendar"]');
+    click(fixture, '[data-fiber="b1"]');
+    click(fixture, '[data-action="confirmar"]');
+    finishSplice(store, 'A bandeja 1 está cheia.');
     fixture.detectChanges();
-    expect(root(fixture).querySelector('app-splice-detail')).toBeNull();
+    expect(root(fixture).querySelector('[role="alert"]')?.textContent).toContain('A bandeja 1 está cheia.');
+    expect(text(fixture)).toContain('Nova emenda');
   });
 
-  it('creates a tray with the chosen capacity and deletes an empty one', () => {
+  it('Cancelar sai do modo escolher sem chamar nada', () => {
     const { fixture, store } = render();
-    click(fixture, '[data-action="nova-bandeja"]');
-    click(fixture, '[data-capacity="24"]');
-    expect(store.addTray).toHaveBeenCalledWith(24);
+    click(fixture, '[data-fiber="a1"]');
+    click(fixture, '[data-action="emendar"]');
+    click(fixture, '[data-action="cancelar-escolha"]');
+    expect(text(fixture)).not.toContain('Escolha a fibra');
+    expect(root(fixture).querySelector<HTMLButtonElement>('[data-fiber="b3"]')?.disabled ?? false).toBe(false);
+    expect(store.spliceFibers).not.toHaveBeenCalled();
+  });
 
-    expect(root(fixture).querySelector('[data-action="excluir-bandeja"]')).toBeNull();
-    click(fixture, '[data-tray-tab="2"]');
-    click(fixture, '[data-action="excluir-bandeja"]');
+  it('rodapé das bandejas: ocupação e Excluir só na bandeja vazia', () => {
+    const { fixture, store } = render();
+    expect(text(fixture)).toContain('Bandeja 1 · 1/6');
+    expect(text(fixture)).toContain('Bandeja 2 · 0/12');
+    expect(root(fixture).querySelector('[data-tray-delete="1"]')).toBeNull();
+    click(fixture, '[data-tray-delete="2"]');
     expect(store.deleteTray).toHaveBeenCalledWith('t2');
   });
 
-  it('invites to create the first tray when there is none', () => {
-    const { fixture, store } = render({ store: fakeBoxStore({ trays: [], splices: [] }) });
-    expect(text(fixture)).toContain('Esta caixa ainda não tem bandejas.');
-    click(fixture, '[data-action="nova-bandeja"]');
-    click(fixture, '[data-capacity="12"]');
-    expect(store.addTray).toHaveBeenCalledWith(12);
+  it('caixa sem cabos mostra a frase e Voltar ao mapa', () => {
+    const { fixture } = render({ store: fakeBoxStore({ cables: [], fibers: {} }) });
+    expect(text(fixture)).toContain('Nenhum cabo chega aqui ainda.');
+    expect(root(fixture).querySelector('[data-action="voltar-ao-mapa"]')).toBeTruthy();
   });
 
-  it('only reads without edit permission', () => {
+  it('sem permissão: sem Emendar nem Excluir', () => {
     const { fixture } = render({ canEdit: false });
-    expect(root(fixture).querySelector('[data-action="nova-bandeja"]')).toBeNull();
-    expect(text(fixture)).not.toContain('emendar aqui');
-    click(fixture, '[data-position="2"]');
+    click(fixture, '[data-fiber="a1"]');
+    expect(root(fixture).querySelector('[data-action="emendar"]')).toBeNull();
+    expect(root(fixture).querySelector('[data-tray-delete]')).toBeNull();
+    click(fixture, '[data-fiber="a2"]');
     expect(root(fixture).querySelector('[data-action="excluir-emenda"]')).toBeNull();
-    click(fixture, '[data-tray-tab="2"]');
-    expect(root(fixture).querySelector('[data-action="excluir-bandeja"]')).toBeNull();
+  });
+
+  it('desfazer a emenda pede confirmação e exclui', () => {
+    const { fixture, store } = render();
+    click(fixture, '[data-fiber="a2"]');
+    click(fixture, '[data-action="excluir-emenda"]');
+    expect(store.deleteSplice).toHaveBeenCalledWith('s1');
   });
 
   it('goes back to the map with the box selected, centering it when it was not selected', () => {
@@ -155,10 +193,17 @@ describe('BoxSplicesPage', { timeout: 20000 }, () => {
 
   it('shows a cable on the map from the splice card', () => {
     const { fixture, router, mapReturn } = render();
-    click(fixture, '[data-position="2"]');
+    click(fixture, '[data-fiber="a2"]');
     click(fixture, '[data-cable="c2"]');
     expect(mapReturn.take()).toEqual({ selection: { type: 'cable', id: 'c2' }, focus: true });
     expect(router.navigate).toHaveBeenCalledWith(['/']);
+  });
+
+  it('Ver o caminho de uma emenda abre o rastreio no mapa', () => {
+    const { fixture, router } = render();
+    click(fixture, '[data-fiber="a2"]');
+    click(fixture, '[data-trace-splice]');
+    expect(router.navigate).toHaveBeenCalledWith(['/'], { queryParams: { trace: 'SPLICE:s1' } });
   });
 
   it('offers to retry or go back when the box cannot be loaded', () => {

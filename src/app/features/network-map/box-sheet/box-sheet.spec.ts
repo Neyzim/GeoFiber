@@ -238,4 +238,24 @@ describe('BoxSheetComponent', { timeout: 20000 }, () => {
     fixture.detectChanges();
     expect(root.querySelector('button[aria-label="Editar dados"]')).toBeFalsy();
   });
+
+  it('"Mais ações" → "Excluir" pede a exclusão da caixa; sem permissão, não há o menu', async () => {
+    const fixture = render('CTO');
+    let removed = 0;
+    fixture.componentInstance.remove.subscribe(() => removed++);
+    await clickMenuItem(fixture, 'excluir');
+    expect(removed).toBe(1);
+
+    fixture.componentRef.setInput('canEdit', false);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('button[aria-label="Mais ações"]')).toBeFalsy();
+  });
 });
+
+async function clickMenuItem(fixture: ComponentFixture<unknown>, action: string): Promise<void> {
+  (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('button[aria-label="Mais ações"]')!.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  document.querySelector<HTMLElement>(`[data-action="${action}"]`)!.click();
+  fixture.detectChanges();
+}

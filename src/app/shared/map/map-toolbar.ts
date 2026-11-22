@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TOOL_LABELS } from '../../core/constants/map.constants';
 import { MapTool } from '../../core/models/geo.model';
@@ -17,7 +18,7 @@ interface ToolOption {
 /** Barra flutuante de ferramentas do mapa (seleção, criação e navegação). */
 @Component({
   selector: 'app-map-toolbar',
-  imports: [MatButtonModule, MatDividerModule, MatIconModule, MatTooltipModule],
+  imports: [MatButtonModule, MatDividerModule, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: './map-toolbar.html',
   styleUrl: './map-toolbar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +32,9 @@ export class MapToolbarComponent {
   /** Libera as ferramentas de criação (rede carregada e permissão de edição). */
   readonly editable = input(true);
 
+  /** Papel de quem entrou, em português ("Técnico", "Administrador"). */
+  readonly roleLabel = input('');
+
   readonly toolChange = output<MapTool>();
   readonly zoomIn = output<void>();
   readonly zoomOut = output<void>();
@@ -38,6 +42,7 @@ export class MapToolbarComponent {
   readonly fitToPins = output<void>();
   readonly toggleLayerPanel = output<void>();
   readonly toggleLegend = output<void>();
+  readonly signOut = output<void>();
 
   /** Ferramentas de seleção, criação e ajuste de posição (as de edição exigem `editable`). */
   protected readonly tools: readonly ToolOption[] = [

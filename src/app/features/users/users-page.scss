@@ -1,0 +1,147 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: var(--gf-surface-2);
+  color: var(--gf-text);
+  font-family: var(--gf-font-ui);
+}
+
+.users {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.users__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gf-border);
+}
+
+.users__back {
+  flex: none;
+}
+
+.users__titles {
+  flex: 1 1 240px;
+  min-width: 0;
+
+  h1 {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: var(--gf-text-2);
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.users__state {
+  margin: 0;
+  color: var(--gf-text-2);
+
+  &--error {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--gf-status-critical);
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.users__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--gf-border);
+  border-radius: var(--gf-radius-panel);
+  background: var(--gf-surface);
+}
+
+.users__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+
+  & + & {
+    border-top: 1px solid var(--gf-border);
+  }
+}
+
+.users__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.users__name {
+  font-weight: 500;
+}
+
+.users__me {
+  color: var(--gf-text-2);
+  font-weight: 400;
+}
+
+.users__email {
+  overflow: hidden;
+  color: var(--gf-text-2);
+  font: var(--mat-sys-body-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users__summary {
+  color: var(--gf-text-2);
+  font: var(--mat-sys-body-medium);
+}
+
+.users__row--inactive .users__summary::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--gf-status-inactive);
+  vertical-align: middle;
+}
+
+.users__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.users__danger {
+  color: var(--gf-status-critical);
+}
+
+@media (max-width: 720px) {
+  .users__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .users__actions {
+    justify-content: flex-start;
+  }
+}

@@ -8,6 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { SheetDragDirective } from '../../../shared/common/sheet-drag.directive';
 import { TermHintComponent } from '../../../shared/help/term-hint';
 import { FiberDotComponent } from '../../../shared/common/fiber-dot';
 import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
@@ -51,7 +52,7 @@ const ROUTE_LABELS = { first: 'Início', middle: 'Passa por', last: 'Fim' } as c
  */
 @Component({
   selector: 'app-cable-sheet',
-  imports: [
+  imports: [SheetDragDirective, 
     TermHintComponent,
     FiberDotComponent,
     OccupancyBadgeComponent,
@@ -80,6 +81,8 @@ export class CableSheetComponent {
   readonly canEdit = input(true);
 
   readonly closed = output<void>();
+  /** "Mais ações" → "Excluir": a página confirma e exclui. */
+  readonly remove = output<void>();
   readonly editData = output<void>();
   readonly focusItem = output<RouteItem>();
   /** "Rastrear" numa fibra: envia o id da fibra. */

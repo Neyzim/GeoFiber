@@ -16,41 +16,35 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { SpliceResponse, TrayResponse } from '../../core/api/api-types';
+import { CableView, FiberRow, boxFiberMap, boxSplitters } from '../../core/network/fiber-destinations';
 import { NetworkMapState } from '../../core/network/network-map-state';
 import { groupDefinition, statusDefinition } from '../../core/network/network-catalog';
+import { opticalColor } from '../../core/network/optical-catalog';
+import { defaultSpliceCables, fiberPick } from '../../core/network/splice-board';
+import { spliceSides, trayForNewSplice } from '../../core/network/splice-plan';
 import { MapReturnService } from '../../core/services/map-return';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/ui/confirm-dialog';
 import { BoxSheetStore } from '../network-map/box-sheet/box-sheet-store';
-import { CableStripComponent } from './cable-strip';
-import { SpliceDetailComponent } from './splice-detail';
-import { SplicePickerComponent } from './splice-picker';
-import { TrayBoardComponent } from './tray-board';
+import { DrawerTrace, FiberDrawerComponent, PendingSplice } from './fiber-drawer';
+import { FiberListComponent } from './fiber-list';
 
-/** O que o painel lateral (ou de baixo, no celular) mostra. */
-type Panel =
-  | { kind: 'pick'; trayNumber: number; position: number }
-  | { kind: 'detail'; spliceId: string }
-  | null;
-
-/** Capacidades oferecidas ao criar uma bandeja (as mesmas da ficha da caixa). */
-const TRAY_CAPACITIES = [6, 12, 24, 36, 48] as const;
+/** O que a gaveta mostra: uma fibra, um splitter ou uma emenda (pelo id, lido nos dados atuais). */
+type Selection = { kind: 'fiber' | 'splitter' | 'splice'; id: string } | null;
 
 /**
- * Tela de fusões da caixa (`/caixas/:boxId/fusoes`): os cabos no topo, a bandeja como a física no
- * centro e o painel para emendar numa posição vazia ou consultar uma emenda. Tem endereço próprio
- * para mandar o link a outro técnico.
+ * Diagrama de fusões da caixa (`/caixas/:boxId/fusoes`): uma aba por cabo com o destino de cada
+ * fibra, a gaveta com o desenho da ligação e a emenda por dois toques (a bandeja é escolhida ou
+ * criada sozinha). Tem endereço próprio para mandar o link a outro técnico.
  */
 @Component({
   selector: 'app-box-splices-page',
   imports: [
-    CableStripComponent,
+    FiberDrawerComponent,
+    FiberListComponent,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
     MatTooltipModule,
-    SpliceDetailComponent,
-    SplicePickerComponent,
-    TrayBoardComponent,
   ],
   templateUrl: './box-splices-page.html',
   styleUrl: './box-splices-page.scss',
@@ -64,7 +58,6 @@ export class BoxSplicesPage {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
 
-  protected readonly capacities = TRAY_CAPACITIES;
   protected readonly canEdit = this.mapState.canEdit;
 
   private readonly boxId = toSignal(
@@ -82,35 +75,87 @@ export class BoxSplicesPage {
     return status ? statusDefinition(status) : null;
   });
 
-  private readonly chosenTray = signal<number | null>(null);
-  protected readonly tray = computed<TrayResponse | null>(() => {
-    const trays = this.store.trays();
-    return trays.find((tray) => tray.trayNumber === this.chosenTray()) ?? trays[0] ?? null;
+  protected readonly cables = computed<CableView[]>(() => {
+    const overview = this.store.overview();
+    return overview ? boxFiberMap(overview, this.store.fiberIndex()) : [];
   });
-  protected readonly trayIsEmpty = computed(() => {
-    const number = this.tray()?.trayNumber;
-    return !this.store.splices().some((splice) => splice.trayNumber === number);
+  protected readonly splitters = computed(() => {
+    const overview = this.store.overview();
+    return overview ? boxSplitters(overview, this.store.fiberIndex()) : [];
+  });
+  private readonly rows = computed(() => {
+    const byId = new Map<string, { row: FiberRow; cable: CableView }>();
+    for (const cable of this.cables()) {
+      for (const tube of cable.tubes) {
+        for (const row of tube.rows) byId.set(row.fiber.id, { row, cable });
+      }
+    }
+    return byId;
   });
 
-  protected readonly addingTray = signal(false);
-  protected readonly panel = signal<Panel>(null);
+  protected readonly tab = signal('');
+  protected readonly selection = signal<Selection>(null);
+  /** Modo escolher: a fibra de origem da emenda nova. */
+  protected readonly choosing = signal<{ fromFiberId: string } | null>(null);
+  protected readonly target = signal<string | null>(null);
+  protected readonly drawerError = signal<string | null>(null);
 
-  /** Emenda aberta no cartão; some sozinha quando a emenda é excluída. */
-  protected readonly detail = computed<SpliceResponse | null>(() => {
-    const panel = this.panel();
-    if (panel?.kind !== 'detail') return null;
-    return this.store.splices().find((splice) => splice.id === panel.spliceId) ?? null;
+  protected readonly selectedRow = computed<FiberRow | null>(() => {
+    const selection = this.selection();
+    if (selection?.kind === 'fiber') return this.rows().get(selection.id)?.row ?? null;
+    if (selection?.kind === 'splice') {
+      for (const { row } of this.rows().values()) {
+        if (row.destination.spliceId === selection.id) return row;
+      }
+    }
+    return null;
   });
-  protected readonly pick = computed(() => {
-    const panel = this.panel();
-    return panel?.kind === 'pick' ? panel : null;
+  protected readonly selectedSplice = computed<SpliceResponse | null>(() => {
+    const spliceId =
+      this.selection()?.kind === 'splice' ? this.selection()!.id : this.selectedRow()?.destination.spliceId;
+    return spliceId ? (this.store.splices().find((splice) => splice.id === spliceId) ?? null) : null;
   });
-  protected readonly selectedPosition = computed(() => {
-    const pick = this.pick();
-    if (pick) return pick.position;
-    return this.detail()?.positionNumber ?? null;
+  protected readonly selectedSplitter = computed(() => {
+    const selection = this.selection();
+    const id = selection?.kind === 'splitter' ? selection.id : this.selectedRow()?.destination.splitterId;
+    return id ? (this.splitters().find((splitter) => splitter.id === id) ?? null) : null;
   });
-  protected readonly panelOpen = computed(() => !!this.pick() || !!this.detail());
+  protected readonly pending = computed<PendingSplice | null>(() => {
+    const choosing = this.choosing();
+    const target = this.target();
+    if (!choosing || !target) return null;
+    const from = this.rows().get(choosing.fromFiberId)?.row;
+    const to = this.rows().get(target)?.row;
+    if (!from || !to) return null;
+    return {
+      from,
+      to,
+      choice: trayForNewSplice(this.store.trays(), this.store.splices(), this.box()?.trayCapacity),
+    };
+  });
+  protected readonly choosingFrom = computed(() => {
+    const id = this.choosing()?.fromFiberId;
+    const row = id ? this.rows().get(id)?.row : undefined;
+    return row ? this.fiberName(row) : null;
+  });
+  /** No modo escolher: fibras que não podem receber a emenda, com o motivo. */
+  protected readonly blocked = computed<ReadonlyMap<string, string>>(() => {
+    const choosing = this.choosing();
+    if (!choosing) return new Map();
+    const context = { boxId: this.boxId(), splices: this.store.splices(), chosenOther: choosing.fromFiberId };
+    const blocked = new Map<string, string>();
+    for (const { row } of this.rows().values()) {
+      const pick = fiberPick(row.fiber, row.end, context);
+      if (!pick.free) blocked.set(row.fiber.id, pick.reason ?? 'em uso');
+    }
+    return blocked;
+  });
+  protected readonly drawerOpen = computed(
+    () => !!this.pending() || !!this.selectedRow() || !!this.selectedSplitter() || !!this.selectedSplice(),
+  );
+  protected readonly trayRows = computed(() =>
+    this.store.trays().map((tray) => ({ tray, used: this.usedOf(tray) })),
+  );
 
   constructor() {
     effect(() => {
@@ -121,52 +166,87 @@ export class BoxSplicesPage {
     });
   }
 
-  protected usedOf(tray: TrayResponse): number {
-    return (
-      tray.usedPositions ??
-      this.store.splices().filter((splice) => splice.trayNumber === tray.trayNumber).length
+  protected onFiberTap(row: FiberRow): void {
+    this.drawerError.set(null);
+    const choosing = this.choosing();
+    if (choosing) {
+      if (row.fiber.id !== choosing.fromFiberId) this.target.set(row.fiber.id);
+      return;
+    }
+    this.selection.set({ kind: 'fiber', id: row.fiber.id });
+  }
+
+  protected onSplitterTap(id: string): void {
+    if (this.choosing()) return;
+    this.selection.set({ kind: 'splitter', id });
+  }
+
+  /** "Emendar": a fibra da gaveta vira a origem; a lista abre o cabo do outro lado. */
+  protected startSplice(): void {
+    const row = this.selectedRow();
+    if (!row) return;
+    this.choosing.set({ fromFiberId: row.fiber.id });
+    this.target.set(null);
+    this.drawerError.set(null);
+    const [left, right] = defaultSpliceCables(this.store.cables());
+    const other = row.fiber.cableId === left ? right : left;
+    this.tab.set(other ?? row.fiber.cableId);
+  }
+
+  protected confirmSplice(): void {
+    const pending = this.pending();
+    if (!pending) return;
+    const roleOf = (row: FiberRow) => this.rows().get(row.fiber.id)?.cable.role;
+    const sides = spliceSides(
+      { fiberId: pending.from.fiber.id, role: roleOf(pending.from) },
+      { fiberId: pending.to.fiber.id, role: roleOf(pending.to) },
     );
+    this.store.spliceFibers(pending.choice, sides, (error, spliceId) => {
+      if (error) {
+        this.drawerError.set(error);
+        return;
+      }
+      this.choosing.set(null);
+      this.target.set(null);
+      this.drawerError.set(null);
+      this.selection.set(spliceId ? { kind: 'splice', id: spliceId } : null);
+    });
   }
 
-  protected selectTray(trayNumber: number | undefined): void {
-    this.chosenTray.set(trayNumber ?? null);
-    this.panel.set(null);
+  protected cancelSplice(): void {
+    this.choosing.set(null);
+    this.target.set(null);
+    this.drawerError.set(null);
   }
 
-  protected addTray(capacity: number): void {
-    this.addingTray.set(false);
-    this.store.addTray(capacity);
+  protected closeDrawer(): void {
+    if (this.pending()) {
+      this.cancelSplice();
+      return;
+    }
+    this.selection.set(null);
+    this.drawerError.set(null);
   }
 
-  protected deleteTray(): void {
-    const tray = this.tray();
-    if (!tray?.id) return;
+  protected undoSplice(splice: SpliceResponse): void {
+    if (!splice.id) return;
+    const id = splice.id;
+    const where =
+      splice.positionNumber !== undefined ? `a emenda da posição ${splice.positionNumber}` : 'esta emenda';
+    this.confirm(where, () => {
+      this.store.deleteSplice(id);
+      this.selection.set(null);
+    });
+  }
+
+  protected deleteTray(tray: TrayResponse): void {
+    if (!tray.id) return;
     const id = tray.id;
     this.confirm(`a bandeja ${tray.trayNumber}`, () => this.store.deleteTray(id));
   }
 
-  protected openPosition(position: number): void {
-    const trayNumber = this.tray()?.trayNumber;
-    if (trayNumber === undefined || !this.canEdit()) return;
-    this.panel.set({ kind: 'pick', trayNumber, position });
-  }
-
-  protected openSplice(splice: SpliceResponse): void {
-    if (splice.id) this.panel.set({ kind: 'detail', spliceId: splice.id });
-  }
-
-  protected closePanel(): void {
-    this.panel.set(null);
-  }
-
-  protected deleteSplice(splice: SpliceResponse): void {
-    if (!splice.id) return;
-    const id = splice.id;
-    const where =
-      splice.positionNumber !== undefined
-        ? `a emenda da posição ${splice.positionNumber}`
-        : 'esta emenda';
-    this.confirm(where, () => this.store.deleteSplice(id));
+  protected trace(target: DrawerTrace): void {
+    void this.router.navigate(['/'], { queryParams: { trace: `${target.kind}:${target.id}` } });
   }
 
   protected retry(): void {
@@ -183,14 +263,22 @@ export class BoxSplicesPage {
   }
 
   /** "Ver cabo no mapa" e "Abrir ficha do cabo": volta ao mapa com o cabo selecionado. */
-  /** Abre o rastreio da emenda no mapa (a tela de fusões fecha; o mapa mostra o caminho). */
-  protected traceSplice(spliceId: string): void {
-    void this.router.navigate(['/'], { queryParams: { trace: `SPLICE:${spliceId}` } });
-  }
-
   protected viewCable(cableId: string): void {
     this.mapReturn.request({ type: 'cable', id: cableId }, true);
     void this.router.navigate(['/']);
+  }
+
+  private usedOf(tray: TrayResponse): number {
+    return (
+      tray.usedPositions ??
+      this.store.splices().filter((splice) => splice.trayNumber === tray.trayNumber).length
+    );
+  }
+
+  /** "CABO-01 · 1 Verde". */
+  private fiberName(row: FiberRow): string {
+    const color = row.fiber.color ? ` ${opticalColor(row.fiber.color).label}` : '';
+    return `${row.fiber.cableName} · ${row.fiber.numberInTube}${color}`;
   }
 
   private confirm(what: string, action: () => void): void {

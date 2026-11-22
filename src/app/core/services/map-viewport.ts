@@ -6,6 +6,8 @@ import { GeoPoint } from '../models/geo.model';
 const FOCUS_ZOOM = 17;
 /** Zoom máximo ao enquadrar vários pontos (evita exagero em traçados curtos). */
 const FIT_MAX_ZOOM = 17;
+/** Folga em volta ao enquadrar vários pontos. */
+const FIT_PADDING = 56;
 
 /**
  * Serviço reutilizável de navegação do mapa.
@@ -29,30 +31,42 @@ export class MapViewportService {
     return this.map() !== null;
   }
 
-  /** Centraliza em um ponto, aplicando o zoom de foco. */
-  focus(point: GeoPoint, zoom = FOCUS_ZOOM): boolean {
+  /**
+   * Centraliza em um ponto, aplicando o zoom de foco. `bottomInset` (px) é a altura da gaveta da ficha
+   * no celular: o centro desce metade dela, para o ponto ficar no meio da parte visível do mapa.
+   */
+  focus(point: GeoPoint, zoom = FOCUS_ZOOM, bottomInset = 0): boolean {
     const map = this.map();
     if (!map) {
       return false;
     }
-    map.flyTo([point.lat, point.lng], zoom, { duration: 0.6 });
+    let target = L.latLng(point.lat, point.lng);
+    if (bottomInset > 0) {
+      target = map.unproject(map.project(target, zoom).add([0, bottomInset / 2]), zoom);
+    }
+    map.flyTo(target, zoom, { duration: 0.6 });
     return true;
   }
 
-  /** Enquadra um conjunto de pontos (ex.: vértices de um cabo). */
-  focusAll(points: readonly GeoPoint[], maxZoom = FIT_MAX_ZOOM): boolean {
+  /** Enquadra um conjunto de pontos (ex.: vértices de um cabo), reservando `bottomInset` px embaixo. */
+  focusAll(points: readonly GeoPoint[], maxZoom = FIT_MAX_ZOOM, bottomInset = 0): boolean {
     const map = this.map();
     if (!map || points.length === 0) {
       return false;
     }
     if (points.length === 1) {
-      return this.focus(points[0], maxZoom);
+      return this.focus(points[0], maxZoom, bottomInset);
     }
     const bounds = L.latLngBounds(points.map((point) => L.latLng(point.lat, point.lng)));
     if (!bounds.isValid()) {
       return false;
     }
-    map.fitBounds(bounds, { padding: [56, 56], maxZoom, animate: true });
+    map.fitBounds(bounds, {
+      paddingTopLeft: [FIT_PADDING, FIT_PADDING],
+      paddingBottomRight: [FIT_PADDING, FIT_PADDING + bottomInset],
+      maxZoom,
+      animate: true,
+    });
     return true;
   }
 }

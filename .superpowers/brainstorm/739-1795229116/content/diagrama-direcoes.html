@@ -1,0 +1,116 @@
+<style>
+  .dg { font-family: system-ui, sans-serif; font-size: 13px; }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; border:1px solid rgba(0,0,0,.35); vertical-align:middle; }
+  .row { display:flex; align-items:center; gap:8px; padding:4px 0; }
+  .muted { color:#888; font-size:12px; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; background:rgba(127,127,127,.12); }
+  .box { border:1px solid rgba(127,127,127,.4); border-radius:8px; padding:8px 10px; background:rgba(127,127,127,.06); }
+  .split { border:2px solid #177a54; border-radius:8px; padding:6px 10px; font-weight:600; }
+  .arrow { color:#888; }
+  .col { display:flex; flex-direction:column; gap:4px; }
+  .grid3 { display:grid; grid-template-columns: 1fr auto 1fr; gap:14px; align-items:center; }
+  .tag { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#888; margin-bottom:4px; }
+  .collapsed { font-size:12px; color:#888; padding:4px 8px; border:1px dashed rgba(127,127,127,.5); border-radius:6px; }
+  .hl { outline:2px solid #f9a825; border-radius:6px; }
+</style>
+
+<h2>Diagrama da caixa: qual caminho parece mais claro?</h2>
+<p class="subtitle">Exemplo real: CTO O1-C1-R2 · Cabo 01 (12 fibras) e Backbone 1 (24 fibras) · splitter 1:16. Clique na opção que mais combina com você.</p>
+
+<div class="options">
+
+  <!-- A -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Clássico enxuto: esquerda chega, direita sai</h3>
+      <p>Segue a convenção do mercado, mas mostra só as fibras em uso. As livres ficam recolhidas numa linha.</p>
+      <div class="dg box" style="margin-top:8px">
+        <div class="grid3">
+          <div class="col">
+            <div class="tag">Chega (vem da OLT)</div>
+            <strong>Cabo 01</strong>
+            <div class="row"><span class="dot" style="background:#1f9d4b"></span> Fibra 1 Verde</div>
+            <div class="row"><span class="dot" style="background:#f5d90a"></span> Fibra 2 Amarelo</div>
+            <div class="collapsed">+ 10 fibras livres ▸</div>
+          </div>
+          <div class="col" style="align-items:center">
+            <div class="arrow">── fusão ──▶</div>
+            <div class="split">Splitter 1:16</div>
+            <div class="muted">16 saídas · 5 com cliente</div>
+          </div>
+          <div class="col">
+            <div class="tag">Sai (segue para a rua)</div>
+            <strong>Backbone 1</strong>
+            <div class="row"><span class="dot" style="background:#1f9d4b"></span> Tubo Verde · fibra 2 Amarelo <span class="muted">passa direto</span></div>
+            <div class="collapsed">+ 23 fibras livres ▸</div>
+            <div class="muted" style="margin-top:6px">Portas de atendimento: 5 de 16 em uso</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Por caminhos: uma linha para cada ligação</h3>
+      <p>Cada linha conta uma frase: "de onde vem → o que acontece → para onde vai". Cresce para baixo, nunca se cruza.</p>
+      <div class="dg box" style="margin-top:8px">
+        <div class="row">
+          <span class="pill"><span class="dot" style="background:#1f9d4b"></span> Cabo 01 · fibra 1</span>
+          <span class="arrow">→</span><span class="split">Splitter 1:16</span>
+          <span class="arrow">→</span><span class="pill">16 portas · 5 clientes</span>
+        </div>
+        <div class="row">
+          <span class="pill"><span class="dot" style="background:#f5d90a"></span> Cabo 01 · fibra 2</span>
+          <span class="arrow">→</span><span class="muted">emenda (bandeja 1 · posição 3)</span>
+          <span class="arrow">→</span><span class="pill"><span class="dot" style="background:#f5d90a"></span> Backbone 1 · tubo Verde · fibra 2</span>
+        </div>
+        <div class="row">
+          <span class="pill"><span class="dot" style="background:#fff"></span> Backbone 1 · tubo Verde · fibra 3</span>
+          <span class="arrow">→</span><span class="muted">passa direto pela caixa</span>
+        </div>
+        <div class="collapsed" style="margin-top:6px">33 fibras livres ▸</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Clássico completo com foco: tudo visível, toque destaca</h3>
+      <p>Todas as fibras aparecem, agrupadas por tubo (tubos recolhíveis). Tocar numa fibra apaga o resto e acende o caminho dela.</p>
+      <div class="dg box" style="margin-top:8px">
+        <div class="grid3">
+          <div class="col">
+            <div class="tag">Chega</div>
+            <strong>Cabo 01</strong>
+            <div class="row hl"><span class="dot" style="background:#1f9d4b"></span> 1 Verde</div>
+            <div class="row" style="opacity:.35"><span class="dot" style="background:#f5d90a"></span> 2 Amarelo</div>
+            <div class="row" style="opacity:.35"><span class="dot" style="background:#fff"></span> 3 Branco</div>
+            <div class="row" style="opacity:.35"><span class="dot" style="background:#1565c0"></span> 4 Azul</div>
+            <div class="muted">… até 12</div>
+          </div>
+          <div class="col" style="align-items:center">
+            <div class="arrow" style="color:#f9a825">━━━━▶</div>
+            <div class="split hl">Splitter 1:16</div>
+          </div>
+          <div class="col" style="opacity:.35">
+            <div class="tag">Sai</div>
+            <strong>Backbone 1</strong>
+            <div>▸ Tubo Verde (12)</div>
+            <div>▸ Tubo Amarelo (12)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:16px">
+  <p class="muted">Em todas: textos em português simples ("chega", "sai", "passa direto", "livre"), cores ABNT nas bolinhas e nada de códigos do sistema. Dá para misturar ideias, por exemplo, B como padrão e A como "ver desenho".</p>
+</div>

@@ -1,0 +1,107 @@
+<section class="drawer" aria-label="Detalhe da fibra">
+  @if (pending(); as current) {
+    <header class="drawer__head">
+      <h3>Nova emenda</h3>
+    </header>
+    <app-diagram-line [entrada]="pendingFrom()" [middle]="spliceMiddle" [saida]="pendingTo()" />
+    <p class="drawer__text">{{ pendingText() }}</p>
+    @if (error(); as message) {
+      <p class="drawer__error" role="alert">{{ message }}</p>
+    }
+    <div class="drawer__actions">
+      <button mat-flat-button type="button" data-action="confirmar" [disabled]="cannotConfirm()" (click)="confirm.emit()">
+        Emendar
+      </button>
+      <button mat-button type="button" data-action="cancelar" (click)="cancel.emit()">Cancelar</button>
+    </div>
+  } @else if (kind() === 'splice' && splice(); as current) {
+    <app-splice-detail
+      [splice]="current"
+      [canEdit]="canEdit()"
+      (closed)="closed.emit()"
+      (viewCable)="viewCable.emit($event)"
+      (traceSplice)="trace.emit({ kind: 'SPLICE', id: $event })"
+      (deleteRequested)="undo.emit($event)"
+    />
+  } @else if (row(); as current) {
+    <header class="drawer__head">
+      <h3>{{ current.fiber.cableName }} · fibra {{ current.fiber.numberInTube }}</h3>
+      <button mat-icon-button type="button" data-action="fechar" matTooltip="Fechar" aria-label="Fechar" (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+
+    @switch (kind()) {
+      @case ('free') {
+        <app-diagram-line [entrada]="here()" />
+        <p class="drawer__text">Esta fibra está livre nesta caixa.</p>
+      }
+      @case ('pass-through') {
+        <app-diagram-line [entrada]="here()" />
+        <p class="drawer__text">Esta fibra passa direto pela caixa, sem emenda.</p>
+      }
+      @case ('connector') {
+        <app-diagram-line [entrada]="here()" [middle]="connectorMiddle" [saida]="other()" />
+        <p class="drawer__text">Ligada por conector.</p>
+      }
+      @case ('service-port') {
+        <app-diagram-line [entrada]="here()" />
+        <p class="drawer__text">Vai para a {{ destinationText() }}.</p>
+      }
+      @case ('splitter-in') {
+        <app-diagram-line [entrada]="here()" />
+        <p class="drawer__text">Entra no {{ destinationText() }}.</p>
+      }
+      @case ('splitter-out') {
+        <app-diagram-line [entrada]="here()" />
+        <p class="drawer__text">Sai do {{ destinationText() }}.</p>
+      }
+      @default {
+        <p class="drawer__text">Esta fibra está {{ current.destination.text }}.</p>
+      }
+    }
+
+    @if (splitter(); as split) {
+      <ng-container *ngTemplateOutlet="outputs; context: { $implicit: split }" />
+    }
+
+    @if (error(); as message) {
+      <p class="drawer__error" role="alert">{{ message }}</p>
+    }
+
+    <div class="drawer__actions">
+      @if ((kind() === 'free' || kind() === 'pass-through') && canEdit()) {
+        <button mat-flat-button type="button" data-action="emendar" [disabled]="saving()" (click)="startSplice.emit()">
+          Emendar
+        </button>
+      }
+      @if (kind() === 'connector' || kind() === 'service-port' || kind() === 'splitter-in' || kind() === 'splitter-out') {
+        <button mat-stroked-button type="button" data-action="caminho" (click)="traceFiber()">Ver o caminho</button>
+      }
+    </div>
+  } @else if (splitter(); as split) {
+    <header class="drawer__head">
+      <h3>{{ split.label }}</h3>
+      <button mat-icon-button type="button" data-action="fechar" matTooltip="Fechar" aria-label="Fechar" (click)="closed.emit()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <p class="drawer__text">Entrada: {{ split.inputText }}</p>
+    <ng-container *ngTemplateOutlet="outputs; context: { $implicit: split }" />
+    <div class="drawer__actions">
+      <button mat-stroked-button type="button" data-action="caminho" (click)="traceSplitter(split.id)">Ver o caminho</button>
+    </div>
+  }
+</section>
+
+<ng-template #outputs let-split>
+  <p class="drawer__label">{{ split.label }} · saídas</p>
+  <div class="drawer__outputs">
+    @for (out of split.outputs; track out.number) {
+      <span class="drawer__out" [class.drawer__out--used]="out.used" [attr.data-output]="out.number">
+        <strong>{{ out.number }}</strong>
+        <small>{{ out.customer ?? (out.used ? out.text : 'livre') }}</small>
+      </span>
+    }
+  </div>
+</ng-template>

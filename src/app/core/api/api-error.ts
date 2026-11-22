@@ -18,7 +18,28 @@ const OFFLINE_MESSAGE =
 const SERVER_MESSAGE = 'Erro inesperado no servidor. Tente novamente.';
 const FIELDS_MESSAGE = 'Verifique os campos destacados.';
 
+const SESSION_EXPIRED = 'Sua sessão expirou. Entre novamente.';
+
+/** Frases que o backend já manda em português (autenticação, dono e usuários). */
+const BACKEND_PT_DETAILS = new Set([
+  'Credenciais inválidas ou sessão expirada.',
+  'Acesso negado.',
+  'Só o criador pode alterar este elemento.',
+  'Só o dono de um dos elementos pode alterar esta ligação.',
+  'Você não pode desativar a própria conta.',
+  'E-mail já cadastrado.',
+  'A senha precisa ter pelo menos 10 caracteres.',
+  'Usuário não encontrado.',
+]);
+
+/** Frases do backend técnicas demais para quem está no meio do uso. */
+const REPLACED_DETAILS: Record<string, string> = {
+  'Autenticação necessária.': SESSION_EXPIRED,
+};
+
 const STATUS_MESSAGES: Record<number, string> = {
+  401: SESSION_EXPIRED,
+  403: 'Você não tem permissão para fazer isso.',
   400: 'Os dados enviados são inválidos.',
   404: 'O item não foi encontrado. Ele pode ter sido excluído por outra pessoa.',
   409: 'A operação conflita com dados já cadastrados.',
@@ -42,13 +63,19 @@ export function parseApiError(error: unknown): ApiError {
     return { status, message: FIELDS_MESSAGE, fieldErrors, original: detail };
   }
 
-  const translated = detail ? translateDetail(detail) : null;
+  const translated = detail ? backendText(detail) ?? translateDetail(detail) : null;
   return {
     status,
     message: translated ?? STATUS_MESSAGES[status] ?? SERVER_MESSAGE,
     fieldErrors,
     original: detail,
   };
+}
+
+function backendText(detail: string): string | null {
+  const text = detail.trim();
+  if (BACKEND_PT_DETAILS.has(text)) return text;
+  return REPLACED_DETAILS[text] ?? null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

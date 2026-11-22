@@ -9,6 +9,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { SheetDragDirective } from '../../../shared/common/sheet-drag.directive';
 import { TermHintComponent } from '../../../shared/help/term-hint';
 import { DiagramLineComponent } from '../../../shared/diagram/diagram-line.component';
 import { OccupancyBadgeComponent } from '../../../shared/common/occupancy-badge.component';
@@ -83,7 +84,7 @@ interface FreeOutput {
  */
 @Component({
   selector: 'app-box-sheet',
-  imports: [
+  imports: [SheetDragDirective, 
     TermHintComponent,
     DiagramLineComponent,
     OccupancyBadgeComponent,
@@ -111,6 +112,8 @@ export class BoxSheetComponent {
   readonly canEdit = input(true);
 
   readonly closed = output<void>();
+  /** "Mais ações" → "Excluir": a página confirma e exclui. */
+  readonly remove = output<void>();
   readonly editData = output<void>();
   readonly openCable = output<string>();
   /** "Ver fusões": abre a tela de fusões desta caixa. */

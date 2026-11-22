@@ -1,3 +1,5 @@
+import { CreateBannerComponent } from '../../shared/map/create-banner';
+import { SHEET_OPEN } from '../../core/network/sheet-drag';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -56,7 +58,7 @@ import {
   CableFormData,
   CableFormDialogComponent,
 } from '../../shared/cable/cable-form-dialog';
-import { GeoMapComponent } from '../../shared/map/geo-map';
+import { EDIT_ACTION, GeoMapComponent } from '../../shared/map/geo-map';
 import { LegendGroup, LegendLeaf, MapLegendComponent } from '../../shared/map/map-legend';
 import { MapLayerPanelComponent } from '../../shared/map/map-layer-panel';
 import { MapStatusBarComponent } from '../../shared/map/map-status-bar';
@@ -84,6 +86,8 @@ import { CustomerStatus } from '../../core/api/api-types';
 import { OltSheetComponent } from './olt-sheet/olt-sheet';
 import { OltSheetStore } from './olt-sheet/olt-sheet-store';
 import { NetworkSidebarComponent } from './network-sidebar/network-sidebar';
+import { AuthSession } from '../../core/auth/auth-session';
+import { roleText } from '../../core/auth/roles';
 
 /** Grupos que a ferramenta "Adicionar elemento" cria (OLT, caixas e clientes). */
 type CreatableGroup = ElementGroup;
@@ -98,6 +102,7 @@ const CREATABLE_GROUPS = ELEMENT_GROUPS;
 @Component({
   selector: 'app-network-map-page',
   imports: [
+    CreateBannerComponent,
     BoxSheetComponent,
     CableSheetComponent,
     CustomerSheetComponent,
@@ -131,6 +136,8 @@ export class NetworkMapPage implements OnInit {
   private readonly preferences = inject(MapPreferencesService);
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
+  protected readonly session = inject(AuthSession);
+  protected readonly roleLabel = computed(() => roleText(this.session.role()));
   private readonly viewport = inject(MapViewportService);
   private readonly mapReturn = inject(MapReturnService);
   private readonly router = inject(Router);
@@ -238,6 +245,11 @@ export class NetworkMapPage implements OnInit {
     return element?.kind === 'olt' ? element : null;
   });
 
+  /** Alguma ficha aberta: no celular, a ajuda sai da frente dela. */
+  protected readonly anySheetOpen = computed(
+    () => !!this.state.selectedElement() || !!this.selectedCable() || !!this.trace.query() || !!this.impact.query(),
+  );
+
   /** Início e fim do cabo selecionado para o balão, vindos da ficha. */
   private readonly cableEnds = computed<string | null>(() => {
     const id = this.selectedCableId();
@@ -294,6 +306,15 @@ export class NetworkMapPage implements OnInit {
     () => this.activeTool() === 'addElement' || this.activeTool() === 'addCable',
   );
   protected readonly showPicker = computed(() => this.isCreating() && this.pickerVisible());
+  /** Faixa "Criar …" no topo: aparece quando a escolha do tipo fecha. */
+  protected readonly createLabel = computed<string | null>(() => {
+    if (!this.isCreating() || this.pickerVisible()) return null;
+    if (this.activeTool() === 'addCable') {
+      return `cabo de ${roleDefinition(this.activeRole()).label.toLowerCase()}`;
+    }
+    const label = CREATABLE_GROUPS.find((group) => group.group === this.activeGroup())?.label ?? '';
+    return label === label.toUpperCase() ? label : label.toLowerCase();
+  });
 
   /** Cor do elemento em criação — usada no marcador fantasma e na linha-guia. */
   protected readonly previewColor = computed<string | null>(() => {
@@ -319,7 +340,7 @@ export class NetworkMapPage implements OnInit {
   protected readonly paths = computed<readonly GeoPath[]>(() => {
     const selectedId = this.selectedCableId();
     const endsText = this.cableEnds();
-    const hint = this.editable() ? 'Clique novamente para editar' : null;
+    const action = this.editable() ? EDIT_ACTION : null;
 
     const result: GeoPath[] = this.state.visibleCables().map((cable) => {
       const style = cableLineStyle(cable.role, cable.status);
@@ -331,7 +352,7 @@ export class NetworkMapPage implements OnInit {
         weight: style.weight,
         dashArray: style.dashArray,
         opacity: style.opacity,
-        popupHtml: cablePopupHtml(cable, extra, hint),
+        popupHtml: cablePopupHtml(cable, extra, action),
       };
     });
 
@@ -500,13 +521,13 @@ export class NetworkMapPage implements OnInit {
       const element = this.findElement(selection.key);
       if (!element) return;
       this.state.select(selection);
-      if (focus) this.viewport.focus(element.position);
+      if (focus) this.viewport.focus(element.position, undefined, sheetInset());
       return;
     }
     const cable = this.repository.mapCables().find((item) => item.id === selection.id);
     if (!cable) return;
     this.state.select(selection);
-    if (focus) this.viewport.focusAll(cable.points);
+    if (focus) this.viewport.focusAll(cable.points, undefined, sheetInset());
   }
 
   /** "Ver fusões" na ficha da caixa: abre a tela de fusões. */
@@ -531,6 +552,10 @@ export class NetworkMapPage implements OnInit {
     this.clearDraft();
     this.activeTool.set(tool);
     this.pickerVisible.set(true);
+    // Ao entrar na criação, nada fica selecionado: a ficha fecha e o mapa sai do foco.
+    if (tool === 'addElement' || tool === 'addCable') {
+      this.state.select(null);
+    }
 
     if (tool === 'addElement') {
       this.notifications.info('Escolha o tipo e clique no mapa para criar. ESC encerra.');
@@ -561,6 +586,10 @@ export class NetworkMapPage implements OnInit {
     }
   }
 
+  protected reopenPicker(): void {
+    this.pickerVisible.set(true);
+  }
+
   protected closePicker(): void {
     this.pickerVisible.set(false);
   }
@@ -569,6 +598,7 @@ export class NetworkMapPage implements OnInit {
     const group = CREATABLE_GROUPS.find((item) => item.group === key);
     if (group) {
       this.activeGroup.set(group.group);
+      this.pickerVisible.set(false);
       this.notifications.info(`${group.label} selecionado. Clique no mapa para criar.`);
     }
   }
@@ -577,6 +607,7 @@ export class NetworkMapPage implements OnInit {
     const role = CABLE_ROLES.find((item) => item.role === key);
     if (role) {
       this.activeRole.set(role.role);
+      this.pickerVisible.set(false);
       this.notifications.info(`Cabo de ${role.label} selecionado.`);
     }
   }
@@ -698,12 +729,12 @@ export class NetworkMapPage implements OnInit {
   }
 
   private focusElement(element: MapElement): void {
-    this.viewport.focus(element.position);
+    this.viewport.focus(element.position, undefined, sheetInset());
     this.state.select({ type: 'element', key: element.key });
   }
 
   private focusCable(cable: MapCable): void {
-    if (!this.viewport.focusAll(cable.points)) {
+    if (!this.viewport.focusAll(cable.points, undefined, sheetInset())) {
       this.notifications.warning('Não foi possível enquadrar o cabo.');
       return;
     }
@@ -728,7 +759,7 @@ export class NetworkMapPage implements OnInit {
   protected onRouteItemFocus(item: RouteItem): void {
     const element = this.findElement(`${item.ref.kind}:${item.ref.id}`);
     if (element) {
-      this.viewport.focus(element.position);
+      this.viewport.focus(element.position, undefined, sheetInset());
     }
   }
 
@@ -785,6 +816,31 @@ export class NetworkMapPage implements OnInit {
     const element = this.state.selectedElement();
     if (element) {
       this.openElementEdit(element);
+    }
+  }
+
+  /** "Excluir" na ficha da caixa ou da OLT: a mesma confirmação da Legenda. */
+  protected removeSelectedElement(): void {
+    const element = this.state.selectedElement();
+    if (element) {
+      this.removeElement(element);
+    }
+  }
+
+  /** "Excluir" na ficha do cabo. */
+  protected removeSelectedCable(): void {
+    const id = this.selectedCableId();
+    if (id) {
+      this.removeCable(id);
+    }
+  }
+
+  /** "Toque aqui para editar" no balão: o elemento tem prioridade sobre o cabo, como no balão. */
+  protected onPopupEdit(): void {
+    if (this.state.selectedElement()) {
+      this.editSelectedElement();
+    } else {
+      this.editSelectedCable();
     }
   }
 
@@ -919,20 +975,31 @@ export class NetworkMapPage implements OnInit {
   }
 
   protected onLegendRemoveItem(leaf: LegendLeaf): void {
-    if (!this.state.canEdit()) {
-      return;
-    }
     if (leaf.kind === 'cable') {
-      const cable = this.repository.findCable(leaf.id);
-      if (cable?.id) {
-        this.confirmDelete('cabo', cable.name ?? '', this.repository.deleteCable(cable.id));
-      }
+      this.removeCable(leaf.id);
       return;
     }
     const element = this.findElement(leaf.id);
-    if (element?.kind === 'olt') {
+    if (element) {
+      this.removeElement(element);
+    }
+  }
+
+  private removeCable(id: string): void {
+    const cable = this.repository.findCable(id);
+    if (this.state.canEdit() && cable?.id) {
+      this.confirmDelete('cabo', cable.name ?? '', this.repository.deleteCable(cable.id));
+    }
+  }
+
+  /** Caixa e OLT; o cliente é excluído pela própria ficha. */
+  private removeElement(element: MapElement): void {
+    if (!this.state.canEdit()) {
+      return;
+    }
+    if (element.kind === 'olt') {
       this.confirmDelete('OLT', element.name, this.repository.deleteOlt(element.id));
-    } else if (element?.kind === 'box') {
+    } else if (element.kind === 'box') {
       this.confirmDelete('caixa', element.name, this.repository.deleteBox(element.id));
     }
   }
@@ -1072,8 +1139,14 @@ export class NetworkMapPage implements OnInit {
   }
 }
 
+/** Altura (px) com que a gaveta da ficha abre no celular; 0 no computador (ficha ao lado). */
+function sheetInset(): number {
+  const mobile = typeof matchMedia === 'function' && matchMedia('(max-width: 899.98px)').matches;
+  return mobile ? Math.round(window.innerHeight * SHEET_OPEN) : 0;
+}
+
 /** Balão do cabo selecionado: função, fibras, situação, detalhes e início/fim. */
-function cablePopupHtml(cable: MapCable, extra: string | null, hint: string | null): string {
+function cablePopupHtml(cable: MapCable, extra: string | null, action: string | null): string {
   const role = roleDefinition(cable.role);
   return popupHtml({
     title: cable.name,
@@ -1082,6 +1155,6 @@ function cablePopupHtml(cable: MapCable, extra: string | null, hint: string | nu
     status: statusDefinition(cable.status),
     details: cable.details,
     extra,
-    hint,
+    action,
   });
 }

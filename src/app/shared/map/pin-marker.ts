@@ -95,6 +95,8 @@ export interface PopupContent {
   /** Linha extra (ex.: início e fim do cabo). */
   extra?: string | null;
   hint?: string | null;
+  /** Botão "Toque aqui para editar" (`data-popup-action="edit"`); o `app-geo-map` ouve o clique. */
+  action?: string | null;
 }
 
 /**
@@ -126,6 +128,7 @@ export function popupHtml(content: PopupContent): string {
       ${rows}
       ${content.extra ? `<p class="gf-popup__detail">${escapeHtml(content.extra)}</p>` : ''}
       ${content.hint ? `<p class="gf-popup__hint">${escapeHtml(content.hint)}</p>` : ''}
+      ${content.action ? `<button type="button" class="gf-popup__action" data-popup-action="edit">${escapeHtml(content.action)}</button>` : ''}
     </div>`;
 }
 
@@ -134,6 +137,7 @@ export function elementPopupHtml(
   element: MapElement,
   extra?: string | null,
   hint?: string | null,
+  action?: string | null,
 ): string {
   const group = groupDefinition(element.group);
   const status = statusDefinition(element.status);
@@ -145,5 +149,6 @@ export function elementPopupHtml(
     details: element.details,
     extra,
     hint,
+    action,
   });
 }

@@ -85,26 +85,6 @@ describe('BoxSheetStore', () => {
     expect(store.overview()?.box?.name).toBe('CTO-01');
   });
 
-  it('adds the next tray and reloads', () => {
-    const { store, trayApi, boxApi } = setup();
-    store.open('b1');
-    store.addTray(12);
-    expect(trayApi.create).toHaveBeenCalledWith('b1', { trayNumber: 2, capacity: 12 });
-    expect(boxApi.overview).toHaveBeenCalledTimes(2);
-  });
-
-  it('saves a splice at an exact position and tells the caller, reloading on success', () => {
-    const { store, spliceApi, boxApi } = setup();
-    store.open('b1');
-    const body = { trayNumber: 1, positionNumber: 6, inputFiberId: 'f1', outputFiberId: 'f2' };
-    const done = vi.fn();
-    store.saveSplice(body, done);
-    expect(spliceApi.create).toHaveBeenCalledWith('b1', body);
-    expect(done).toHaveBeenCalledWith(null);
-    expect(boxApi.overview).toHaveBeenCalledTimes(2);
-    expect(store.saving()).toBe(false);
-  });
-
   it('keeps the overview on screen while it reloads', () => {
     const { store, boxApi } = setup();
     store.open('b1');
@@ -114,22 +94,63 @@ describe('BoxSheetStore', () => {
     expect(store.overview()?.box?.name).toBe('CTO-01');
   });
 
-  it('gives the translated error back to the caller instead of a snack bar', () => {
-    const { store, spliceApi } = setup();
-    store.open('b1');
-    spliceApi.create.mockReturnValueOnce(
-      throwError(
-        () =>
-          new HttpErrorResponse({
-            status: 409,
-            error: { detail: 'Position 6 is already occupied in this tray' },
-          }),
-      ),
-    );
-    const done = vi.fn();
-    store.saveSplice({ trayNumber: 1, positionNumber: 6, inputFiberId: 'a', outputFiberId: 'b' }, done);
-    expect(done).toHaveBeenCalledWith('A posição 6 desta bandeja já está ocupada.');
-    expect(store.saving()).toBe(false);
+  describe('spliceFibers', () => {
+    const sides = { inputFiberId: 'f1', inputFiberEnd: 'B' as const, outputFiberId: 'f2', outputFiberEnd: 'A' as const };
+
+    it('cria a bandeja e depois a fusão, sem posição, e devolve o id', () => {
+      const { store, trayApi, spliceApi, boxApi } = setup();
+      store.open('b1');
+      spliceApi.create.mockReturnValueOnce(of({ id: 's9' }));
+      const done = vi.fn();
+      store.spliceFibers({ kind: 'create', trayNumber: 2, capacity: 12 }, sides, done);
+      expect(trayApi.create).toHaveBeenCalledWith('b1', { trayNumber: 2, capacity: 12 });
+      expect(spliceApi.create).toHaveBeenCalledWith('b1', { trayNumber: 2, ...sides });
+      expect(done).toHaveBeenCalledWith(null, 's9');
+      expect(boxApi.overview).toHaveBeenCalledTimes(2);
+      expect(store.saving()).toBe(false);
+    });
+
+    it('bandeja existente: só a fusão', () => {
+      const { store, trayApi, spliceApi } = setup();
+      store.open('b1');
+      store.spliceFibers({ kind: 'existing', trayNumber: 1 }, sides, vi.fn());
+      expect(trayApi.create).not.toHaveBeenCalled();
+      expect(spliceApi.create).toHaveBeenCalledWith('b1', { trayNumber: 1, ...sides });
+    });
+
+    it('caixa cheia: nenhuma chamada e a frase', () => {
+      const { store, trayApi, spliceApi } = setup();
+      store.open('b1');
+      const done = vi.fn();
+      store.spliceFibers({ kind: 'full' }, sides, done);
+      expect(trayApi.create).not.toHaveBeenCalled();
+      expect(spliceApi.create).not.toHaveBeenCalled();
+      expect(done).toHaveBeenCalledWith('Esta caixa não comporta mais bandejas.');
+    });
+
+    it('erro devolve a frase traduzida, libera o salvar e recarrega se a bandeja foi criada', () => {
+      const { store, spliceApi, boxApi } = setup();
+      store.open('b1');
+      spliceApi.create.mockReturnValueOnce(
+        throwError(
+          () => new HttpErrorResponse({ status: 409, error: { detail: 'Position 6 is already occupied in this tray' } }),
+        ),
+      );
+      const done = vi.fn();
+      store.spliceFibers({ kind: 'create', trayNumber: 2, capacity: 12 }, sides, done);
+      expect(done).toHaveBeenCalledWith('A posição 6 desta bandeja já está ocupada.');
+      expect(store.saving()).toBe(false);
+      expect(boxApi.overview).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignora um segundo pedido enquanto salva', () => {
+      const { store, spliceApi } = setup();
+      store.open('b1');
+      spliceApi.create.mockReturnValueOnce(new Subject());
+      store.spliceFibers({ kind: 'existing', trayNumber: 1 }, sides, vi.fn());
+      store.spliceFibers({ kind: 'existing', trayNumber: 1 }, sides, vi.fn());
+      expect(spliceApi.create).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('links a splitter port keeping its attenuation, and unlinks it', () => {

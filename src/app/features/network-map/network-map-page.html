@@ -25,6 +25,7 @@
       (mapClick)="onMapClick($event)"
       (mapDoubleClick)="onMapDoubleClick()"
       (elementClick)="onElementClick($event)"
+      (popupEdit)="onPopupEdit()"
       (elementDoubleClick)="onElementDoubleClick()"
       (pathClick)="onPathClick($event)"
       (pathVertexMoved)="onPathVertexMoved($event)"
@@ -44,6 +45,16 @@
       </div>
     }
 
+    @if (createLabel(); as label) {
+      <app-create-banner
+        class="project__create"
+        [label]="label"
+        [color]="previewColor()"
+        (reopen)="reopenPicker()"
+        (cancel)="setTool('select')"
+      />
+    }
+
     <div class="project__overlay project__overlay--left">
       <app-map-toolbar
         [activeTool]="activeTool()"
@@ -58,6 +69,8 @@
         (fitToPins)="fitToElements()"
         (toggleLayerPanel)="toggleLayerPanel()"
         (toggleLegend)="toggleLegend()"
+        [roleLabel]="roleLabel()"
+        (signOut)="session.logout()"
       />
 
       @if (showPicker()) {
@@ -95,6 +108,7 @@
           [canEdit]="editable()"
           (closed)="closeSheet()"
           (editData)="editSelectedCable()"
+          (remove)="removeSelectedCable()"
           (focusItem)="onRouteItemFocus($event)"
           (traceFiber)="openTrace('FIBER', $event)"
           (impact)="openImpact('cables', cable.id)"
@@ -107,6 +121,7 @@
           (editData)="editSelectedElement()"
           (openCable)="openCableFromSheet($event)"
           (openSplices)="openSplices(box.id)"
+          (remove)="removeSelectedElement()"
           (trace)="openTrace('BOX', box.id)"
           (traceSplitter)="openTrace('SPLITTER', $event)"
           (impact)="openImpact('boxes', box.id)"
@@ -125,6 +140,7 @@
           [olt]="olt"
           (impact)="openImpact('olts', olt.id)"
           (tracePort)="openTrace('FIBER', $event, 'DOWNSTREAM')"
+          (remove)="removeSelectedElement()"
           [canEdit]="editable()"
           (closed)="closeSheet()"
           (editData)="editSelectedElement()"
@@ -170,7 +186,7 @@
     </div>
 
     <!-- Ajuda para quem não é técnico: canto inferior esquerdo -->
-    <div class="project__help" role="group" aria-label="Ajuda">
+    <div class="project__help" role="group" aria-label="Ajuda" [class.project__help--behind-sheet]="anySheetOpen()">
       <button mat-stroked-button type="button" (click)="openViewHelp()">
         <mat-icon>help</mat-icon>
         O que estou vendo?

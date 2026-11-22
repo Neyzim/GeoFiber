@@ -111,6 +111,20 @@ describe('CableSheetComponent', { timeout: 20000 }, () => {
     expect(ids).toEqual(['f1']);
   });
 
+  it('"Mais ações" → "Excluir" pede a exclusão do cabo; sem permissão, não há o menu', async () => {
+    let removed = 0;
+    fixture.componentInstance.remove.subscribe(() => removed++);
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('button[aria-label="Mais ações"]')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    document.querySelector<HTMLElement>('[data-action="excluir"]')!.click();
+    expect(removed).toBe(1);
+
+    fixture.componentRef.setInput('canEdit', false);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('button[aria-label="Mais ações"]')).toBeFalsy();
+  });
+
   it('Fibras shows tube occupancy and ABNT color dots', () => {
     clickTab('fibras');
     expect(text()).toContain('1/2 em uso');

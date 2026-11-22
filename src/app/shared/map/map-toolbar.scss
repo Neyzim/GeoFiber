@@ -57,3 +57,11 @@ mat-divider {
   width: 24px;
   margin: 2px 0;
 }
+
+/* Papel de quem entrou, no topo do menu de conta (texto, não é item clicável). */
+.map-toolbar__role {
+  margin: 0;
+  padding: 8px 16px 4px;
+  color: var(--gf-text-2);
+  font: var(--mat-sys-label-medium);
+}

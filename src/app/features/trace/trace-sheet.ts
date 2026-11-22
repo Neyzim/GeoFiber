@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { SheetDragDirective } from '../../shared/common/sheet-drag.directive';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -24,7 +25,7 @@ const DIRECTIONS: readonly { value: TraceDirection; label: string }[] = [
  */
 @Component({
   selector: 'app-trace-sheet',
-  imports: [MatButtonModule, MatIconModule, MatProgressBarModule],
+  imports: [SheetDragDirective, MatButtonModule, MatIconModule, MatProgressBarModule],
   templateUrl: './trace-sheet.html',
   styleUrls: ['../network-map/sheet-frame.scss', './trace-sheet.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,12 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, map, switchMap } from 'rxjs';
+import { Observable, concatMap, map, of, switchMap, tap } from 'rxjs';
+import { SpliceSides, TrayChoice, trayChoiceText } from '../../../core/network/splice-plan';
 import {
   BoxOverviewResponse,
   ConnectionRequest,
   FiberEnd,
   ServicePortRequest,
   ServicePortResponse,
-  SpliceRequest,
   SplitterPortResponse,
   SplitterPortUpdateRequest,
   SplitterRatio,
@@ -131,38 +131,45 @@ export class BoxSheetStore {
 
   // --- Bandejas e fusões ----------------------------------------------------
 
-  addTray(capacity: number): void {
-    const id = this._boxId();
-    if (!id) return;
-    const trayNumber = nextNumber(this.trays().map((tray) => tray.trayNumber ?? 0));
-    this.run(this.trayApi.create(id, { trayNumber, capacity }), `Bandeja ${trayNumber} criada.`);
-  }
-
   deleteTray(trayId: string): void {
     const id = this._boxId();
     if (id) this.run(this.trayApi.delete(id, trayId), 'Bandeja excluída.');
   }
 
   /**
-   * Registra a fusão (com posição exata, se informada). `done` recebe `null` quando deu certo ou a
-   * mensagem do erro já em português, para a tela mostrar no próprio painel.
+   * Emenda do diagrama: cria a bandeja quando a escolha pede, depois a fusão sem posição (o backend
+   * usa a próxima livre). `done` recebe `null` e o id da emenda nova, ou a frase do erro.
    */
-  saveSplice(body: SpliceRequest, done: (error: string | null) => void): void {
+  spliceFibers(choice: TrayChoice, sides: SpliceSides, done: (error: string | null, spliceId?: string) => void): void {
     const id = this._boxId();
     if (!id || this._saving()) return;
+    if (choice.kind === 'full') {
+      done(trayChoiceText(choice));
+      return;
+    }
     this._saving.set(true);
-    this.spliceApi.create(id, body).subscribe({
-      next: () => {
-        this._saving.set(false);
-        this.notifications.success('Emenda registrada.');
-        done(null);
-        this.reload();
-      },
-      error: (error: unknown) => {
-        this._saving.set(false);
-        done(parseApiError(error).message);
-      },
-    });
+    let trayCreated = false;
+    const tray$: Observable<unknown> =
+      choice.kind === 'create'
+        ? this.trayApi
+            .create(id, { trayNumber: choice.trayNumber, capacity: choice.capacity })
+            .pipe(tap(() => (trayCreated = true)))
+        : of(null);
+    tray$
+      .pipe(concatMap(() => this.spliceApi.create(id, { trayNumber: choice.trayNumber, ...sides })))
+      .subscribe({
+        next: (splice) => {
+          this._saving.set(false);
+          this.notifications.success('Emenda registrada.');
+          done(null, splice.id);
+          this.reload();
+        },
+        error: (error: unknown) => {
+          this._saving.set(false);
+          done(parseApiError(error).message);
+          if (trayCreated) this.reload();
+        },
+      });
   }
 
   deleteSplice(spliceId: string): void {

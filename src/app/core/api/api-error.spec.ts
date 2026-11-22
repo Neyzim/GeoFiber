@@ -109,4 +109,33 @@ describe('parseApiError', () => {
     expect(result.status).toBe(0);
     expect(result.message).toBeTruthy();
   });
+
+  describe('autenticação e dono', () => {
+    const passthrough: [number, string][] = [
+      [403, 'Só o criador pode alterar este elemento.'],
+      [403, 'Só o dono de um dos elementos pode alterar esta ligação.'],
+      [403, 'Acesso negado.'],
+      [401, 'Credenciais inválidas ou sessão expirada.'],
+      [409, 'E-mail já cadastrado.'],
+      [409, 'Você não pode desativar a própria conta.'],
+      [400, 'A senha precisa ter pelo menos 10 caracteres.'],
+      [404, 'Usuário não encontrado.'],
+    ];
+    for (const [status, detail] of passthrough) {
+      it(`usa o texto do backend: ${detail}`, () => {
+        expect(parseApiError(httpError(status, { status, detail })).message).toBe(detail);
+      });
+    }
+
+    it('dá frases próprias para 401 e 403 sem detalhe', () => {
+      expect(parseApiError(httpError(401, null)).message).toBe('Sua sessão expirou. Entre novamente.');
+      expect(parseApiError(httpError(403, null)).message).toBe('Você não tem permissão para fazer isso.');
+    });
+
+    it('troca "Autenticação necessária." pela frase de sessão expirada', () => {
+      expect(parseApiError(httpError(401, { detail: 'Autenticação necessária.' })).message).toBe(
+        'Sua sessão expirou. Entre novamente.',
+      );
+    });
+  });
 });

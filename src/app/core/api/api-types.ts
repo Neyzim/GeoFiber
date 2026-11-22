@@ -73,3 +73,11 @@ export type OpticalColor = NonNullable<FiberResponse['color']>;
 export type SplitterRatio = NonNullable<SplitterResponse['ratio']>;
 export type CustomerStatus = NonNullable<CustomerResponse['status']>;
 export type AttachmentRole = NonNullable<CableAttachmentResponse['role']>;
+
+export type LoginRequest = Schemas['LoginRequest'];
+export type TokenResponse = Schemas['TokenResponse'];
+export type CreateUserRequest = Schemas['CreateUserRequest'];
+export type UserResponse = Schemas['UserResponse'];
+export type UserRole = NonNullable<UserResponse['role']>;
+export type SetActiveRequest = Schemas['SetActiveRequest'];
+export type ResetPasswordRequest = Schemas['ResetPasswordRequest'];

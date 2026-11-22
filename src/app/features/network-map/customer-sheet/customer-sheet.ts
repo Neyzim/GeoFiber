@@ -7,6 +7,7 @@ import {
   linkedSignal,
   output,
 } from '@angular/core';
+import { SheetDragDirective } from '../../../shared/common/sheet-drag.directive';
 import { TermHintComponent } from '../../../shared/help/term-hint';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,7 +42,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/ui/co
 /** Ficha do cliente selecionado: situação explicada, quem o atende, histórico e ações. */
 @Component({
   selector: 'app-customer-sheet',
-  imports: [
+  imports: [SheetDragDirective, 
     TermHintComponent,
     SheetTabsComponent,
     UnifilarSummaryComponent,

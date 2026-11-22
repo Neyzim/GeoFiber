@@ -89,16 +89,23 @@ export function defaultFibers(): Record<string, CableFiberResponse[]> {
 export function fakeBoxStore(data: FakeBoxData = {}) {
   const cables = data.cables ?? DEFAULT_CABLES;
   const fibers = data.fibers ?? defaultFibers();
+  const trayList = data.trays ?? [
+    { id: 't1', trayNumber: 1, capacity: 6, usedPositions: 1 },
+    { id: 't2', trayNumber: 2, capacity: 12, usedPositions: 0 },
+  ];
+  const spliceList = data.splices ?? DEFAULT_SPLICES;
   const overview = signal<Record<string, unknown> | null>({
     box: { id: 'b1', name: 'CEO-07', type: 'CEO', usageStatus: 'ACTIVE' },
+    cables,
+    trays: trayList,
+    splices: spliceList,
+    splitters: [],
+    servicePorts: [],
+    connections: [],
+    customers: [],
   });
-  const trays = signal<TrayResponse[]>(
-    data.trays ?? [
-      { id: 't1', trayNumber: 1, capacity: 6, usedPositions: 1 },
-      { id: 't2', trayNumber: 2, capacity: 12, usedPositions: 0 },
-    ],
-  );
-  const splices = signal<SpliceResponse[]>(data.splices ?? DEFAULT_SPLICES);
+  const trays = signal<TrayResponse[]>(trayList);
+  const splices = signal<SpliceResponse[]>(spliceList);
   return {
     boxId: signal('b1'),
     state: signal('ready'),
@@ -120,10 +127,9 @@ export function fakeBoxStore(data: FakeBoxData = {}) {
     open: vi.fn(),
     close: vi.fn(),
     reload: vi.fn(),
-    addTray: vi.fn(),
     deleteTray: vi.fn(),
     deleteSplice: vi.fn(),
-    saveSplice: vi.fn(),
+    spliceFibers: vi.fn(),
   };
 }
 

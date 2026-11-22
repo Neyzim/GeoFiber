@@ -5,6 +5,7 @@
         mat-icon-button
         type="button"
         matTooltip="Expandir painel"
+        aria-label="Expandir painel"
         matTooltipPosition="right"
         (click)="toggleCollapsed()"
       >
@@ -19,6 +20,17 @@
       >
         <mat-icon>category</mat-icon>
       </a>
+      @if (canEdit()) {
+        <a mat-icon-button routerLink="/importar" matTooltip="Importar KMZ/KML" aria-label="Importar KMZ/KML"
+          matTooltipPosition="right">
+          <mat-icon>upload_file</mat-icon>
+        </a>
+      }
+      @if (isAdmin()) {
+        <a mat-icon-button routerLink="/usuarios" matTooltip="Usuários" aria-label="Usuários" matTooltipPosition="right">
+          <mat-icon>manage_accounts</mat-icon>
+        </a>
+      }
       <button
         mat-icon-button
         type="button"
@@ -41,6 +53,7 @@
         type="button"
         class="sidebar__collapse"
         matTooltip="Recolher painel"
+        aria-label="Recolher painel"
         (click)="toggleCollapsed()"
       >
         <mat-icon>chevron_left</mat-icon>
@@ -69,6 +82,16 @@
           <span class="sidebar__nav-text">
             <strong>Importar KMZ/KML</strong>
             <small>Traga a rede de outro sistema</small>
+          </span>
+          <mat-icon class="sidebar__nav-arrow">chevron_right</mat-icon>
+        </a>
+      }
+      @if (isAdmin()) {
+        <a routerLink="/usuarios" class="sidebar__nav-item">
+          <mat-icon>manage_accounts</mat-icon>
+          <span class="sidebar__nav-text">
+            <strong>Usuários</strong>
+            <small>Contas, senhas e acesso da equipe</small>
           </span>
           <mat-icon class="sidebar__nav-arrow">chevron_right</mat-icon>
         </a>

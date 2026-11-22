@@ -63,6 +63,9 @@ const IMPACT_STYLE: Record<ImpactMarker['kind'], { fill: string; radius: number 
  * Ações imperativas (centralizar, enquadrar, localizar) ficam expostas por
  * métodos públicos para uso via `viewChild`.
  */
+
+/** Texto do botão de editar no balão (elemento e cabo). */
+export const EDIT_ACTION = 'Toque aqui para editar';
 @Component({
   selector: 'app-geo-map',
   templateUrl: './geo-map.html',
@@ -119,6 +122,8 @@ export class GeoMapComponent implements OnDestroy {
   readonly mapClick = output<MapClickEvent>();
   /** Clique em um elemento. */
   readonly elementClick = output<MapElement>();
+  /** Botão "Toque aqui para editar" do balão: a página edita o que está selecionado. */
+  readonly popupEdit = output<void>();
   /** Elemento arrastado para uma nova posição. */
   readonly elementMoved = output<ElementMoveEvent>();
   /** Posição do cursor (`null` quando sai do mapa). */
@@ -144,6 +149,7 @@ export class GeoMapComponent implements OnDestroy {
   private rubberBand: L.Polyline | null = null;
   private snapMarker: L.CircleMarker | null = null;
   private popup: L.Popup | null = null;
+  private popupActionBound: HTMLElement | null = null;
   private cursorPoint: GeoPoint | null = null;
   private resizeObserver: ResizeObserver | null = null;
   /** Marcadores por `MapElement.key`. */
@@ -615,7 +621,7 @@ export class GeoMapComponent implements OnDestroy {
       const canEditIt = this.editable() && element.kind !== 'customer';
       this.showPopup(
         [element.position.lat, element.position.lng],
-        elementPopupHtml(element, null, canEditIt ? 'Clique novamente para editar' : null),
+        elementPopupHtml(element, null, null, canEditIt ? EDIT_ACTION : null),
         -34,
       );
       return;
@@ -656,6 +662,21 @@ export class GeoMapComponent implements OnDestroy {
     if (!map.hasLayer(this.popup)) {
       this.popup.openOn(map);
     }
+    this.listenPopupAction();
+  }
+
+  /** O Leaflet já impede que o clique no balão chegue ao mapa; aqui só lemos o botão. */
+  private listenPopupAction(): void {
+    const element = this.popup?.getElement();
+    if (!element || this.popupActionBound === element) {
+      return;
+    }
+    this.popupActionBound = element;
+    element.addEventListener('click', (event) => {
+      if ((event.target as Element | null)?.closest('[data-popup-action="edit"]')) {
+        this.popupEdit.emit();
+      }
+    });
   }
 
   private hidePopup(): void {

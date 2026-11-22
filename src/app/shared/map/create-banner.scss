@@ -1,0 +1,34 @@
+// Faixa "Criar …": pílula no topo do mapa, centralizada pela página.
+:host { display: block; }
+
+.create-banner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 2px 2px 4px;
+  border: 1px solid var(--gf-border);
+  border-radius: 999px;
+  background: var(--gf-surface);
+  color: var(--gf-text);
+  box-shadow: var(--gf-shadow-float);
+}
+
+.create-banner__main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 8px 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: 600 14px/1.2 var(--gf-font-ui);
+  cursor: pointer;
+
+  &:hover { background: var(--gf-surface-2); }
+  &:focus-visible { outline: 2px solid var(--gf-accent); outline-offset: -2px; }
+  mat-icon { width: 20px; height: 20px; font-size: 20px; color: var(--gf-text-2); }
+}
+
+.create-banner__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }

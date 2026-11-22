@@ -10,15 +10,51 @@ central da operadora até cada cliente. O GeoFiber mostra essa rede no mapa e re
 em cada ponto: por onde passa cada cabo, o que tem dentro de cada caixa e qual cliente está ligado
 em qual porta.
 
+## Entrar e sair
+
+- **Entrar:** abra o GeoFiber, informe seu e-mail e senha e toque em **Entrar**. Se você abriu um link
+  (ex.: as fusões de uma caixa), o sistema leva para ele depois de entrar.
+- **Continuar conectado:** você não precisa entrar de novo a cada vez que abre o sistema; a sessão se
+  renova sozinha. Ela termina quando você sai, depois de 14 dias sem uso, ou se o administrador
+  desativar sua conta ou trocar sua senha.
+- **"Sua sessão expirou. Entre novamente.":** entre de novo; o sistema volta para a tela em que você
+  estava. O que estava sendo digitado e não foi salvo se perde.
+- **"Não foi possível conectar ao servidor do GeoFiber.":** o servidor não respondeu. Confira a
+  internet e toque em **Tentar novamente**. Isso não encerra a sua sessão.
+- **Sair:** no mapa, toque no ícone de pessoa (**Conta**), no pé da barra de ferramentas, e em **Sair**.
+  O menu também mostra seu papel: **Técnico** (opera a rede) ou **Administrador** (opera a rede e
+  cuida das contas).
+
+## Gerenciar usuários (administrador)
+
+No painel lateral do mapa, toque em **Usuários** (abaixo de **Importar KMZ/KML**): aparece a lista de todas as contas, com o papel e a situação
+(**Ativa** ou **Desativada**). A sua conta aparece com "(você)".
+
+- **Alguém entrou na equipe:** toque em **Cadastrar**, informe nome, e-mail, uma senha com pelo menos
+  10 caracteres e o papel. Passe a senha à pessoa por um meio seguro.
+- **Um técnico saiu da equipe:** toque em **Desativar** na linha dele e confirme. Ele sai do sistema em
+  até 15 minutos e não consegue entrar de novo. O que ele cadastrou continua na rede. Se ele voltar,
+  toque em **Reativar**. Você não pode desativar a sua própria conta.
+- **Alguém esqueceu a senha:** toque em **Trocar senha** na linha da pessoa, defina uma senha
+  temporária (pelo menos 10 caracteres) e passe para ela. As sessões abertas dela são encerradas e
+  ela entra com a senha nova. Se trocar a sua própria senha, o sistema pede para você entrar de novo.
+- **"Só o criador pode alterar este elemento.":** cada caixa, cabo, OLT e cliente pertence a quem o
+  cadastrou. Todos veem tudo, mas só o dono altera ou exclui — nem o administrador altera o que é de
+  outra pessoa. O que você digitou continua no formulário; peça a alteração ao dono.
+
 ## Como usar o mapa
 
 Tudo o que aparece no mapa vem do servidor e fica salvo nele: recarregar a página não perde nada.
 
 - **Ver um item:** clique num marcador ou num cabo. Um balão mostra o nome, o tipo, a situação e
   os detalhes. No cabo, o balão também diz **de onde para onde** ele vai (ex.: "De OLT-CENTRO para
-  CEO-01"). Clique de novo no mesmo item para editar.
+  CEO-01"). Para editar, toque no botão **"Toque aqui para editar"** do balão (ou clique de novo no
+  mesmo item).
 - **Adicionar elemento:** na barra da esquerda, escolha "Adicionar elemento", o tipo (OLT, CTO,
-  CEO ou DIO) e clique no mapa. Preencha o formulário e salve.
+  CEO ou DIO) e clique no mapa. Preencha o formulário e salve. Depois de escolher o tipo, a janela
+  de escolha fecha e aparece no alto do mapa a faixa **"Criar CTO"**: toque nela para trocar o tipo,
+  ou no X para parar de criar. Ao entrar na criação, o item que estava selecionado deixa de estar e a
+  ficha dele fecha.
 - **Traçar cabo:** escolha "Traçar cabo" e a função (Backbone, Alimentação...). Clique no mapa para
   marcar o caminho; **clique numa OLT ou caixa** para começar ou terminar nela. Termine com duplo
   clique. O formulário já vem com "Começa em …" e "Termina em …" marcados; o início e o fim só são
@@ -26,8 +62,11 @@ Tudo o que aparece no mapa vem do servidor e fica salvo nele: recarregar a pági
 - **Mover:** "Mover elemento" deixa arrastar OLTs e caixas; "Mover cabo" deixa arrastar os pontos
   do cabo clicado. A posição é salva ao soltar; se o servidor recusar, o item volta para onde
   estava.
-- **Excluir:** na legenda, use o ícone de lixeira do item. O servidor pode recusar (ex.: caixa que
-  ainda tem cabos) e a mensagem explica o motivo.
+- **Excluir:** na ficha da caixa, da OLT ou do cabo, toque em **⋮ (Mais ações) → Excluir** (ou use a
+  lixeira do item na legenda). O sistema sempre pede confirmação. O servidor pode recusar (ex.:
+  caixa que ainda tem cabos) e a mensagem explica o motivo.
+- **Painel lateral:** começa recolhido, para o mapa ter mais espaço. A seta abre o painel; os ícones
+  dão acesso direto a Modelos, Importar e (para administrador) Usuários.
 - **Legenda:** busque pelo nome, filtre pela situação e use o olho para esconder um tipo do mapa.
 - **Muitos itens juntos:** com o mapa afastado, marcadores próximos viram um círculo com o número
   de itens. Aproxime (ou clique no círculo) para vê-los separados.
@@ -62,7 +101,11 @@ Toda ficha (cabo, caixa, OLT e cliente) abre com **uma linha só** no alto:
   12; "6/8 ocupadas" são 6 portas em uso de 8.
 - **Bolinhas coloridas** são fibras e tubos nas cores da norma, sempre com o número por cima. Passe
   o mouse para ver o nome ("Fibra 3 · Branco").
-- No celular (ou janela estreita), a ficha vira uma gaveta que sobe da parte de baixo da tela.
+- No celular (ou janela estreita), a ficha vira uma gaveta que sobe da parte de baixo da tela. Ela
+  abre baixa (cerca de um terço da tela) para o item continuar à vista no mapa. Arraste a **alça**
+  (o tracinho no alto da gaveta) para cima para ver mais, quase até o alto da tela, ou para baixo para
+  diminuir. Se arrastar até quase o fim, a ficha fecha. Com a ficha aberta, os botões "O que estou
+  vendo?" e "Glossário" saem da frente; eles voltam ao fechar a ficha.
 
 ### Ficha do cabo
 
@@ -102,34 +145,32 @@ um lado à esquerda, a fibra do outro lado à direita.
 As pontas da fibra (A e B) ficam escondidas; o padrão serve na maioria dos casos. Quem precisar
 pode ligar "Mostrar pontas (avançado)" no diálogo.
 
-### Registrar fusões
+### Registrar fusões (diagrama de fusões)
 
-A tela de fusões imita a caixa aberta na sua frente. Ela tem endereço próprio (ex.:
-`/caixas/…/fusoes`): dá para mandar o link para outro técnico ou para o atendimento.
+O diagrama de fusões mostra, para cada fibra da caixa, para onde ela vai. Ele tem endereço próprio
+(ex.: `/caixas/…/fusoes`): dá para mandar o link para outro técnico ou para o atendimento.
 
-- **No alto, os cabos da caixa:** cada barra mostra o nome do cabo, se ele chega, sai ou passa por
-  aqui, quantas fibras tem e as cores dos tubos. Toque na barra para **abrir o cabo**: aparecem os
-  tubos e cada fibra com a cor, o número e onde está emendada ("emendada na bandeja 1, posição 5"
-  ou "livre nesta caixa"). Toque de novo para fechar.
-- **No centro, a bandeja:** uma aba por bandeja ("Bandeja 1 · 3/12") e todas as posições, de 1 até a
-  última, como na bandeja de verdade. Posição ocupada mostra a fibra que chega, o protetor de emenda
-  com as duas cores e a fibra que sai. Posição livre mostra **+ emendar aqui**.
-- **Para emendar:** toque numa posição livre. Abre o painel "Emenda na posição 6 · Bandeja 1" com
-  duas colunas: **lado que chega** e **lado que sai**. Em cada uma, escolha o cabo e toque na fibra
-  pela cor. Fibras apagadas já estão em uso; toque nelas para saber onde ("já emendada na bandeja 1,
-  posição 2", "ligada a um splitter"…). A frase no alto do painel diz o próximo passo. Se quiser,
-  informe a perda (dB) e toque em **Registrar emenda**.
-- **Para consultar:** toque numa posição ocupada para ver de onde a fibra chega, para onde sai e a
-  perda. Dali dá para ver cada cabo no mapa ou **excluir a emenda** (para corrigir, exclua e
-  registre de novo).
-- **Bandejas:** "+ bandeja" cria uma bandeja (escolha quantas posições ela tem). Uma bandeja vazia
-  mostra **Excluir bandeja**.
-- **Sem posição definida:** emendas registradas antes da posição exata aparecem numa faixa abaixo
-  da bandeja. Exclua e registre de novo na posição certa.
+- **Uma aba por cabo:** "CABO-01 · chega aqui", "BACKBONE · passa por aqui", "DROP · sai daqui" e,
+  se a caixa tiver, "Splitters". A tela abre no primeiro cabo que chega.
+- **Cada fibra numa linha:** a bolinha com a cor, o número e o destino em poucas palavras:
+  "→ BACKBONE · Verde 1" (emendada), "→ Splitter 1:8", "→ porta 3 · Maria", "passa direto",
+  "livre", "rompida", "em outra caixa". Em cabos com vários tubos, cada tubo tem um título com a
+  cor e quantas fibras estão em uso ("1/12 em uso"); toque nele para recolher.
+- **Toque numa fibra** para abrir o desenho só daquela ligação: de onde chega, o que tem no meio e
+  para onde vai. Numa emenda dá para ver a posição e a bandeja, ver cada cabo no mapa, **Ver o
+  caminho** da fibra no mapa ou **Excluir emenda**. No splitter aparecem a entrada e as saídas, com o
+  cliente de cada uma.
+- **Para emendar:** toque numa fibra livre e em **Emendar**. Aparece o aviso "Escolha a fibra que vai
+  emendar com …" e a lista abre no cabo do outro lado. Fibras já em uso ficam apagadas, com o motivo.
+  Toque na segunda fibra, confira o desenho e a frase ("Vai para a bandeja 1, na próxima posição
+  livre." ou "Vou criar a bandeja 2 (12 posições).") e toque em **Emendar**. Para desistir, **Cancelar**.
+  Você não precisa escolher bandeja nem posição: o sistema faz isso.
+- **Bandejas:** o rodapé mostra cada bandeja com a ocupação ("Bandeja 1 · 3/12"). Uma bandeja vazia
+  tem **Excluir**. Quando a caixa já tem o máximo de bandejas, o diagrama avisa e não emenda.
 - **Voltar** leva ao mapa com a caixa selecionada, no mesmo lugar em que você estava.
 
-No celular, o painel de emenda sobe por cima da parte de baixo da tela; no computador ele fica à
-direita da bandeja.
+No celular, o desenho sobe por baixo da tela (até 60% da altura); no computador ele fica à direita
+da lista.
 
 ### Importar a rede de um KMZ ou KML
 

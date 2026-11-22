@@ -39,4 +39,19 @@ describe('pin-marker', () => {
     expect(html).toContain('Portas de atendimento');
     expect(html).toContain('De A para B');
   });
+
+  it('o balão pode ter o botão "Toque aqui para editar"', () => {
+    const html = elementPopupHtml(cto, null, null, 'Toque aqui para editar');
+    const box = document.createElement('div');
+    box.innerHTML = html;
+    const button = box.querySelector<HTMLButtonElement>('button[data-popup-action="edit"]');
+    expect(button?.type).toBe('button');
+    expect(button?.textContent?.trim()).toBe('Toque aqui para editar');
+  });
+
+  it('sem ação, o balão não tem botão', () => {
+    const box = document.createElement('div');
+    box.innerHTML = elementPopupHtml(cto);
+    expect(box.querySelector('button')).toBeNull();
+  });
 });

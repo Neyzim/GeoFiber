@@ -1,0 +1,12 @@
+<div class="create-banner" role="status">
+  <button type="button" class="create-banner__main" data-action="reabrir" (click)="reopen.emit()">
+    @if (color(); as tint) {
+      <span class="create-banner__dot" [style.background]="tint" aria-hidden="true"></span>
+    }
+    <span>Criar {{ label() }}</span>
+    <mat-icon aria-hidden="true">expand_more</mat-icon>
+  </button>
+  <button mat-icon-button type="button" aria-label="Encerrar criação" (click)="cancel.emit()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>

@@ -1,0 +1,38 @@
+.user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--gf-font-ui);
+}
+
+.user-form__roles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    padding: 0;
+    color: var(--gf-text-2);
+    font: var(--mat-sys-label-large);
+  }
+
+  mat-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.user-form__hint {
+  margin: 0;
+  color: var(--gf-text-2);
+  font: var(--mat-sys-body-small);
+}
+
+.user-form__error {
+  margin: 0;
+  color: var(--gf-status-critical);
+}

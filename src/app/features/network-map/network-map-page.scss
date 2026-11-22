@@ -116,3 +116,18 @@
     }
   }
 }
+
+// No celular a ficha vira gaveta embaixo: a ajuda sai da frente enquanto houver ficha aberta.
+@media (max-width: 899.98px) {
+  .project__help--behind-sheet { display: none; }
+}
+
+// Faixa "Criar …" no topo, centralizada no mapa (no lugar da janela de escolha do tipo).
+.project__create {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 1100;
+  max-width: calc(100% - 120px);
+  transform: translateX(-50%);
+}

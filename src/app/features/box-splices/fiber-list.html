@@ -1,0 +1,63 @@
+<div class="list">
+  <div class="list__tabs" role="tablist" aria-label="Cabos da caixa">
+    @for (cable of cables(); track cable.cableId) {
+      <button type="button" role="tab" class="list__tab" [attr.data-cable-tab]="cable.cableId"
+        [attr.aria-selected]="activeTab() === cable.cableId" (click)="select(cable.cableId)">
+        {{ cable.name }}@if (cable.roleText) { · {{ cable.roleText }}}
+      </button>
+    }
+    @if (splitters().length) {
+      <button type="button" role="tab" class="list__tab" data-cable-tab="splitters"
+        [attr.aria-selected]="activeTab() === 'splitters'" (click)="select('splitters')">Splitters</button>
+    }
+  </div>
+
+  @if (activeTab() === 'splitters') {
+    @for (splitter of splitters(); track splitter.id) {
+      <button type="button" class="list__row list__row--splitter" [attr.data-splitter]="splitter.id"
+        (click)="splitterTap.emit(splitter.id)">
+        <span class="list__main">
+          <strong>{{ splitter.label }}</strong>
+          <small>Entrada: {{ splitter.inputText }}</small>
+        </span>
+        <span class="list__dest">{{ usedOutputs(splitter) }} de {{ splitter.outputs.length }} saídas em uso</span>
+      </button>
+    }
+  } @else if (activeCable(); as cable) {
+    @if (cable.empty) {
+      <div class="list__empty">
+        <p>Este cabo ainda não tem fibras.</p>
+        <button type="button" class="list__link" data-action="abrir-cabo" (click)="openCable.emit(cable.cableId)">
+          Abrir ficha do cabo
+        </button>
+      </div>
+    } @else {
+      @for (tube of cable.tubes; track tube.number) {
+        @if (cable.tubes.length > 1) {
+          <button type="button" class="list__tube" [attr.data-tube]="tube.number"
+            [attr.aria-expanded]="isOpen(cable, tube.number)" (click)="toggleTube(cable, tube.number)">
+            <span aria-hidden="true">{{ isOpen(cable, tube.number) ? '▾' : '▸' }}</span>
+            <app-fiber-dot [color]="tube.color" [number]="tube.number" kind="tubo" size="sm" />
+            <strong>Tubo {{ colorName(tube.color) || tube.number }}</strong>
+            <small>{{ tube.used }}/{{ tube.total }} em uso</small>
+          </button>
+        }
+        @if (isOpen(cable, tube.number)) {
+          @for (item of tube.rows; track item.fiber.id) {
+            <button type="button" class="list__row" [attr.data-fiber]="item.fiber.id"
+              [class.list__row--selected]="selectedFiberId() === item.fiber.id"
+              [disabled]="blocked().has(item.fiber.id)" (click)="fiberTap.emit(item)">
+              <app-fiber-dot [color]="item.fiber.color" [number]="item.fiber.numberInTube" />
+              <span class="list__main">{{ item.fiber.numberInTube }} {{ colorName(item.fiber.color) }}</span>
+              @if (blocked().get(item.fiber.id); as reason) {
+                <span class="list__dest list__dest--muted">{{ reason }}</span>
+              } @else {
+                <span class="list__dest" [class.list__dest--muted]="!isUsed(item)">{{ item.destination.text }}</span>
+              }
+            </button>
+          }
+        }
+      }
+    }
+  }
+</div>

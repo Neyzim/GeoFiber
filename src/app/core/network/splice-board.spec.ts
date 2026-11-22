@@ -2,15 +2,9 @@ import { CableFiberResponse, SpliceResponse } from '../api/api-types';
 import { indexFibers } from './box-interior';
 import {
   attachmentText,
-  cableTubes,
   defaultSpliceCables,
   describeTraySummary,
-  fiberLocation,
   fiberPick,
-  fiberShortName,
-  pickHint,
-  trayPositions,
-  unplacedSplices,
   usedEnd,
 } from './splice-board';
 
@@ -62,32 +56,6 @@ describe('splice-board', () => {
       expect(usedEnd('PASS_THROUGH', 'out')).toBe('A');
       expect(usedEnd(undefined, 'in')).toBe('B');
       expect(usedEnd(undefined, 'out')).toBe('A');
-    });
-  });
-
-  describe('trayPositions', () => {
-    it('lists every position from 1 to the capacity, empty ones included', () => {
-      const positions = trayPositions(6, 1, SPLICES);
-      expect(positions.map((item) => item.number)).toEqual([1, 2, 3, 4, 5, 6]);
-      expect(positions[0].splice).toBeNull();
-      expect(positions[1].splice?.id).toBe('s1');
-      expect(positions[4].splice?.id).toBe('s2');
-    });
-
-    it('returns nothing for a tray without capacity', () => {
-      expect(trayPositions(0, 1, SPLICES)).toEqual([]);
-    });
-  });
-
-  describe('unplacedSplices', () => {
-    it('keeps splices without a position, above the capacity or in an unknown tray', () => {
-      const trays = [
-        { trayNumber: 1, capacity: 12 },
-        { trayNumber: 2, capacity: 12 },
-      ];
-      const withLost = [...SPLICES, { id: 'lost', trayNumber: 9, positionNumber: 1 }];
-      expect(unplacedSplices(trays, 1, withLost).map((item) => item.id)).toEqual(['old', 'big']);
-      expect(unplacedSplices(trays, 2, withLost).map((item) => item.id)).toEqual([]);
     });
   });
 
@@ -146,72 +114,12 @@ describe('splice-board', () => {
     });
   });
 
-  describe('fiberLocation', () => {
-    const index = indexFibers([
-      {
-        cableId: 'c1',
-        name: 'CABO-01',
-        fibers: [
-          fiber('f1', 1, 1, { ends: linked('FUSION', { id: 's1', elementId: 'box1' }) }),
-          fiber('f9', 1, 2),
-        ],
-      },
-    ]);
-
-    it('says where the fiber is spliced in this box, or that it is free here', () => {
-      const context = { boxId: 'box1', splices: SPLICES };
-      expect(fiberLocation(index.get('f1')!, 'B', context)).toBe(
-        'emendada na bandeja 1, posição 2',
-      );
-      expect(fiberLocation(index.get('f9')!, 'B', context)).toBe('livre nesta caixa');
-    });
-  });
-
   describe('names and texts', () => {
-    const index = indexFibers([{ cableId: 'c1', name: 'CABO-01', fibers: [fiber('f2', 1, 2)] }]);
-
-    it('gives a short fiber name: cable, tube color and fiber number', () => {
-      expect(fiberShortName(index.get('f2'))).toBe('CABO-01 Verde·2');
-      expect(fiberShortName(undefined)).toBe('Fibra de outro cabo');
-    });
-
     it('translates the attachment role', () => {
       expect(attachmentText('END')).toBe('chega aqui');
       expect(attachmentText('START')).toBe('sai daqui');
       expect(attachmentText('PASS_THROUGH')).toBe('passa por aqui');
       expect(attachmentText(undefined)).toBe('');
-    });
-
-    it('guides each step of the choice', () => {
-      const info = index.get('f2');
-      expect(pickHint(undefined, undefined, 'CABO-01', 'CABO-02')).toBe(
-        'Toque na fibra do CABO-01 que chega.',
-      );
-      expect(pickHint(info, undefined, 'CABO-01', 'CABO-02')).toBe(
-        'Amarelo (fibra 2) do CABO-01 escolhida. Agora a fibra do CABO-02.',
-      );
-      expect(pickHint(info, info, 'CABO-01', 'CABO-02')).toBe(
-        'Pronto. Confira e toque em "Registrar emenda".',
-      );
-      expect(pickHint(undefined, info, 'CABO-01', 'CABO-02')).toBe(
-        'Agora a fibra do CABO-01 que chega.',
-      );
-    });
-  });
-
-  describe('cableTubes', () => {
-    it('groups the fibers of a cable by tube, in order', () => {
-      const index = indexFibers([
-        { cableId: 'c1', name: 'CABO-01', fibers: [fiber('b', 2, 1), fiber('a2', 1, 2), fiber('a1', 1, 1)] },
-        { cableId: 'c2', name: 'CABO-02', fibers: [fiber('z', 1, 1)] },
-      ]);
-      const tubes = cableTubes(index, 'c1');
-      expect(tubes.map((tube) => [tube.number, tube.color])).toEqual([
-        [1, 'GREEN'],
-        [2, 'YELLOW'],
-      ]);
-      expect(tubes[0].fibers.map((item) => item.id)).toEqual(['a1', 'a2']);
-      expect(cableTubes(index, 'nope')).toEqual([]);
     });
   });
 

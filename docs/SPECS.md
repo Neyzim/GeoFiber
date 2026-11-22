@@ -40,11 +40,15 @@ Convenção: **RI** = regra de interface.
   claro/escuro, fichas com a linha "chega → elemento → sai" e abas, diagrama por emenda, bolinhas de
   fibra ABNT, ocupação "ocupado/total" e foco no mapa. O tema escuro muda só a interface; o mapa
   fica em ruas (OpenStreetMap) ou satélite.
-- **Tela de fusões** (`/caixas/:boxId/fusoes`; [design](superpowers/specs/2026-11-20-tela-de-fusoes-design.md),
-  [plano](superpowers/plans/2026-11-20-splice-screen-impl.md)): a bandeja desenhada como a física,
-  com todas as posições; emenda registrada com dois toques em fibras coloridas numa posição exata;
-  consulta da emenda; cabos "abertos" com onde cada fibra está emendada. Substitui a lista de fusões
-  e o diálogo "Nova fusão" da ficha da caixa.
+- **Diagrama de fusões** (`/caixas/:boxId/fusoes`; [design](superpowers/specs/2026-11-20-diagrama-de-fusoes-design.md),
+  [plano](superpowers/plans/2026-11-21-diagrama-de-fusoes.md); etapa 1): uma aba por cabo (e uma de
+  splitters) com o destino de cada fibra em frase curta; tocar numa fibra abre a gaveta com o
+  desenho daquela ligação; emenda por dois toques, com a bandeja escolhida ou criada sozinha.
+  Substituiu a tela de bandejas ([design antigo](superpowers/specs/2026-11-20-tela-de-fusoes-design.md)).
+  Etapa 2 (desenho clássico no computador) ainda não feita.
+- **Gerenciar usuários** (`/usuarios`, só administrador; [design](superpowers/specs/2026-11-21-gerenciar-usuarios-design.md),
+  [plano](superpowers/plans/2026-11-21-gerenciar-usuarios.md); segurança etapa 2): lista de contas,
+  desativar quem saiu, reativar, trocar senha esquecida e cadastrar (RI-39).
 - **Importação de KMZ/KML** (`/importar`; [design](superpowers/specs/2026-11-20-importar-kmz-design.md),
   [plano](superpowers/plans/2026-11-20-importar-kmz.md)): lê o arquivo no navegador, agrupa os itens
   (pontos por pasta e ícone; linhas por pasta, cor e espessura), a pessoa decide o tipo de cada
@@ -52,6 +56,9 @@ Convenção: **RI** = regra de interface.
   uma vez. Depende do endpoint `POST /imports/network` no backend.
 
 ### 1.2 Ainda não entregue
+- Nome de quem entrou no cabeçalho (depende de `GET /auth/me`). Mudar papel ou excluir conta (sem
+  endpoint). Esconder editar/excluir de quem não é dono (depende de `createdBy` ou `ownedByMe` nas
+  respostas).
 - Rastreio do sinal de ponta a ponta (adiado no roadmap) e escala B (listas paginadas).
 - Busca por área e cache (Etapa B). Rastreio de fibra (futuro).
 - Exportar KMZ/KML e importar clientes pelo arquivo (o cliente exige contrato e porta).
@@ -59,6 +66,24 @@ Convenção: **RI** = regra de interface.
 ---
 
 ## 2. Arquitetura da camada de API
+
+### 2.0 Sessão e acesso (`core/auth`, `features/auth`; [design](superpowers/specs/2026-11-21-seguranca-frontend-design.md), [plano](superpowers/plans/2026-11-21-seguranca-frontend.md))
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `core/auth/auth-api.ts` | `POST /auth/login`, `/auth/refresh`, `/auth/logout` (refresh e logout sem corpo). |
+| `core/auth/auth-session.ts` | Sessão: `status` (`checking`/`offline`/`signedIn`/`signedOut`), token só em memória, papel lido do JWT, `start()` (refresh ao abrir, uma vez), `login`, `refresh()` único em andamento, renovação em `expiresIn − 60` s (mín. 10 s; sem conexão, de novo em 30 s), `logout()` (limpa mesmo com erro) e `expire()` (login com `?expirou=1&voltar=`). |
+| `core/auth/auth.interceptor.ts` | Só na API: `withCredentials` sempre; Bearer fora de `/auth/*`; 401 → espera o refresh da sessão e repete uma vez; repetição com 401 → `expire()`; refresh sem conexão → o erro de conexão segue para quem chamou. |
+| `core/auth/auth-guards.ts` | `authGuard` (todas as telas da rede), `guestGuard` (`/entrar`), `adminGuard` (`/usuarios`; quem não é administrador vai ao mapa; vem depois do `authGuard`) e `safeReturnUrl` (só caminho interno). |
+| `core/auth/jwt.ts`, `roles.ts` | `readTokenClaims` (id e papel, nunca lança) e `roleText` ("Administrador", "Técnico"). |
+| `core/api/resources/user-api.ts` | `GET /users` (lista por nome), `POST /users` (cadastro), `PATCH /users/{id}/active` (`{active}`) e `PUT /users/{id}/password` (`{password}`), só administrador. |
+| `features/auth/sign-in-page.ts` | Página `/entrar`: e-mail e senha, aviso de sessão expirada, erros em português, aviso de conexão com "Tentar novamente". |
+| `shared/users/user-form-dialog.ts` | Diálogo "Cadastrar usuário": nome, e-mail, senha (≥ 10), papel; 409 no campo e-mail, 400 de senha no campo senha. |
+| `shared/users/password-dialog.ts` | Diálogo "Trocar senha de <nome>": senha nova (≥ 10, mostrar/ocultar); 400 no campo; sucesso "Senha de <nome> trocada. Passe a nova senha para ela." Na própria conta avisa antes, mostra "Sua senha foi trocada. Entre de novo com a senha nova." e sai (o backend encerra as sessões). |
+| `features/users/users-store.ts` | Lista da página: `load()`, `setActive(user, active)` (uma troca por vez em `busyId`; sucesso avisa "Conta de <nome> desativada/reativada." e recarrega; erro só avisa). |
+| `features/users/users-page.ts` | Página `/usuarios`: lista (nome, e-mail, papel · situação), "(você)" na própria linha, Trocar senha, Desativar (com confirmação) / Reativar, Cadastrar. |
+| `shared/map/map-toolbar` | Botão "Conta" no pé da barra: papel e "Sair". |
+| `features/network-map/network-sidebar` | Painel lateral: Modelos de rede, Importar KMZ/KML (quem edita) e Usuários (só administrador, abre `/usuarios`). |
 
 | Arquivo | Responsabilidade |
 |---|---|
@@ -104,7 +129,9 @@ Todos os caminhos são relativos a `/api/v1`.
 | `line-state-style.ts` | Forma da linha por estado (`active`, `planned`, `reserved`, `disabled`, `broken`): `lineStateOf` (situação de infra/cliente), `fiberLineState` e `lineStyleByState` (`stroke-dasharray`). |
 | `unifilar.ts` | Lados da linha do topo das fichas: `boxSides`, `cableSides`, `oltSides`, `customerSides`; `splitVisible` mostra até 3 de cada lado e o "+N". |
 | `occupancy.ts` | Contas de ocupação: portas de atendimento, saídas de splitter, portas PON e fibras do tubo. |
-| `splice-board.ts` | Regras da tela de fusões: `trayPositions` (1..capacidade, vazias incluídas), `unplacedSplices`, `usedEnd` (ponta pelo papel do cabo), `fiberPick` / `fiberLocation` (livre ou o motivo), `cableTubes`, `defaultSpliceCables`, frases (`pickHint`, `fiberShortName`, `describeTraySummary`). |
+| `splice-board.ts` | Regras da emenda: `usedEnd` (ponta pelo papel do cabo), `fiberPick` (livre ou o motivo), `attachmentText`, `defaultSpliceCables`, `describeTraySummary`. |
+| `fiber-destinations.ts` | Diagrama de fusões: `boxFiberMap` (cabos na ordem chega → passa → sai, tubos com ocupação, cada fibra com o destino em frase: "→ CABO · Verde 1", "→ Splitter 1:8", "→ porta 3 · Maria", "livre"…) e `boxSplitters` (entrada e saídas). |
+| `splice-plan.ts` | `trayForNewSplice` (primeira bandeja com espaço, senão criar a próxima com 12 posições, ou caixa cheia pelo `trayCapacity`), `spliceSides` (quem é entrada: chega antes de passa antes de sai; pontas explícitas) e `trayChoiceText`. |
 
 Os formulários ficam em `shared/network/` (OLT e caixa) e `shared/cable/` (cabo); cada um salva
 pelo repositório e só fecha depois da resposta do servidor. O início e o fim do cabo selecionado
@@ -138,7 +165,11 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
 | `shared/common/sheet-tabs.ts` | `app-sheet-tabs`: abas das fichas com sublinhado de 2px. |
 | `shared/diagram/unifilar-summary.ts` | `app-unifilar-summary`: linha "chega → elemento → sai" do topo da ficha, com a forma pela situação. |
 | `shared/diagram/diagram-line.component.ts` | `app-diagram-line`: uma linha por fusão/conector (entrada ─ posição/atenuação ─ saída) com `aria-label` da frase completa. |
-| `features/network-map/sheet-frame.scss` | Moldura comum das fichas: topo fixo, corpo rolável, 400px no computador, gaveta de 60dvh no celular (< 900px). |
+| `features/network-map/sheet-frame.scss` | Moldura comum das fichas: topo fixo, corpo rolável, 400px no computador, gaveta arrastável no celular (< 900px; altura `--gf-sheet-height`, 35dvh ao abrir). |
+| `core/network/sheet-drag.ts` | Gaveta do celular: `SHEET_OPEN` 0,35, `SHEET_MAX` 0,9, `SHEET_DISMISS` 0,2; `dragHeight` e `dragEnd` (RI-40). |
+| `shared/common/sheet-drag.directive.ts` | `appSheetDrag`: alça `[data-sheet-grip]` muda a altura da ficha no celular; soltar abaixo de 20% emite `sheetDismiss` (a ficha fecha). |
+| `shared/map/create-banner.ts` | `app-create-banner`: faixa "Criar CTO" no topo do mapa depois de escolher o tipo; tocar reabre a escolha, X encerra a criação. |
+| `core/services/map-viewport.ts` | `focus(point, zoom, bottomInset)` e `focusAll(points, maxZoom, bottomInset)`: no celular o centro desce metade da gaveta para o item ficar à vista. |
 | `shared/map/map-focus.ts` | Foco no mapa: classe `gf-map--focus` e `pathOpacity` (cabos não selecionados a 0,35). |
 | `core/services/map-preferences.ts` | Camada base salva; uma chave que não existe mais (CARTO "Claro"/"Escuro") volta para ruas. |
 
@@ -156,19 +187,18 @@ linhas das fichas (topo e diagramas) usam a forma de `line-state-style.ts` (RI-2
 | Arquivo | Responsabilidade |
 |---|---|
 | `core/network/box-interior.ts` | Nome da fibra para leigos, fibras com ponta livre, pontas padrão, splitters (razões, saídas a partir de 1), origem do sinal da porta e o resumo da caixa. |
-| `box-sheet-store.ts` | Estado da caixa aberta (ficha e tela de fusões): `GET /boxes/{id}/overview` + fibras de cada cabo; escritas de bandeja, fusão, conector, splitter e porta (sempre recarrega, sem apagar a tela). `saveSplice(body, done)` devolve o erro traduzido para o painel em vez do aviso. |
+| `box-sheet-store.ts` | Estado da caixa aberta (ficha e tela de fusões): `GET /boxes/{id}/overview` + fibras de cada cabo; escritas de bandeja, fusão, conector, splitter e porta (sempre recarrega, sem apagar a tela). `spliceFibers(choice, sides, done)` cria a bandeja quando preciso e a fusão sem posição; devolve o id ou o erro traduzido para a gaveta. |
 | `fiber-link-dialog.ts` | Diálogo único para escolher fibras (conector, splitter, porta); pontas A/B no modo avançado. |
 | `box-sheet.ts` | Painel à direita do mapa; seções conforme o tipo (CTO: splitters e portas; CEO/DIO: fusões, conectores e splitters). Fusões: só o resumo e "Ver fusões" (também no Resumo). |
 
-### 2.4.1 Tela de fusões (`features/box-splices`)
+### 2.4.1 Diagrama de fusões (`features/box-splices`)
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `box-splices-page.ts` | Página da rota `caixas/:boxId/fusoes` (provê o `BoxSheetStore`): cabeçalho com voltar, abas das bandejas, "+ bandeja", "Excluir bandeja", erro com "Tentar novamente"/"Voltar ao mapa" e o painel (direita ≥ 900px; por cima da parte de baixo no celular). |
-| `cable-strip.ts` | Faixa de cabos: barra com papel na caixa, fibras e listras dos tubos; abrir o cabo mostra cada fibra e onde está emendada. |
-| `tray-board.ts` | Posições 1..capacidade (vazia / "+ emendar aqui" / emenda com fibra que chega, protetor e fibra que sai) e a faixa "Sem posição definida". |
-| `splice-picker.ts` | Escolha das fibras: duas colunas (chega/sai) com cabos, tubos e fibras coloridas; frases de ajuda, perda, pontas no modo avançado e "Registrar emenda". |
-| `splice-detail.ts` | Consulta: posição, de onde chega, para onde sai, perda; "Ver cabo no mapa" e "Excluir emenda". |
+| `box-splices-page.ts` | Página da rota `caixas/:boxId/fusoes` (provê o `BoxSheetStore`): cabeçalho com voltar, seleção (fibra, splitter ou emenda, pelo id), modo escolher com aviso e Cancelar, fibras bloqueadas (`fiberPick`), confirmação com `spliceFibers`, rodapé das bandejas (Excluir só na vazia), caixa sem cabos e erro com "Tentar novamente"/"Voltar ao mapa". Gaveta à direita ≥ 900px; embaixo até 60dvh no celular. |
+| `fiber-list.ts` | Abas por cabo ("CABO-01 · chega aqui") e "Splitters"; tubos recolhíveis com "1/12 em uso" (só com mais de um tubo); cada fibra com bolinha, número, cor e destino; bloqueadas desabilitadas com o motivo; cabo sem fibras com "Abrir ficha do cabo". |
+| `fiber-drawer.ts` | Gaveta: desenho da ligação (`app-diagram-line`) e a frase por destino (livre, passa direto, conector, porta, splitter, rompida, outra caixa); emenda via `app-splice-detail`; grade de saídas do splitter; "Emendar", "Ver o caminho", confirmação "Nova emenda" com a frase da bandeja e erro no próprio painel. |
+| `splice-detail.ts` | Consulta: posição, de onde chega, para onde sai, perda; "Ver cabo no mapa", "Ver o caminho" e "Excluir emenda". |
 | `core/services/map-return.ts` | Recado em memória para o mapa: selecionar (e centralizar) a caixa ou o cabo quando a rede carregar. |
 
 ### 2.4.2 Importação de rede (`core/import`, `features/network-import`)
@@ -348,7 +378,7 @@ OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo
   bolinha tem nome acessível (`app-fiber-dot`).
 - **RI-29 Ficha.** Topo fixo com a linha "chega → elemento → sai" e as abas; só o corpo rola; ao
   trocar de elemento a ficha volta ao Resumo. Painel de 400px à direita no computador; gaveta
-  embaixo com 60dvh no celular (< 900px). Abas: caixa CEO/DIO Resumo · Fusões · Splitters; CTO
+  embaixo, arrastável, no celular (< 900px; RI-40). Abas: caixa CEO/DIO Resumo · Fusões · Splitters; CTO
   Resumo · Portas · Fusões (só com bandeja ou conector); cabo Resumo · Fibras; OLT Resumo · Portas
   PON; cliente Resumo · Histórico.
 - **RI-30 Ocupação.** Sempre `ocupado/total unidade` (`app-occupancy-badge`); some quando o total
@@ -356,22 +386,37 @@ OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo
 - **RI-31 Foco no mapa.** Com um elemento ou cabo selecionado, os outros marcadores ficam a 45% e
   os outros cabos a 35% (selecionados e destacados ficam normais). O tema não troca a camada base:
   só há ruas (OpenStreetMap) e satélite (Esri); camada salva que não existe mais volta para ruas.
-- **RI-32 Tela de fusões.** Endereço próprio `/caixas/:boxId/fusoes` ("Ver fusões" na ficha da
-  caixa, também em CTO sem bandeja). A bandeja mostra todas as posições de 1 até a capacidade;
-  fusões sem posição válida ficam em "Sem posição definida" com "Excluir". Voltar leva ao mapa com
-  a caixa selecionada na mesma posição/zoom; se a caixa não estava selecionada (link direto), o
-  mapa centraliza nela. Sem `canEdit`: sem "+ emendar aqui", "+ bandeja" e exclusões.
-- **RI-33 Escolher fibras da emenda.** Sem tabelas nem listas suspensas: cabos em botões, tubos e
-  fibras como bolinhas (alvo de 44px). A ponta usada segue o papel do cabo na caixa (chega = B,
-  sai = A, passa = B na entrada e A na saída) e vai sempre explícita no `POST`; o modo avançado
-  troca. Fibra com a ponta em uso fica apagada e, ao ser tocada, diz o motivo (emenda nesta caixa
-  com bandeja/posição, outra caixa, conector, splitter, porta de atendimento, OLT, rompida,
-  reservada). A mesma fibra não vale dos dois lados. Erro do servidor aparece no painel e mantém as
-  escolhas; sucesso fecha o painel e a tela recarrega sem sumir.
+- **RI-32 Diagrama de fusões.** Endereço próprio `/caixas/:boxId/fusoes` ("Ver fusões" na ficha da
+  caixa, também em CTO sem bandeja). Uma aba por cabo, na ordem chega → passa → sai, e "Splitters"
+  se houver; abre no primeiro cabo que chega. Cada fibra mostra o destino em frase curta, sem código
+  do backend. Tocar numa fibra ou splitter abre a gaveta com o desenho só daquela ligação. O rodapé
+  lista as bandejas ("Bandeja 1 · 3/12"); Excluir só na vazia. Caixa sem cabos: frase e "Voltar ao
+  mapa". Voltar leva ao mapa com a caixa selecionada na mesma posição/zoom; se a caixa não estava
+  selecionada (link direto), o mapa centraliza nela. Sem `canEdit`: sem Emendar e sem exclusões.
+- **RI-33 Emendar por dois toques.** "Emendar" na gaveta de uma fibra livre (ou que passa) entra no
+  modo escolher: aviso fixo "Escolha a fibra que vai emendar com …" com Cancelar, a lista abre no
+  cabo do outro lado e as fibras em uso ficam desabilitadas com o motivo (`fiberPick`). Escolhida a
+  segunda, a gaveta mostra "Nova emenda", o desenho e onde ela vai ("Vai para a bandeja N, na
+  próxima posição livre." / "Vou criar a bandeja N (12 posições)." / "Esta caixa não comporta mais
+  bandejas.", que desabilita Emendar). A entrada é a fibra do cabo que chega (chega antes de passa
+  antes de sai; empate = a primeira tocada); as pontas vão explícitas. A bandeja nova é criada antes
+  da fusão, que vai sem posição (o backend usa a próxima livre). Erro aparece na gaveta e mantém a
+  escolha; sucesso mostra a emenda nova na gaveta e a tela recarrega sem sumir.
 - **RI-34 Espaço do mapa.** A barra de ferramentas é uma coluna fina de 40px sobre o mapa (botões
   de 34px, ícones de 20px, dicas à direita). O painel lateral expandido tem 232px (até 64% da
   largura em telas < 820px) e recolhido 56px (48px no celular). A escolha do tipo (elemento ou
   função do cabo) é um popup de 216px ao lado da barra, em grade de 2 colunas com rolagem própria.
+- **RI-40 Mapa no celular e excluir pela ficha.** (a) O painel lateral começa sempre recolhido; recolhido
+  ele mostra também os ícones de Importar (com `canEdit`) e Usuários (administrador). (b) Fichas da
+  caixa, da OLT e do cabo têm "Mais ações" (⋮, só com `canEdit`) → "Excluir", com a mesma confirmação
+  da Legenda. (c) O balão do elemento e do cabo tem o botão "Toque aqui para editar"
+  (`data-popup-action="edit"`, `popupEdit`); tocar de novo no item também edita. (d) Abaixo de 900px:
+  com qualquer ficha aberta, "O que estou vendo?" e "Glossário" somem; a ficha abre com 35% da
+  altura, a alça leva livremente até 90% e soltar abaixo de 20% fecha a ficha (tira a seleção); ao focar um item,
+  o mapa o centraliza na parte visível acima da gaveta. (e) Ao escolher o tipo (elemento ou função do
+  cabo), a escolha fecha e aparece a faixa "Criar CTO" / "Criar cabo de distribuição" no topo; tocar
+  nela reabre a escolha, o X encerra a criação. Entrar na criação (elemento ou cabo) tira a seleção: a
+  ficha aberta fecha.
 
 ---
 
@@ -404,6 +449,28 @@ OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo
   continuam exatos. Abrir o impacto fecha o rastreio e as outras fichas, e o contrário também vale.
   Item sem clientes mostra "Nenhum cliente depende deste item."; cliente ou caixa sem posição fica só
   na lista. 404 mostra "Não encontramos este item na rede.".
+
+- **RI-38 Sessão e acesso.** O token de acesso fica só em memória (nunca `localStorage` nem
+  `sessionStorage`); o refresh só existe no cookie httpOnly. Só um `POST /auth/refresh` fica em
+  andamento por vez (o backend encerra todas as sessões se dois chegarem juntos). Ao abrir, o app
+  tenta o refresh: deu certo, entra; 401, vai para `/entrar`; sem conexão, `/entrar` mostra "Não foi
+  possível conectar ao servidor do GeoFiber." com "Tentar novamente". Só 401 do refresh encerra a
+  sessão, com "Sua sessão expirou. Entre novamente." e volta ao endereço de antes (`voltar` só aceita
+  caminho interno). Erros 401/403 usam o texto em português do backend; 403 de dono ("Só o criador
+  pode alterar este elemento.") vira aviso e o formulário continua aberto. Editar e excluir aparecem
+  para todos que entraram (`canEdit` segue `true`): o backend decide o dono. Papéis na tela como
+  "Administrador" e "Técnico"; só o administrador vê "Usuários" no painel lateral.
+
+- **RI-39 Gerenciar usuários.** `/usuarios` só abre para administrador (`authGuard` e depois
+  `adminGuard`; técnico vai ao mapa, sem sessão vai a `/entrar?voltar=%2Fusuarios`). A lista vem de
+  `GET /users` e mostra nome, e-mail e "Administrador"/"Técnico" · "Ativa"/"Desativada"; erro ao
+  carregar mostra a mensagem e "Tentar novamente". A própria linha tem "(você)" e não tem
+  "Desativar" (o backend também recusa com 409). "Desativar" pede confirmação ("Ela sai do sistema
+  em até 15 minutos e não consegue entrar de novo até ser reativada."); "Reativar" não. Uma troca
+  por vez; a lista só muda depois do sucesso, recarregando. "Trocar senha" aparece em todas as
+  linhas e encerra as sessões da pessoa no backend; na própria conta o administrador sai em seguida
+  e entra com a senha nova. Só a recarga mais recente da lista vale. "Cadastrar" recarrega a lista quando alguém foi
+  criado.
 
 ## 4. Testes
 

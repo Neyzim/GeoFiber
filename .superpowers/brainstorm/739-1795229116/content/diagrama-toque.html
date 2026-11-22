@@ -1,0 +1,112 @@
+<style>
+  .phone { width: 260px; border: 2px solid rgba(127,127,127,.5); border-radius: 22px; padding: 10px; background: rgba(127,127,127,.05); font-family: system-ui, sans-serif; font-size: 12px; }
+  .bar { display:flex; justify-content:space-between; font-weight:600; padding:4px 2px 8px; border-bottom:1px solid rgba(127,127,127,.3); margin-bottom:6px; }
+  .dot { display:inline-block; width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.35); vertical-align:middle; flex:none; }
+  .muted { color:#888; font-size:11px; }
+  .chip { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; background:rgba(127,127,127,.14); font-size:11px; }
+  .row { display:flex; align-items:center; gap:6px; padding:5px 2px; border-bottom:1px solid rgba(127,127,127,.15); }
+  .row.on { background:rgba(249,168,37,.18); border-radius:6px; }
+  .dim { opacity:.3; }
+  .tabs { display:flex; gap:4px; margin-bottom:6px; }
+  .tab { padding:3px 8px; border-radius:999px; font-size:11px; background:rgba(127,127,127,.14); }
+  .tab.on { background:#177a54; color:#fff; }
+  .drawer { margin-top:8px; border:1px solid rgba(127,127,127,.4); border-radius:14px 14px 4px 4px; padding:10px; background:rgba(127,127,127,.08); }
+  .grab { width:36px; height:4px; border-radius:2px; background:rgba(127,127,127,.5); margin:0 auto 8px; }
+  .line { display:flex; align-items:center; gap:4px; margin:8px 0; }
+  .end { display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10px; text-align:center; width:64px; }
+  .wire { flex:1; height:3px; background:#f9a825; position:relative; }
+  .mid { font-size:10px; text-align:center; padding:2px 6px; border:1px solid rgba(127,127,127,.5); border-radius:6px; }
+  .split { border:2px solid #177a54; border-radius:8px; padding:3px 6px; font-weight:600; font-size:11px; }
+  .btns { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .btn { padding:4px 8px; border-radius:8px; border:1px solid rgba(127,127,127,.5); font-size:11px; }
+  .btn.pri { background:#177a54; color:#fff; border-color:#177a54; }
+  .outs { display:grid; grid-template-columns: repeat(4, 1fr); gap:4px; margin-top:6px; }
+  .out { font-size:10px; text-align:center; padding:3px 0; border-radius:6px; background:rgba(127,127,127,.12); }
+  .out.used { background:rgba(31,157,107,.25); }
+  .flex { display:flex; gap:16px; flex-wrap:wrap; }
+  .cap { font-weight:600; margin:0 0 6px; }
+</style>
+
+<h2>O que aparece ao tocar numa fibra (opção 2)</h2>
+<p class="subtitle">A lista fica em cima; uma gaveta sobe de baixo com o desenho só daquela ligação. Lista nunca polui; o desenho mostra uma coisa por vez.</p>
+
+<div class="flex">
+
+  <div>
+    <p class="cap">a) Fibra emendada</p>
+    <div class="phone">
+      <div class="bar"><span>‹ O1-C1-R2</span><span class="muted">Diagrama</span></div>
+      <div class="tabs"><span class="tab on">Cabo 01 · chega</span><span class="tab">Backbone 1</span></div>
+      <div class="row dim"><span class="dot" style="background:#1f9d4b"></span> 1 Verde <span style="margin-left:auto" class="chip">→ Splitter</span></div>
+      <div class="row on"><span class="dot" style="background:#f5d90a"></span> 2 Amarelo <span style="margin-left:auto" class="chip">→ Backbone</span></div>
+      <div class="row dim"><span class="dot" style="background:#fff"></span> 3 Branco <span style="margin-left:auto" class="muted">livre</span></div>
+      <div class="drawer">
+        <div class="grab"></div>
+        <strong>Emenda por fusão</strong>
+        <div class="line">
+          <div class="end"><span class="dot" style="background:#f5d90a"></span>Cabo 01<br>fibra 2 Amarelo</div>
+          <div class="wire"></div>
+          <div class="mid">fusão</div>
+          <div class="wire"></div>
+          <div class="end"><span class="dot" style="background:#f5d90a"></span>Backbone 1<br>tubo Verde · 2</div>
+        </div>
+        <div class="muted">Na caixa: bandeja 1 · posição 3 · perda 0,05 dB</div>
+        <div class="btns"><span class="btn">Ver o caminho</span><span class="btn">Desfazer emenda</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="cap">b) Fibra que vai ao splitter</p>
+    <div class="phone">
+      <div class="bar"><span>‹ O1-C1-R2</span><span class="muted">Diagrama</span></div>
+      <div class="tabs"><span class="tab on">Cabo 01 · chega</span><span class="tab">Backbone 1</span></div>
+      <div class="row on"><span class="dot" style="background:#1f9d4b"></span> 1 Verde <span style="margin-left:auto" class="chip">→ Splitter</span></div>
+      <div class="row dim"><span class="dot" style="background:#f5d90a"></span> 2 Amarelo <span style="margin-left:auto" class="chip">→ Backbone</span></div>
+      <div class="drawer">
+        <div class="grab"></div>
+        <strong>Entra no splitter</strong>
+        <div class="line">
+          <div class="end"><span class="dot" style="background:#1f9d4b"></span>Cabo 01<br>fibra 1 Verde</div>
+          <div class="wire"></div>
+          <div class="split">Splitter 1:16</div>
+        </div>
+        <div class="muted">Saídas (5 com cliente, 11 livres):</div>
+        <div class="outs">
+          <span class="out used">1 Maria</span><span class="out used">2 João</span><span class="out used">3 Ana</span><span class="out">4</span>
+          <span class="out used">5 Pedro</span><span class="out">6</span><span class="out used">7 Rita</span><span class="out">8</span>
+        </div>
+        <div class="muted" style="margin-top:2px">… até 16</div>
+        <div class="btns"><span class="btn">Ver o caminho</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="cap">c) Fibra livre: emendar</p>
+    <div class="phone">
+      <div class="bar"><span>‹ O1-C1-R2</span><span class="muted">Diagrama</span></div>
+      <div class="tabs"><span class="tab">Cabo 01</span><span class="tab on">Backbone 1 · sai</span></div>
+      <div class="muted" style="padding:2px">Escolha o destino da fibra 3 Branco (Cabo 01):</div>
+      <div class="row"><span class="dot" style="background:#1f9d4b"></span> Verde · 1 <span style="margin-left:auto" class="muted">livre</span></div>
+      <div class="row dim"><span class="dot" style="background:#f5d90a"></span> Verde · 2 <span style="margin-left:auto" class="muted">ocupada</span></div>
+      <div class="row on"><span class="dot" style="background:#fff"></span> Verde · 3 <span style="margin-left:auto" class="muted">livre</span></div>
+      <div class="drawer">
+        <div class="grab"></div>
+        <strong>Nova emenda</strong>
+        <div class="line">
+          <div class="end"><span class="dot" style="background:#fff"></span>Cabo 01<br>fibra 3 Branco</div>
+          <div class="wire" style="background:repeating-linear-gradient(90deg,#f9a825 0 6px,transparent 6px 10px)"></div>
+          <div class="end"><span class="dot" style="background:#fff"></span>Backbone 1<br>tubo Verde · 3</div>
+        </div>
+        <div class="muted">Vai para: bandeja 1 · próxima posição livre (4)</div>
+        <div class="btns"><span class="btn pri">Emendar</span><span class="btn">Cancelar</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:14px">
+  <p class="muted">O desenho da gaveta é o mesmo "chega → elemento → sai" que já existe nas fichas (app-diagram-line). No computador, a gaveta vira o painel da direita e o diagrama clássico fica à esquerda.</p>
+</div>

@@ -8,7 +8,7 @@
       <span class="page__badge" [style.background]="definition.color">{{ definition.code }}</span>
     }
     <div class="page__titles">
-      <h1>{{ box()?.name ?? 'Caixa' }} <span class="page__subtitle">· Fusões</span></h1>
+      <h1>{{ box()?.name ?? 'Caixa' }} <span class="page__subtitle">· Diagrama de fusões</span></h1>
       @if (status(); as situation) {
         <p class="page__status">
           <span class="page__dot" [style.background]="situation.color"></span>
@@ -30,63 +30,69 @@
         <button mat-button type="button" data-action="voltar-ao-mapa" (click)="back()">Voltar ao mapa</button>
       </div>
     </div>
+  } @else if (store.overview() && cables().length === 0) {
+    <div class="page__error">
+      <p>Nenhum cabo chega aqui ainda. Inclua esta caixa na lista de um cabo, na ficha do cabo.</p>
+      <div class="page__error-actions">
+        <button mat-button type="button" data-action="voltar-ao-mapa" (click)="back()">Voltar ao mapa</button>
+      </div>
+    </div>
   } @else if (store.overview()) {
-    <app-cable-strip class="page__cables" (openCable)="viewCable($event)" />
-
-    <div class="page__main" [class.has-panel]="panelOpen()">
-      <section class="page__board" aria-label="Bandejas">
-        <div class="trays" role="tablist" aria-label="Bandejas da caixa">
-          @for (item of store.trays(); track item.id) {
-            <button type="button" role="tab" class="trays__tab" [attr.data-tray-tab]="item.trayNumber"
-              [attr.aria-selected]="item.trayNumber === tray()?.trayNumber"
-              (click)="selectTray(item.trayNumber)">Bandeja {{ item.trayNumber }} · <span class="gf-data">{{ usedOf(item) }}/{{ item.capacity }}</span></button>
-          }
-          @if (canEdit()) {
-            <button type="button" class="trays__add" data-action="nova-bandeja" [attr.aria-expanded]="addingTray()"
-              [disabled]="store.saving()" (click)="addingTray.set(!addingTray())">+ bandeja</button>
-          }
-        </div>
-
-        @if (addingTray()) {
-          <div class="trays__capacities" role="group" aria-label="Quantas posições tem a bandeja?">
-            <span>Quantas posições?</span>
-            @for (capacity of capacities; track capacity) {
-              <button mat-stroked-button type="button" [attr.data-capacity]="capacity" (click)="addTray(capacity)">
-                {{ capacity }}
-              </button>
-            }
+    <div class="page__main" [class.has-panel]="drawerOpen()">
+      <section class="page__board" aria-label="Diagrama de fusões">
+        @if (choosingFrom(); as from) {
+          <div class="page__choosing" role="status">
+            <span>Escolha a fibra que vai emendar com {{ from }}</span>
+            <button mat-button type="button" data-action="cancelar-escolha" (click)="cancelSplice()">Cancelar</button>
           </div>
         }
 
-        @if (tray(); as current) {
-          <app-tray-board [tray]="current" [canEdit]="canEdit()" [selected]="selectedPosition()"
-            (positionTapped)="openPosition($event)" (spliceTapped)="openSplice($event)"
-            (deleteRequested)="deleteSplice($event)" />
-          @if (canEdit() && trayIsEmpty()) {
-            <button mat-button type="button" class="page__danger" data-action="excluir-bandeja" (click)="deleteTray()">
-              <mat-icon>delete_outline</mat-icon>
-              Excluir bandeja
-            </button>
-          }
-        } @else {
-          <p class="page__empty">
-            Esta caixa ainda não tem bandejas.
-            @if (canEdit()) {
-              Toque em "+ bandeja" para criar a primeira e escolha quantas posições ela tem.
+        <app-fiber-list
+          [cables]="cables()"
+          [splitters]="splitters()"
+          [selectedFiberId]="selectedRow()?.fiber?.id ?? null"
+          [blocked]="blocked()"
+          [(tab)]="tab"
+          (fiberTap)="onFiberTap($event)"
+          (splitterTap)="onSplitterTap($event)"
+          (openCable)="viewCable($event)"
+        />
+
+        @if (trayRows().length) {
+          <footer class="page__trays" aria-label="Bandejas">
+            <span class="page__trays-title">Bandejas:</span>
+            @for (item of trayRows(); track item.tray.id) {
+              <span class="page__tray">
+                Bandeja {{ item.tray.trayNumber }} · <span class="gf-data">{{ item.used }}/{{ item.tray.capacity }}</span>
+                @if (canEdit() && item.used === 0) {
+                  <button mat-button type="button" class="page__danger" [attr.data-tray-delete]="item.tray.trayNumber"
+                    (click)="deleteTray(item.tray)">Excluir</button>
+                }
+              </span>
             }
-          </p>
+          </footer>
         }
       </section>
 
-      @if (panelOpen()) {
-        <aside class="page__panel" aria-label="Emenda">
-          @if (pick(); as current) {
-            <app-splice-picker [trayNumber]="current.trayNumber" [position]="current.position"
-              (done)="closePanel()" (closed)="closePanel()" (openCable)="viewCable($event)" />
-          } @else if (detail(); as splice) {
-            <app-splice-detail [splice]="splice" [canEdit]="canEdit()" (closed)="closePanel()"
-              (viewCable)="viewCable($event)" (traceSplice)="traceSplice($event)" (deleteRequested)="deleteSplice($event)" />
-          }
+      @if (drawerOpen()) {
+        <aside class="page__panel" aria-label="Detalhe">
+          <app-fiber-drawer
+            [row]="selectedRow()"
+            [splitter]="selectedSplitter()"
+            [splice]="selectedSplice()"
+            [pending]="pending()"
+            [error]="drawerError()"
+            [canEdit]="canEdit()"
+            [saving]="store.saving()"
+            [fiberIndex]="store.fiberIndex()"
+            (startSplice)="startSplice()"
+            (confirm)="confirmSplice()"
+            (cancel)="cancelSplice()"
+            (trace)="trace($event)"
+            (undo)="undoSplice($event)"
+            (viewCable)="viewCable($event)"
+            (closed)="closeDrawer()"
+          />
         </aside>
       }
     </div>

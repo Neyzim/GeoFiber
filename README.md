@@ -55,10 +55,13 @@ Use os tipos pelos aliases de `src/app/core/api/api-types.ts` (ex.: `BoxResponse
 | Pasta | Conteúdo |
 |---|---|
 | `src/app/core/api/` | Comunicação com o backend: URL, idioma, tipos, coordenadas, erros e um serviço por recurso (`resources/`). |
+| `src/app/core/auth/` | Sessão: login, refresh por cookie (um só em andamento), renovação, logout, interceptor (Bearer + `withCredentials`) e guardas das rotas. |
+| `src/app/features/auth/` | Página `/entrar`. |
+| `src/app/features/users/` | Página `/usuarios` (só administrador): lista de contas, desativar/reativar, trocar senha, cadastrar. |
 | `src/app/core/network/` | Camada do mapa: catálogo visual, conversão para marcadores/linhas, repositório (fala com a API) e estado da tela. |
 | `src/app/features/network-map/cable-sheet/` | Ficha do cabo: por onde passa (lista editável), tubos e fibras. |
 | `src/app/features/network-map/box-sheet/` | Ficha da caixa: resumo das fusões, conectores, splitters e portas de atendimento. |
-| `src/app/features/box-splices/` | Tela de fusões (`/caixas/:boxId/fusoes`): a bandeja como a física, cabos abertos e emenda com dois toques nas fibras coloridas. |
+| `src/app/features/box-splices/` | Diagrama de fusões (`/caixas/:boxId/fusoes`): uma aba por cabo com o destino de cada fibra, gaveta com o desenho da ligação e emenda por dois toques (a bandeja é escolhida ou criada sozinha). |
 | `src/app/core/import/` | Importação de KMZ/KML: leitura do arquivo e do KML, agrupamento, reconhecimento de duplicados, prévia e montagem do pedido. |
 | `src/app/features/impact/` | Impacto de manutenção: ficha com os clientes, caixas e OLTs que ficam sem sinal se um cabo, caixa ou OLT sair (só leitura). |
 | `src/app/features/trace/` | Rastreio da fibra: ficha com o caminho até a OLT ou até os clientes, quebras e saídas do splitter (só leitura). |
@@ -66,7 +69,7 @@ Use os tipos pelos aliases de `src/app/core/api/api-types.ts` (ex.: `BoxResponse
 | `src/app/features/network-map/olt-sheet/` | Ficha da OLT: portas PON por placa e ligação com as fibras. |
 | `src/app/features/network-map/customer-sheet/` | Ficha do cliente: situação, quem atende e histórico. |
 | `src/app/shared/help/` | Ajuda para leigos: glossário, "?" nos termos e "O que estou vendo?". |
-| `src/app/shared/common/` | Peças do visual "Esquema Unifilar": bolinha de fibra ABNT, selo de ocupação ("3/12") e abas das fichas. |
+| `src/app/shared/common/` | Peças do visual "Esquema Unifilar": bolinha de fibra ABNT, selo de ocupação ("3/12"), abas das fichas e a gaveta arrastável do celular (`appSheetDrag`). |
 | `src/app/shared/diagram/` | Linha "chega → elemento → sai" do topo das fichas e diagrama de cada emenda. |
 | `src/theme/` | `_tokens.scss`: cores (tema claro/escuro), raios, sombra e fontes `--gf-*` usados em todo o app. |
 | `src/app/core/` | Modelos, constantes e serviços de estado (tema, preferências, modelos de rede). |
@@ -79,3 +82,12 @@ Use os tipos pelos aliases de `src/app/core/api/api-types.ts` (ex.: `BoxResponse
 - [`docs/SPECS.md`](docs/SPECS.md) — especificação do frontend: o que faz e quais regras segue.
 - [`docs/GUIA.md`](docs/GUIA.md) — guia de uso e glossário em linguagem simples.
 - [Roadmap](docs/superpowers/specs/2026-11-19-frontend-roadmap-design.md) — etapas de integração com o backend.
+
+## Login e backend
+
+Todas as telas exigem login (`/entrar`). O token de acesso fica só em memória; o refresh vem num
+cookie httpOnly `Secure`, aceito pelo navegador só em HTTPS ou em `http://localhost`. A origem do
+front precisa estar em `CORS_ALLOWED_ORIGINS` no backend (padrão `http://localhost:4200`). O primeiro
+usuário administrador é criado pelo backend na primeira subida (variáveis `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`).
+Os demais usuários são cadastrados, desativados e têm a senha trocada pelo administrador em
+**Usuários**, no painel lateral do mapa (`/usuarios`).

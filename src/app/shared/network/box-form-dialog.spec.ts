@@ -24,7 +24,7 @@ function setup(data: BoxFormData, createBox = vi.fn(() => of({ id: 'b1' }))) {
     ],
   });
   const component = TestBed.createComponent(BoxFormDialogComponent).componentInstance;
-  return { component, close, repository };
+  return { component, close, repository, notifications };
 }
 
 const position = { lat: -5.8, lng: -35.2 };
@@ -66,6 +66,23 @@ describe('BoxFormDialogComponent', () => {
     component.form.patchValue({ name: 'X' });
     component.submit();
     expect(component.form.get('name')?.errors?.['api']).toBe('obrigatório');
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('403 de dono: avisa com o texto do backend e mantém o que foi digitado', () => {
+    const error = new HttpErrorResponse({
+      status: 403,
+      error: { status: 403, detail: 'Só o criador pode alterar este elemento.' },
+    });
+    const { component, close, notifications } = setup(
+      { mode: 'create', position, type: 'CTO' },
+      vi.fn(() => throwError(() => error)),
+    );
+    component.form.patchValue({ name: 'CTO-09' });
+    component.submit();
+    expect(notifications.apiError).toHaveBeenCalledWith(error);
+    expect(parseApiError(error).message).toBe('Só o criador pode alterar este elemento.');
+    expect(component.form.get('name')?.value).toBe('CTO-09');
     expect(close).not.toHaveBeenCalled();
   });
 });
