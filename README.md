@@ -51,6 +51,12 @@ No backend de produção: `API_DOCS_ENABLED` sem valor (Swagger desligado), `GEO
 forte e, atrás de proxy, `server.forward-headers-strategy=native` (o limite de tentativas de login
 usa o IP do cliente). O build de produção não gera source maps.
 
+**Teste gratuito na Netlify.** O arquivo `public/_redirects` (copiado para o `dist` no build) faz a
+Netlify encaminhar `/api/*` para o backend no Render e devolver `index.html` para as rotas do app. Na
+Netlify: build `npm run build`, pasta publicada `dist/geofiber/browser`. Se o serviço no Render tiver
+outro nome, troque a URL no `_redirects`. Passo a passo completo (Supabase + Render + Netlify):
+`geofiber-backend/docs/PUBLICAR-GRATUITO.md`.
+
 Toda chamada à API envia `Accept-Language: pt-BR`, para as mensagens de validação virem em português.
 
 ## Tipos da API
