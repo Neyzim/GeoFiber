@@ -1,15 +1,23 @@
+@if (!collapsed()) {
+  <!-- Fundo só aparece no celular (o painel abre por cima do mapa): tocar fora recolhe. -->
+  <button type="button" class="sidebar__backdrop" aria-label="Fechar painel" tabindex="-1"
+    (click)="toggleCollapsed()"></button>
+}
 <aside class="sidebar" [class.is-collapsed]="collapsed()">
   @if (collapsed()) {
     <div class="sidebar__rail">
+      <!-- No celular só este botão aparece (☰), flutuando sobre o mapa. -->
       <button
         mat-icon-button
         type="button"
+        class="sidebar__toggle"
         matTooltip="Expandir painel"
         aria-label="Expandir painel"
         matTooltipPosition="right"
         (click)="toggleCollapsed()"
       >
-        <mat-icon>chevron_right</mat-icon>
+        <mat-icon class="sidebar__toggle-desktop">chevron_right</mat-icon>
+        <mat-icon class="sidebar__toggle-mobile">menu</mat-icon>
       </button>
       <span class="sidebar__logo" aria-hidden="true">GF</span>
       <a

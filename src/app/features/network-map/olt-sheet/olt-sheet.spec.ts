@@ -31,6 +31,7 @@ function render(): ComponentFixture<OltSheetComponent> {
         useValue: {
           state: signal('ready'),
           saving: signal(false),
+          batchProgress: signal(null),
           summary: signal('Esta OLT tem 2 portas PON (1 em uso). 1 cabo sai dela.'),
           slots: signal(groupPortsBySlot(ports)),
           ports: signal(ports),

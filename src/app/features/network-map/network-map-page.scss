@@ -6,6 +6,7 @@
 }
 
 .project {
+  position: relative; // no celular o painel lateral flutua por cima do mapa
   display: flex;
   height: 100%;
   overflow: hidden;
@@ -79,6 +80,14 @@
   &--right {
     right: 12px;
     align-items: flex-end;
+  }
+}
+
+// No celular o painel vira o botão ☰ no canto de cima (40px): a barra de ferramentas desce.
+// Fica depois de `.project__overlay` para vencer o `top: 12px` dela.
+@media (max-width: 899.98px) {
+  .project__overlay--left {
+    top: 60px;
   }
 }
 

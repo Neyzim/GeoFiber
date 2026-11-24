@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -82,6 +83,18 @@ export class FiberLinkDialogComponent {
     trayNumber: new FormControl<number | null>(this.data.trays?.[0]?.number ?? null),
     attenuationDb: new FormControl<number | null>(null, Validators.min(0)),
   });
+
+  constructor() {
+    // Trocar a ponta (modo avançado) limpa a fibra que deixou de estar livre nela.
+    this.form.controls.slots.controls.forEach((slot, index) => {
+      slot.controls.fiberEnd.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+        const chosen = slot.controls.fiberId.value;
+        if (chosen && !this.optionsFor(index).some((option) => option.id === chosen)) {
+          slot.controls.fiberId.setValue('');
+        }
+      });
+    });
+  }
 
   toggleAdvanced(): void {
     this.advanced.update((value) => !value);

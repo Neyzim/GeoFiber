@@ -40,6 +40,7 @@ import {
   createUserLocationIcon,
   elementPopupHtml,
   elementTooltipHtml,
+  plainPopup,
 } from './pin-marker';
 import { bindElementMarker, canDragMarker, elementChanged, pathClickIntent } from './marker-sync';
 import { MAP_FOCUS_CLASS, pathOpacity } from './map-focus';
@@ -809,7 +810,7 @@ export class GeoMapComponent implements OnDestroy {
         fillOpacity: 1,
         interactive: true,
       })
-        .bindPopup(item.message)
+        .bindPopup(plainPopup(item.message))
         .addTo(this.breakLayer);
     }
   }
@@ -830,7 +831,7 @@ export class GeoMapComponent implements OnDestroy {
         fillOpacity: 1,
         interactive: true,
       })
-        .bindPopup(item.label)
+        .bindPopup(plainPopup(item.label))
         .addTo(this.impactLayer);
     }
   }

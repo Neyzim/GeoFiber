@@ -14,15 +14,67 @@
   min-width: 56px;
 }
 
-@media (max-width: 820px) {
+.sidebar__toggle-mobile,
+.sidebar__backdrop {
+  display: none;
+}
+
+// Celular (mesmo corte da gaveta das fichas): o painel não ocupa largura do mapa. Recolhido vira só
+// o botão ☰ flutuando no canto (a barra de ferramentas desce, ver network-map-page.scss); aberto,
+// fica por cima do mapa, e tocar fora fecha.
+@media (max-width: 899.98px) {
   :host {
-    width: min(220px, 64vw);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1300;
+    width: min(260px, 82vw);
     min-width: 0;
+    transition: none;
   }
 
   :host(.is-collapsed) {
-    width: 48px;
-    min-width: 48px;
+    top: 12px;
+    bottom: auto;
+    left: 12px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    z-index: 1100;
+  }
+
+  .sidebar {
+    position: relative;
+    z-index: 1;
+    box-shadow: var(--gf-shadow-float);
+  }
+
+  .sidebar.is-collapsed {
+    padding: 0;
+    justify-content: center;
+    border: 1px solid var(--gf-border);
+    border-radius: var(--gf-radius-panel);
+  }
+
+  .sidebar__rail > :not(.sidebar__toggle),
+  .sidebar__toggle-desktop {
+    display: none;
+  }
+
+  .sidebar__toggle-mobile {
+    display: inline-block;
+  }
+
+  .sidebar__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(0 0 0 / 32%);
+    cursor: default;
   }
 }
 

@@ -75,6 +75,31 @@ describe('OltSheetStore', () => {
     expect(oltApi.listPorts).toHaveBeenCalledTimes(2);
   });
 
+  it('reports the batch progress while creating ports', () => {
+    const { store, oltApi } = setup();
+    store.open('o1');
+    const answers = [new Subject<unknown>(), new Subject<unknown>(), new Subject<unknown>()];
+    answers.forEach((answer) => oltApi.createPort.mockReturnValueOnce(answer));
+    store.addPorts(1, 3);
+    expect(store.batchProgress()).toEqual({ done: 0, total: 3 });
+    answers[0].next({});
+    answers[0].complete();
+    expect(store.batchProgress()).toEqual({ done: 1, total: 3 });
+    answers[1].next({});
+    answers[1].complete();
+    answers[2].next({});
+    answers[2].complete();
+    expect(store.batchProgress()).toBeNull();
+  });
+
+  it('clears the batch progress when a port fails', () => {
+    const { store, oltApi } = setup();
+    store.open('o1');
+    oltApi.createPort.mockReturnValueOnce(throwError(() => new Error('409')));
+    store.addPorts(1, 3);
+    expect(store.batchProgress()).toBeNull();
+  });
+
   it('links and unlinks a fiber keeping slot and number', () => {
     const { store, oltApi } = setup();
     store.open('o1');

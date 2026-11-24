@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, concatMap, forkJoin, from, map, switchMap, toArray } from 'rxjs';
+import { Observable, concatMap, forkJoin, from, map, switchMap, tap, toArray } from 'rxjs';
 import {
   AttachedCableResponse,
   OltPortRequest,
@@ -32,6 +32,7 @@ export class OltSheetStore {
   private readonly _cables = signal<readonly AttachedCableResponse[]>([]);
   private readonly _fiberIndex = signal<FiberIndex>(new Map());
   private readonly _saving = signal(false);
+  private readonly _batchProgress = signal<{ done: number; total: number } | null>(null);
 
   readonly oltId = this._oltId.asReadonly();
   readonly state = this._state.asReadonly();
@@ -39,6 +40,8 @@ export class OltSheetStore {
   readonly cables = this._cables.asReadonly();
   readonly fiberIndex = this._fiberIndex.asReadonly();
   readonly saving = this._saving.asReadonly();
+  /** Progresso da criação em lote ("Criando porta X de N…"); `null` fora dela. */
+  readonly batchProgress = this._batchProgress.asReadonly();
 
   readonly slots = computed(() => groupPortsBySlot(this._ports()));
   readonly summary = computed(() => describeOltSummary(this._ports(), this._cables().length));
@@ -89,14 +92,21 @@ export class OltSheetStore {
     const planned = planPorts(this._ports(), slot, count);
     if (!id || planned.length === 0 || this._saving()) return;
     this._saving.set(true);
+    this._batchProgress.set({ done: 0, total: planned.length });
     from(planned)
       .pipe(
         concatMap((body) => this.oltApi.createPort(id, body)),
+        tap(() =>
+          this._batchProgress.update((progress) =>
+            progress ? { ...progress, done: progress.done + 1 } : progress,
+          ),
+        ),
         toArray(),
       )
       .subscribe({
         next: (created) => {
           this._saving.set(false);
+          this._batchProgress.set(null);
           this.notifications.success(
             created.length === 1 ? 'Porta PON criada.' : `${created.length} portas PON criadas.`,
           );
@@ -104,6 +114,7 @@ export class OltSheetStore {
         },
         error: (error: unknown) => {
           this._saving.set(false);
+          this._batchProgress.set(null);
           this.notifications.apiError(error);
           this.reload();
         },

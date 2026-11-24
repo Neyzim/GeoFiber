@@ -2,6 +2,14 @@ import * as L from 'leaflet';
 import { ElementDetail, MapElement } from '../../core/network/map-element';
 import { groupDefinition, statusDefinition } from '../../core/network/network-catalog';
 
+/**
+ * Balão de texto simples (marcadores de impacto e de quebra do rastreio). Nomes vêm de quem
+ * cadastra ou de um KMZ importado, e o Leaflet usa `innerHTML`: sempre escapar.
+ */
+export function plainPopup(text: string): string {
+  return escapeHtml(text);
+}
+
 export const PIN_ICON_SIZE: readonly [number, number] = [34, 38];
 export const PIN_ICON_ANCHOR: readonly [number, number] = [17, 37];
 

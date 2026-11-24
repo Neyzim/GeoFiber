@@ -21,6 +21,9 @@ em qual porta.
   estava. O que estava sendo digitado e não foi salvo se perde.
 - **"Não foi possível conectar ao servidor do GeoFiber.":** o servidor não respondeu. Confira a
   internet e toque em **Tentar novamente**. Isso não encerra a sua sessão.
+- **"Muitas tentativas de entrar.":** depois de 5 senhas erradas seguidas, o sistema espera 15
+  minutos antes de aceitar esse e-mail de novo. Se esqueceu a senha, peça ao administrador para
+  trocá-la.
 - **Sair:** no mapa, toque no ícone de pessoa (**Conta**), no pé da barra de ferramentas, e em **Sair**.
   O menu também mostra seu papel: **Técnico** (opera a rede) ou **Administrador** (opera a rede e
   cuida das contas).
@@ -66,7 +69,8 @@ Tudo o que aparece no mapa vem do servidor e fica salvo nele: recarregar a pági
   lixeira do item na legenda). O sistema sempre pede confirmação. O servidor pode recusar (ex.:
   caixa que ainda tem cabos) e a mensagem explica o motivo.
 - **Painel lateral:** começa recolhido, para o mapa ter mais espaço. A seta abre o painel; os ícones
-  dão acesso direto a Modelos, Importar e (para administrador) Usuários.
+  dão acesso direto a Modelos, Importar e (para administrador) Usuários. No celular, o painel é só
+  o botão ☰ no canto de cima. Toque nele para abrir e toque fora para fechar.
 - **Legenda:** busque pelo nome, filtre pela situação e use o olho para esconder um tipo do mapa.
 - **Muitos itens juntos:** com o mapa afastado, marcadores próximos viram um círculo com o número
   de itens. Aproxime (ou clique no círculo) para vê-los separados.
@@ -116,7 +120,8 @@ Ao clicar num cabo, abre à direita a **ficha do cabo**, com as abas **Resumo** 
   no mapa.
 - **Por onde o cabo passa:** clique em "Editar lista" para montar o caminho. Adicione pelo seletor
   ou com **"Escolher no mapa"** (cada OLT/caixa clicada entra no fim da lista). Use as setas para
-  ordenar: o primeiro é o início e o último é o fim. Salve com "Salvar lista".
+  ordenar: o primeiro é o início e o último é o fim. Salve com "Salvar lista". Enquanto escolhe no
+  mapa, clicar em outro cabo não abre a ficha dele (para não perder a lista): salve ou cancele antes.
 - **Tubos e fibras:** num cabo novo, escolha quantas fibras vão em cada tubo e clique em "Criar
   tubos e fibras"; o sistema cria tudo de uma vez, nas cores da norma. Abra um tubo para ver as
   fibras: número no tubo e no cabo, cor, situação e o que está ligado em cada ponta. Pelo menu ⋮
@@ -245,7 +250,7 @@ cabos que saem dela (clique para abrir a ficha do cabo). Abas: **Resumo** e **Po
 placa mostra quantas portas estão ocupadas, ex.: "6/8 ocupadas").
 
 - **Adicionar portas:** escolha a placa e quantas portas (1, 4, 8 ou 16). A numeração continua de
-  onde a placa parou.
+  onde a placa parou. Enquanto cria, a ficha mostra "Criando porta 3 de 16…".
 - Pelo menu ⋮ de cada porta: **Ligar fibra** (a fibra do cabo que leva o sinal para a rede),
   **Desligar fibra**, marcar como **reservada** ou **com defeito**, ou **excluir** (só sem fibra).
 

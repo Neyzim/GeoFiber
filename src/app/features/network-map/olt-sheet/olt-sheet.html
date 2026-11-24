@@ -148,6 +148,11 @@
                   Adicionar portas
                 </button>
               </div>
+              @if (store.batchProgress(); as progress) {
+                <p class="sheet__hint" role="status">
+                  Criando porta {{ progress.done + 1 }} de {{ progress.total }}…
+                </p>
+              }
             }
           </section>
         }

@@ -63,12 +63,13 @@ import { LegendGroup, LegendLeaf, MapLegendComponent } from '../../shared/map/ma
 import { MapLayerPanelComponent } from '../../shared/map/map-layer-panel';
 import { MapStatusBarComponent } from '../../shared/map/map-status-bar';
 import { MapToolbarComponent } from '../../shared/map/map-toolbar';
+import { pathClickAction } from './path-click';
 import { MapTypePickerComponent, TypePickerOption } from '../../shared/map/map-type-picker';
 import { popupHtml } from '../../shared/map/pin-marker';
 import { BoxFormData, BoxFormDialogComponent } from '../../shared/network/box-form-dialog';
 import { OltFormData, OltFormDialogComponent } from '../../shared/network/olt-form-dialog';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/ui/confirm-dialog';
-import { RouteItem } from '../../core/network/cable-route';
+import { RouteItem, isSameVertex } from '../../core/network/cable-route';
 import { describeCableEnds } from './cable-ends';
 import { BoxSheetComponent } from './box-sheet/box-sheet';
 import { BoxSheetStore } from './box-sheet/box-sheet-store';
@@ -665,23 +666,25 @@ export class NetworkMapPage implements OnInit {
 
   /** Clique no cabo: seleciona e busca início/fim; o segundo clique abre a edição. */
   protected onPathClick(path: GeoPath): void {
-    const tool = this.activeTool();
-    if (tool !== 'select' && tool !== 'editCable') {
-      return;
-    }
     const cable = this.repository.mapCables().find((item) => item.id === path.id);
     if (!cable) {
       return;
     }
-    if (tool === 'select' && this.selectedCableId() === cable.id) {
+    const action = pathClickAction(
+      this.activeTool(),
+      this.sheet.picking(),
+      this.selectedCableId(),
+      cable.id,
+    );
+    if (action === 'warnPicking') {
+      this.notifications.info('Salve ou cancele a lista antes de abrir outro cabo.');
+    } else if (action === 'edit') {
       this.openCableEdit(cable.id);
-      return;
-    }
-    if (tool === 'editCable') {
+    } else if (action === 'select') {
       this.state.select({ type: 'cable', id: cable.id });
-      return;
+    } else if (action === 'focus') {
+      this.focusCable(cable);
     }
-    this.focusCable(cable);
   }
 
   protected onPathVertexMoved(event: PathVertexMoveEvent): void {
@@ -880,8 +883,8 @@ export class NetworkMapPage implements OnInit {
         ? { ref: { kind: element.kind, id: element.id }, name: element.name }
         : null;
 
-    if (last && last.lat === position.lat && last.lng === position.lng) {
-      // Mesmo ponto (ex.: os cliques do duplo clique): só completa o encaixe.
+    if (last && isSameVertex(last, position, this.view()?.zoom ?? null)) {
+      // Mesmo ponto (ex.: os cliques do duplo clique, a poucos pixels): só completa o encaixe.
       if (snap) {
         this.cableDraftSnaps.update((snaps) => [...snaps.slice(0, -1), snap]);
       }
@@ -1064,11 +1067,15 @@ export class NetworkMapPage implements OnInit {
   }
 
   private openBoxForm(data: BoxFormData): void {
-    this.openDialog(BoxFormDialogComponent, data, '600px', (saved: { name?: string }) =>
+    this.openDialog(BoxFormDialogComponent, data, '600px', (saved: { name?: string }) => {
       this.notifications.success(
         `Caixa "${saved.name ?? ''}" ${data.mode === 'edit' ? 'atualizada' : 'cadastrada'}.`,
-      ),
-    );
+      );
+      // A ficha aberta da mesma caixa recarrega (ex.: o tipo mudou).
+      if (data.mode === 'edit' && this.boxSheet.boxId() === data.box.id) {
+        this.boxSheet.reload();
+      }
+    });
   }
 
   private openCustomerForm(data: CustomerFormData): void {

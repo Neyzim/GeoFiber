@@ -26,6 +26,14 @@ describe('parseApiError', () => {
     );
   });
 
+  it('explains the login lockout (429)', () => {
+    const detail = 'Muitas tentativas de entrar. Espere 15 minutos e tente de novo.';
+    expect(parseApiError(httpError(429, { status: 429, detail })).message).toBe(detail);
+    expect(parseApiError(httpError(429, null)).message).toBe(
+      'Muitas tentativas. Espere alguns minutos e tente de novo.',
+    );
+  });
+
   it('translates a detail with a number', () => {
     const result = parseApiError(httpError(409, { status: 409, detail: 'Tray 3 is full' }));
     expect(result.message).toBe('A bandeja 3 está cheia.');

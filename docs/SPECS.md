@@ -417,6 +417,14 @@ OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo
   cabo), a escolha fecha e aparece a faixa "Criar CTO" / "Criar cabo de distribuição" no topo; tocar
   nela reabre a escolha, o X encerra a criação. Entrar na criação (elemento ou cabo) tira a seleção: a
   ficha aberta fecha.
+- **RI-41 Ajustes antes do teste de usabilidade.** (a) Durante "Escolher no mapa", clicar num cabo não
+  troca a ficha: aparece "Salve ou cancele a lista antes de abrir outro cabo." (`features/network-map/path-click.ts`).
+  (b) Em "Mover cabo", clicar de novo no cabo selecionado não faz nada. (c) Salvar "Editar dados" de
+  uma caixa recarrega a ficha dela, se aberta. (d) No diálogo de fibras, trocar a ponta (modo avançado)
+  limpa a fibra que deixou de estar livre nessa ponta; a fibra já ligada continua. (e) Ao traçar o cabo,
+  um clique a até 6px de tela do vértice anterior conta como o mesmo vértice (`isSameVertex` em
+  `core/network/cable-route.ts`; sem zoom conhecido, só pontos idênticos). (f) A criação de portas PON
+  em lote mostra "Criando porta X de N…" (`OltSheetStore.batchProgress`).
 
 ---
 
@@ -459,7 +467,18 @@ OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo
   caminho interno). Erros 401/403 usam o texto em português do backend; 403 de dono ("Só o criador
   pode alterar este elemento.") vira aviso e o formulário continua aberto. Editar e excluir aparecem
   para todos que entraram (`canEdit` segue `true`): o backend decide o dono. Papéis na tela como
-  "Administrador" e "Técnico"; só o administrador vê "Usuários" no painel lateral.
+  "Administrador" e "Técnico"; só o administrador vê "Usuários" no painel lateral. Login bloqueado
+  pelo backend (`429`, 5 erros em 15 min) mostra "Muitas tentativas de entrar. Espere 15 minutos e
+  tente de novo."; sem `detail`, "Muitas tentativas. Espere alguns minutos e tente de novo.".
+- **RI-42 Publicação segura.** Todo texto que entra em HTML do Leaflet (balões, dicas, ícones)
+  passa por `escapeHtml` (`shared/map/pin-marker.ts`); os balões de texto simples (impacto e quebras
+  do rastreio) usam `plainPopup`. Nomes vêm de quem cadastra ou de um KMZ importado: nunca vão crus
+  para `innerHTML`. O build de produção usa `environment.prod.ts` (`/api/v1` no mesmo endereço) e
+  não gera source maps.
+- **RI-43 Painel lateral no celular.** Abaixo de 900px o painel lateral não ocupa largura do mapa:
+  recolhido, é só o botão ☰ (`menu`) flutuando no canto de cima à esquerda, e a barra de ferramentas
+  do mapa desce para baixo dele. Aberto, fica por cima do mapa (até 260px / 82% da tela) com um fundo
+  escurecido, e tocar no fundo recolhe. No computador, nada muda: coluna de ícones de 56px.
 
 - **RI-39 Gerenciar usuários.** `/usuarios` só abre para administrador (`authGuard` e depois
   `adminGuard`; técnico vai ao mapa, sem sessão vai a `/entrar?voltar=%2Fusuarios`). A lista vem de

@@ -82,4 +82,56 @@ describe('FiberLinkDialogComponent', () => {
       'Ligue um cabo a esta caixa na ficha do cabo',
     );
   });
+
+  describe('changing the end (advanced mode)', () => {
+    // f9: ponta B livre, ponta A já tem fusão.
+    const halfBusy = indexFibers([
+      {
+        cableId: 'c1',
+        name: 'CABO-01',
+        fibers: [
+          {
+            id: 'f9',
+            tubeNumber: 1,
+            numberInTube: 3,
+            absoluteNumber: 3,
+            status: 'OCCUPIED',
+            ends: [
+              { end: 'A', status: 'CONNECTED', link: { type: 'FUSION', id: 's1', elementId: 'b1' } },
+              { end: 'B', status: 'AVAILABLE' },
+            ],
+          },
+          { id: 'f1', tubeNumber: 1, numberInTube: 1, absoluteNumber: 1, status: 'AVAILABLE' },
+        ],
+      },
+    ]);
+    const single = [{ label: 'Fibra que chega', defaultEnd: 'B' as const }];
+
+    it('clears a fiber that is no longer free on the new end', () => {
+      const { component } = setup({ fibers: halfBusy, slots: single, trays: undefined });
+      const slot = component.form.controls.slots.at(0).controls;
+      slot.fiberId.setValue('f9');
+      slot.fiberEnd.setValue('A');
+      expect(slot.fiberId.value).toBe('');
+    });
+
+    it('keeps a fiber that is free on both ends', () => {
+      const { component } = setup({ fibers: halfBusy, slots: single, trays: undefined });
+      const slot = component.form.controls.slots.at(0).controls;
+      slot.fiberId.setValue('f1');
+      slot.fiberEnd.setValue('A');
+      expect(slot.fiberId.value).toBe('f1');
+    });
+
+    it('keeps the fiber that is already linked', () => {
+      const { component } = setup({
+        fibers: halfBusy,
+        slots: [{ label: 'Fibra que chega', defaultEnd: 'B', current: 'f9' }],
+        trays: undefined,
+      });
+      const slot = component.form.controls.slots.at(0).controls;
+      slot.fiberEnd.setValue('A');
+      expect(slot.fiberId.value).toBe('f9');
+    });
+  });
 });

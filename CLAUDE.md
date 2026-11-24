@@ -28,7 +28,8 @@ Documentação de rede FTTH sobre um mapa. Dois públicos: o **técnico** que do
   globs `*.spec.ts`, não `**`). O builder compila tudo o que os specs alcançam, então um erro de tipo
   em qualquer lugar quebra o teste.
 - `npm run api:types` — regenera `src/app/core/api/generated/schema.d.ts` a partir do backend
-  rodando em `localhost:8080`; os apelidos ficam em `src/app/core/api/api-types.ts`.
+  rodando em `localhost:8080` com `API_DOCS_ENABLED=true` no `.env` do backend (o Swagger fica
+  desligado por padrão); os apelidos ficam em `src/app/core/api/api-types.ts`.
 - Ao ler a saída de teste, procurar também **"Unhandled"** (erros soltos não aparecem no resumo).
 - No Bash deste ambiente, heredocs com apóstrofo falham: para edições grandes, escrever um script
   Python no scratchpad e rodar com `python -I script.py "$(pwd)"`.
@@ -101,8 +102,7 @@ fibra adiado**; modelos de rede são atalhos locais.
 `docs/superpowers/plans/2026-11-20-redesign-unifilar-app.md` (Tasks 1–14; design em
 `docs/superpowers/specs/2026-11-20-redesign-unifilar-app-design.md`, RI-26…RI-31 no SPECS). O plano
 antigo `2026-11-20-visual-redesign-unifilar.md` foi substituído (commits dele: `77906cb`, `2407fab`,
-`c6b62c9`, `93a955b`, `156a534`). O trabalho do plano novo **não foi commitado**: as mensagens
-sugeridas por tarefa estão nos passos "Registrar" do plano. Tokens `--gf-*` em `src/theme/`, tema pela
+`c6b62c9`, `93a955b`, `156a534`). Tokens `--gf-*` em `src/theme/`, tema pela
 classe `html.dark-theme`, fichas com linha "chega → elemento → sai" + abas, diagrama por emenda,
 ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o mapa fica em ruas
 (OpenStreetMap) ou satélite; as camadas do CARTO saíram porque passaram a exigir chave.
@@ -113,7 +113,7 @@ ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o 
 - **Etapa 3:** ficha da caixa ✅ (bandejas, fusões, conectores, splitters, portas de atendimento).
   - **Diagrama de fusões** ✅ etapa 1 `/caixas/:boxId/fusoes` (plano `docs/superpowers/plans/2026-11-21-diagrama-de-fusoes.md`,
     design `2026-11-20-diagrama-de-fusoes-design.md`, RI-32/33): lista por cabo, gaveta, emenda por dois
-    toques; substituiu a tela de bandejas. Não commitado; falta conferir no navegador. Etapa 2 (desenho
+    toques; substituiu a tela de bandejas. Etapa 2 (desenho
     clássico no computador) pendente.
 - **Etapa 4:** ficha da OLT (portas PON por placa, criação em lote, ligar fibra).
 - **Etapa 5:** clientes (cadastro pelo mapa, CTO mais próxima, porta livre com sinal, situação,
@@ -121,37 +121,59 @@ ocupação "ocupado/total", foco no mapa. O tema escuro muda só a interface: o 
 - **Etapa 6:** ajuda para leigos (glossário, "?" nos termos, "O que estou vendo?").
 - **Segurança, etapa 1** ✅ (design `docs/superpowers/specs/2026-11-21-seguranca-frontend-design.md`,
   plano `docs/superpowers/plans/2026-11-21-seguranca-frontend.md`, RI-38, GUIA "Entrar e sair"): login,
-  sessão em memória, refresh único, renovação, logout, guardas, 401/403, cadastro de usuário. Não
-  commitada; conferir no navegador. **Etapa 2** ✅ gerenciar usuários `/usuarios` (design
+  sessão em memória, refresh único, renovação, logout, guardas, 401/403, cadastro de usuário.
+  **Etapa 2** ✅ gerenciar usuários `/usuarios` (design
   `docs/superpowers/specs/2026-11-21-gerenciar-usuarios-design.md`, plano
   `docs/superpowers/plans/2026-11-21-gerenciar-usuarios.md`, RI-39, GUIA "Gerenciar usuários"): lista,
-  desativar/reativar, trocar senha, cadastrar. Não commitada; conferir no navegador. Nome de quem
+  desativar/reativar, trocar senha, cadastrar. Nome de quem
   entrou espera `GET /auth/me`.
 
 **Importação de KMZ/KML** (design `docs/superpowers/specs/2026-11-20-importar-kmz-design.md`, plano
 `docs/superpowers/plans/2026-11-20-importar-kmz.md`, RI-35, GUIA): leitura, agrupamento, duplicados,
-pedido, serviço, store, tela `/importar`, prévia no mapa. Não commitado. Depende do endpoint
+pedido, serviço, store, tela `/importar`, prévia no mapa. Depende do endpoint
 `POST /imports/network` no backend (o dono implementa; contrato no design). Backend publicado; `npm run api:types` feito e `core/api/import-types.ts` usa os tipos gerados.
 
 **Rastreio da fibra** (design `docs/superpowers/specs/2026-11-20-rastreio-fibra-design.md`, plano
 `docs/superpowers/plans/2026-11-20-rastreio-fibra.md`, RI-36, GUIA): endpoint `GET /trace/{kind}/{id}`
 já publicado no backend; front implementado (ficha, store, marcadores vermelhos no mapa, entradas
-na caixa, splitter, fibra, emenda e `?trace=`). Não commitado. Página do mapa e entradas sem spec
-próprio (Leaflet não roda no jsdom): conferir no navegador.
+na caixa, splitter, fibra, emenda e `?trace=`). Página do mapa e entradas sem spec
+próprio (Leaflet não roda no jsdom); conferido no navegador.
 
 **Impacto de manutenção** (design `docs/superpowers/specs/2026-11-20-impacto-manutencao-design.md`, plano
 `docs/superpowers/plans/2026-11-20-impacto-manutencao.md`, RI-37, GUIA): endpoints
 `GET /impact/{cables|boxes|olts}/{id}` publicados no backend; front implementado (ficha, store, marcadores
-por tipo no mapa, traçado roxo do cabo alvo, entradas no cabo, caixa e OLT). Não commitado. A página do
-mapa não tem spec (Leaflet não roda no jsdom): conferir no navegador.
+por tipo no mapa, traçado roxo do cabo alvo, entradas no cabo, caixa e OLT). A página do
+mapa não tem spec (Leaflet não roda no jsdom); conferido no navegador.
 
 **Ajustes do mapa no celular e excluir pela ficha** (design `docs/superpowers/specs/2026-11-22-ajustes-mapa-celular-design.md`,
 plano `docs/superpowers/plans/2026-11-22-ajustes-mapa-celular.md`, RI-40, GUIA "Como usar o mapa"): ⋮ → Excluir
 nas fichas de caixa/OLT/cabo, painel lateral começa recolhido, ajuda some com ficha aberta no celular,
 "Toque aqui para editar" no balão, foco acima da gaveta, gaveta arrastável (`core/network/sheet-drag`,
-`shared/common/sheet-drag.directive`), faixa "Criar …" (`shared/map/create-banner`). Não commitado; conferir no navegador.
+`shared/common/sheet-drag.directive`), faixa "Criar …" (`shared/map/create-banner`).
 
-Testes: 103 arquivos / 598 passando; build ok. Falta a conferência no navegador (ver Pendências).
+**Conferido no navegador e aprovado pelo dono (2026-11-22):** redesign Unifilar, diagrama de fusões,
+segurança (etapas 1 e 2), importação KMZ/KML, rastreio, impacto e ajustes do mapa no celular; tudo
+commitado pelo dono.
+
+**Ajustes finais antes do teste com técnico** (design `docs/superpowers/specs/2026-11-22-ajustes-finais-teste-design.md`,
+plano `docs/superpowers/plans/2026-11-22-ajustes-finais-teste.md`, RI-41): "Escolher no mapa" não perde a
+lista ao clicar noutro cabo, ficha da caixa recarrega após "Editar dados", trocar a ponta limpa a fibra,
+vértice a ≤ 6px conta como o mesmo, progresso do lote de portas PON, reclicar o cabo em "Mover cabo" não
+busca de novo. Roteiro do teste: `docs/ROTEIRO-TESTE-USABILIDADE.md`. Não commitado. Próximo passo: o dono
+testa com um técnico; as anotações viram a próxima rodada de ajustes.
+
+**Revisão de vazamentos antes de publicar** (2026-11-22, RI-42, README "Publicar"): balões de impacto e de
+quebra do rastreio escapam o texto (`plainPopup`); build de produção com `environment.prod.ts` (`/api/v1`
+no mesmo endereço) e sem source maps; mensagem do `429` no login. No backend (a pedido do dono): Swagger
+desligado por padrão (`API_DOCS_ENABLED`) e limite de 5 logins errados em 15 min (`LoginAttemptLimiter`).
+Não commitado.
+
+**Painel lateral no celular** (2026-11-23, design `docs/superpowers/specs/2026-11-23-painel-lateral-celular-design.md`,
+plano `docs/superpowers/plans/2026-11-23-painel-lateral-celular.md`, RI-43): abaixo de 900px, recolhido é só o
+☰ flutuante (a barra de ferramentas desce para `top: 60px`); aberto fica por cima do mapa e tocar fora fecha.
+Não commitado.
+
+Testes: 104 arquivos / 614 passando; build ok.
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 
@@ -189,26 +211,6 @@ Testes: 103 arquivos / 598 passando; build ok. Falta a conferência no navegador
 
 ### Pendências conhecidas (menores)
 
-- **Validar no navegador a importação de KMZ/KML** (arquivo real do OZMap e do Google Earth, grupos,
-  duplicados ao importar de novo, "Ver no mapa", erro 409) depois que o backend publicar o endpoint.
-
-- **Validar no navegador o diagrama de fusões** (celular e computador, claro e escuro, link direto,
-  voltar ao mapa, emendar, erro 409 no painel).
-
-- **Validar no navegador os ajustes do mapa no celular** (gaveta arrastável nas seis fichas, foco acima da
-  gaveta, "Toque aqui para editar" sem criar/desselecionar, faixa "Criar …", ⋮ → Excluir, ajuda escondida).
-
-- **Validar no navegador o redesign Unifilar** (lista no Task 14, Step 5 do plano
-  `2026-11-20-redesign-unifilar-app.md`) até o dono conferir.
-
-- Clicar em outro cabo durante "Escolher no mapa" descarta o rascunho.
-- Trocar a ponta (modo avançado) não limpa a fibra escolhida que deixou de estar livre.
-- Mudar o tipo da caixa em "Editar dados" só atualiza a ficha ao selecionar de novo.
-- Criação de portas PON em lote sem progresso por porta.
 - Legenda não edita/exclui clientes (isso é feito na ficha do cliente).
 - Rollback de arrasto compara só a posição; arrastos do mesmo elemento podem chegar fora de ordem.
-- Duplo clique pode adicionar um vértice quase duplicado no traçado do cabo.
 - Modelos "CEO 24 emendas" migrados não têm `trayCapacity`.
-- Reclicar o cabo selecionado em "Mover cabo" busca as pontas de novo.
-- Não verificado no navegador: posição das fichas à direita junto do painel de camadas, tema
-  claro/escuro das fichas.

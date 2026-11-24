@@ -1,5 +1,5 @@
 import { MapElement } from '../../core/network/map-element';
-import { createElementIcon, elementPopupHtml, elementTooltipHtml } from './pin-marker';
+import { createElementIcon, elementPopupHtml, elementTooltipHtml, plainPopup } from './pin-marker';
 
 const cto: MapElement = {
   key: 'box:b1',
@@ -53,5 +53,13 @@ describe('pin-marker', () => {
     const box = document.createElement('div');
     box.innerHTML = elementPopupHtml(cto);
     expect(box.querySelector('button')).toBeNull();
+  });
+});
+
+describe('plainPopup', () => {
+  it('shows a name as text, never as HTML', () => {
+    const html = plainPopup('<img src=x onerror="alert(1)">CTO & cia');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;CTO &amp; cia');
   });
 });

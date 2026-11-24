@@ -47,6 +47,22 @@ describe('NetworkSidebarComponent', { timeout: 20000 }, () => {
     expect(root.querySelector('a[href="/usuarios"]')).toBeNull();
     expect(root.querySelector('a[href="/importar"]')).toBeTruthy();
   });
+
+  it('no celular o botão recolhido é o ☰ (menu)', () => {
+    const root = render(true);
+    const toggle = root.querySelector('button[aria-label="Expandir painel"]')!;
+    expect(toggle.classList).toContain('sidebar__toggle');
+    expect(toggle.querySelector('.sidebar__toggle-mobile')!.textContent).toContain('menu');
+  });
+
+  it('aberto, tocar fora do painel (no fundo) recolhe', () => {
+    const root = render(true);
+    expect(root.querySelector('.sidebar__backdrop')).toBeNull();
+    expand(root);
+    root.querySelector<HTMLButtonElement>('.sidebar__backdrop')!.click();
+    TestBed.inject(ApplicationRef).tick();
+    expect(root.querySelector('aside.sidebar')!.classList).toContain('is-collapsed');
+  });
 });
 
 function expand(root: HTMLElement): void {

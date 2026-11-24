@@ -30,6 +30,7 @@ const BACKEND_PT_DETAILS = new Set([
   'E-mail já cadastrado.',
   'A senha precisa ter pelo menos 10 caracteres.',
   'Usuário não encontrado.',
+  'Muitas tentativas de entrar. Espere 15 minutos e tente de novo.',
 ]);
 
 /** Frases do backend técnicas demais para quem está no meio do uso. */
@@ -43,6 +44,7 @@ const STATUS_MESSAGES: Record<number, string> = {
   400: 'Os dados enviados são inválidos.',
   404: 'O item não foi encontrado. Ele pode ter sido excluído por outra pessoa.',
   409: 'A operação conflita com dados já cadastrados.',
+  429: 'Muitas tentativas. Espere alguns minutos e tente de novo.',
 };
 
 /** Converte qualquer erro (ProblemDetail, rede, exceção) em `ApiError`. Nunca lança. */

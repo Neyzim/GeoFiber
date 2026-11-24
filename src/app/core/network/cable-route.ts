@@ -1,5 +1,6 @@
 import { CableAttachmentRequest, CableAttachmentResponse } from '../api/api-types';
 import { ElementRef } from './network-map-repository';
+import { GeoPoint } from '../models/geo.model';
 
 /** Um elemento (OLT ou caixa) na lista do cabo, com o nome para exibir. */
 export interface RouteItem {
@@ -73,4 +74,32 @@ export function describeCableRoute(list: readonly CableAttachmentResponse[]): st
   }
   const middle = through.length > 0 ? `, passa por ${joinNames(through)}` : '';
   return `Este cabo sai de ${start}${middle} e termina em ${end}.`;
+}
+
+/** Metros por pixel no zoom 0 da projeção Web Mercator, no equador. */
+const METERS_PER_PIXEL_Z0 = 156543.03392;
+
+/**
+ * Dois cliques a poucos pixels de tela contam como o mesmo vértice (ex.: os dois cliques
+ * do duplo clique). Sem o zoom, só pontos idênticos.
+ */
+export function isSameVertex(
+  a: GeoPoint,
+  b: GeoPoint,
+  zoom: number | null,
+  tolerancePx = 6,
+): boolean {
+  if (a.lat === b.lat && a.lng === b.lng) {
+    return true;
+  }
+  if (zoom === null) {
+    return false;
+  }
+  const rad = Math.PI / 180;
+  const meanLat = ((a.lat + b.lat) / 2) * rad;
+  const dx = (b.lng - a.lng) * rad * Math.cos(meanLat) * 6371008.8;
+  const dy = (b.lat - a.lat) * rad * 6371008.8;
+  const meters = Math.hypot(dx, dy);
+  const metersPerPixel = (METERS_PER_PIXEL_Z0 * Math.cos(meanLat)) / 2 ** zoom;
+  return meters <= tolerancePx * metersPerPixel;
 }
