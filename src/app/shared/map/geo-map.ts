@@ -21,7 +21,7 @@ import {
   MAP_MIN_ZOOM,
   baseLayerDefinition,
 } from '../../core/constants/map.constants';
-import 'leaflet.markercluster';
+import { createMarkerClusterGroup } from './marker-cluster';
 import {
   ElementMoveEvent,
   GeoPath,
@@ -365,8 +365,8 @@ export class GeoMapComponent implements OnDestroy {
       showCoverageOnHover: false,
       chunkedLoading: true,
     };
-    this.infraCluster = L.markerClusterGroup(clusterOptions).addTo(map);
-    this.customerCluster = L.markerClusterGroup(clusterOptions).addTo(map);
+    this.infraCluster = createMarkerClusterGroup(clusterOptions).addTo(map);
+    this.customerCluster = createMarkerClusterGroup(clusterOptions).addTo(map);
     this.syncMarkers(this.elements());
     this.applyTool(this.activeTool());
     this.syncPaths(
