@@ -81,6 +81,8 @@ Tudo o que aparece no mapa vem do servidor e fica salvo nele: recarregar a pági
   destacar. Os elementos do cabo aberto continuam normais.
 - **Tema claro/escuro:** o tema muda só os painéis, fichas e janelas. O mapa continua o mesmo
   (ruas ou satélite, à sua escolha no seletor de mapas).
+- **Zoom bem perto:** nos zooms mais altos o fundo fica um pouco borrado, porque o mapa amplia a
+  última imagem disponível. É normal: os elementos e cabos continuam no lugar certo.
 
 ### Como ler as fichas
 

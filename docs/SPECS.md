@@ -386,6 +386,9 @@ OLTs (azul-índigo) afetados como marcadores. Resto do mapa esmaece, com o mesmo
 - **RI-31 Foco no mapa.** Com um elemento ou cabo selecionado, os outros marcadores ficam a 45% e
   os outros cabos a 35% (selecionados e destacados ficam normais). O tema não troca a camada base:
   só há ruas (OpenStreetMap) e satélite (Esri); camada salva que não existe mais volta para ruas.
+  As duas camadas vão até o zoom máximo do mapa (20); acima do último zoom com tiles reais
+  (`maxNativeZoom`: ruas 19, satélite 18) o Leaflet amplia o último tile, para o fundo não sumir
+  nem mostrar "Map data not yet available".
 - **RI-32 Diagrama de fusões.** Endereço próprio `/caixas/:boxId/fusoes` ("Ver fusões" na ficha da
   caixa, também em CTO sem bandeja). Uma aba por cabo, na ordem chega → passa → sai, e "Splitters"
   se houver; abre no primeiro cabo que chega. Cada fibra mostra o destino em frase curta, sem código

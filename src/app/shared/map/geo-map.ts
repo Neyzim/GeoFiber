@@ -458,6 +458,7 @@ export class GeoMapComponent implements OnDestroy {
     this.tileLayer = L.tileLayer(definition.url, {
       attribution: definition.attribution,
       maxZoom: definition.maxZoom,
+      maxNativeZoom: definition.maxNativeZoom,
       opacity,
       crossOrigin: true,
     }).addTo(map);

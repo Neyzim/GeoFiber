@@ -7,8 +7,14 @@ export interface BaseLayerDefinition {
   icon: string;
   url: string;
   attribution: string;
+  /** Zoom máximo da camada no mapa; igual a MAP_MAX_ZOOM para o fundo nunca sumir. */
   maxZoom: number;
+  /** Último zoom com tiles reais no servidor; acima dele o Leaflet amplia esse tile. */
+  maxNativeZoom: number;
 }
+
+export const MAP_MIN_ZOOM = 3;
+export const MAP_MAX_ZOOM = 20;
 
 export const BASE_LAYERS: readonly BaseLayerDefinition[] = [
   {
@@ -17,7 +23,8 @@ export const BASE_LAYERS: readonly BaseLayerDefinition[] = [
     icon: 'map',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; colaboradores do OpenStreetMap',
-    maxZoom: 19,
+    maxZoom: MAP_MAX_ZOOM,
+    maxNativeZoom: 19,
   },
   {
     key: 'satellite',
@@ -25,7 +32,9 @@ export const BASE_LAYERS: readonly BaseLayerDefinition[] = [
     icon: 'satellite_alt',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Imagens &copy; Esri, Maxar, Earthstar Geographics',
-    maxZoom: 19,
+    maxZoom: MAP_MAX_ZOOM,
+    // Em boa parte do Brasil a Esri não tem imagem no 19 e devolve "Map data not yet available".
+    maxNativeZoom: 17,
   },
 ];
 
@@ -37,9 +46,6 @@ export const DEFAULT_MAP_VIEW: MapViewState = {
   center: { lat: -23.5505, lng: -46.6333 },
   zoom: 13,
 };
-
-export const MAP_MIN_ZOOM = 3;
-export const MAP_MAX_ZOOM = 20;
 
 export const THEME_STORAGE_KEY = 'geofiber.theme.v1';
 /** Chaves antigas de PINs e cabos, apagadas na inicialização (a rede vive no backend). */

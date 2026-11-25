@@ -173,7 +173,9 @@ plano `docs/superpowers/plans/2026-11-23-painel-lateral-celular.md`, RI-43): aba
 ☰ flutuante (a barra de ferramentas desce para `top: 60px`); aberto fica por cima do mapa e tocar fora fecha.
 Não commitado.
 
-Testes: 104 arquivos / 614 passando; build ok.
+**Zoom alto do mapa** (2026-11-24, RI-31): camadas com `maxZoom` 20 e `maxNativeZoom` (ruas 19, satélite 18); o fundo não some nem mostra "Map data not yet available". Não commitado.
+
+Testes: 106 arquivos / 619 passando; build ok.
 
 ### Decisões tomadas sem o dono (revisar se algo incomodar)
 
